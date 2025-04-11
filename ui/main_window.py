@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import sys
 from typing import TYPE_CHECKING
 from PySide6.QtCore import (
@@ -10,6 +11,8 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import (
     QCloseEvent,
+    QDragEnterEvent,
+    QDropEvent,
 )
 from PySide6.QtWidgets import (
     QApplication,
@@ -19,15 +22,19 @@ from PySide6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QVBoxLayout,
+    QComboBox,
 )
+
 from .designer.ui_main_window import Ui_MainWindow
 if TYPE_CHECKING:
     from backend.controller import Controller
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
-    signal_k_ep_p_refreshed = Signal(dict)
     signal_preview_modified = Signal(dict)
+    signal_get_out_fp = Signal(str)
+    signal_convert_action = Signal(dict)
+    signal_model_loaded = Signal(str)
 
     def __init__(self, controller: Controller):
         super().__init__()
@@ -35,6 +42,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.controller: Controller = controller
         self.is_closing: bool = False
 
+        self.init_gui()
+
+        self.widget_onnx_model.set_editable(False)
+        self.widget_onnx_conversion.set_editable(True)
+        # set_stylesheet(self)
         self.installEventFilter(self)
 
 
@@ -75,3 +87,111 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.close()
         # Not clean but avoid ghost processes: clean this
         sys.exit()
+
+
+    def init_gui(self):
+        # self.setAcceptDrops(False)
+
+
+        # Put here all initialization settings fro each widget.
+        # so that it will be easier for refactoring
+        self.combobox_in_model_fp.setAcceptDrops(True)
+        self.combobox_in_model_fp.setEditable(True)
+        self.combobox_in_model_fp.setInsertPolicy(QComboBox.InsertAtCurrent)
+        self.combobox_in_model_fp.clear()
+        self.combobox_in_model_fp.clearEditText()
+        self.button_in_browse.clicked.connect(self.event_in_model_picker)
+
+
+
+
+        self.combobox_out_name.setAcceptDrops(False)
+        self.combobox_out_name.setEditable(True)
+        self.combobox_out_name.setInsertPolicy(QComboBox.InsertAtCurrent)
+        self.combobox_out_name.clear()
+        self.combobox_out_name.clearEditText()
+        self.button_out_browse.clicked.connect(self.event_out_dir_picker)
+        self.checkbox_out_autonaming.setChecked(True)
+        self.checkbox_out_autonaming.toggled[bool].connect(self.event_out_autonaming)
+
+        self.button_convert.clicked.connect(self.event_convert)
+
+        self.controller.signal_out_fp.connect(self.event_out_fp_refreshed)
+
+        self.supported_model_extensions: list[str] = [
+            '.engine', '.onnx', '.pt', '.pth'
+        ]
+
+
+
+    def get_conversion_settings(self) -> dict:
+        return {}
+
+
+    def event_in_model_picker(self):
+        pass
+
+    def event_out_dir_picker(self):
+        pass
+
+    def event_out_autonaming(self):
+        auto_naming: bool = self.checkbox_out_autonaming.isChecked()
+        self.signal_get_out_fp.emit(
+            {
+                'autonaming': auto_naming,
+                'out_dir': self.combobox_out_name.currentText(),
+                'settings': self.get_conversion_settings(),
+            }
+        )
+        label_text: str = "Save as" if auto_naming else "Directory"
+        self.label_out_type.setText(label_text)
+
+
+    def event_out_fp_refreshed(self, name: str) -> None:
+        self.combobox_out_name.setCurrentText(name)
+
+
+    def event_convert(self) -> None:
+        # Can be either start or cancel
+        self.signal_convert_action.emit()
+        self.button_convert.setEnabled(False)
+
+
+    def event_convert_state_changed(self, status: dict) -> None:
+        # status: dict(
+        #   'state': Literal['stopped', 'running'],
+        #   'type': Literal['progress', 'undetermined'],
+        #   'progress': int,
+        # )
+        if status['state'] == 'stopped':
+            self.button_convert.setText("Convert")
+            self.button_convert.setEnabled(True)
+
+        elif status['state'] == 'running':
+            self.button_convert.setText("Cancel")
+            self.button_convert.setEnabled(True)
+
+
+    def dropEvent(self, event: QDropEvent):
+        urls = event.mimeData().urls()
+        model_fp: str = urls[0].toLocalFile()
+        self.combobox_in_model_fp.setCurrentText(model_fp)
+        print(f"dropped: {self.combobox_in_model_fp.currentText()}")
+
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        is_allowed: bool = False
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            if len(urls) == 1:
+                extension = os.path.splitext(
+                    os.path.abspath(os.path.expanduser(urls[0].toLocalFile()))
+                )[1].lower()
+                if extension in self.supported_model_extensions:
+                    event.acceptProposedAction()
+                    is_allowed = True
+
+        if not is_allowed:
+            print("Oh noooo!!!")
+
+        # return super().dragEnterEvent(event)

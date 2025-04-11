@@ -11,6 +11,8 @@ from ui.main_window import MainWindow
 
 
 class Controller(QObject):
+    signal_progress: Signal = Signal(dict)
+    signal_out_fp: Signal = Signal(dict)
 
     def __init__(self, dev: bool):
         super().__init__()
@@ -40,3 +42,10 @@ class Controller(QObject):
         self.view = view
         view.apply_user_preferences(self.user_preferences)
         print("preferences: set_view")
+
+
+    def parse_model(self, object: dict) -> None:
+        self.signal_progress.emit(
+            {'action': 'start', 'progress': 0}
+        )
+        model_path: str = object['filepath']
