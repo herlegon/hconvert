@@ -44,7 +44,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.init_gui()
 
-        self.widget_onnx_model.set_editable(False)
+
         self.widget_onnx_conversion.set_editable(True)
         # set_stylesheet(self)
         self.installEventFilter(self)
@@ -90,20 +90,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def init_gui(self):
-        # self.setAcceptDrops(False)
-
 
         # Put here all initialization settings fro each widget.
         # so that it will be easier for refactoring
-        self.combobox_in_model_fp.setAcceptDrops(True)
-        self.combobox_in_model_fp.setEditable(True)
-        self.combobox_in_model_fp.setInsertPolicy(QComboBox.InsertAtCurrent)
-        self.combobox_in_model_fp.clear()
-        self.combobox_in_model_fp.clearEditText()
-        self.button_in_browse.clicked.connect(self.event_in_model_picker)
-
-
-
 
         self.combobox_out_name.setAcceptDrops(False)
         self.combobox_out_name.setEditable(True)
@@ -118,9 +107,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.controller.signal_out_fp.connect(self.event_out_fp_refreshed)
 
-        self.supported_model_extensions: list[str] = [
-            '.engine', '.onnx', '.pt', '.pth'
-        ]
 
 
 
@@ -128,8 +114,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         return {}
 
 
-    def event_in_model_picker(self):
-        pass
 
     def event_out_dir_picker(self):
         pass
@@ -171,27 +155,3 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.button_convert.setText("Cancel")
             self.button_convert.setEnabled(True)
 
-
-    def dropEvent(self, event: QDropEvent):
-        urls = event.mimeData().urls()
-        model_fp: str = urls[0].toLocalFile()
-        self.combobox_in_model_fp.setCurrentText(model_fp)
-        print(f"dropped: {self.combobox_in_model_fp.currentText()}")
-
-
-    def dragEnterEvent(self, event: QDragEnterEvent):
-        is_allowed: bool = False
-        if event.mimeData().hasUrls():
-            urls = event.mimeData().urls()
-            if len(urls) == 1:
-                extension = os.path.splitext(
-                    os.path.abspath(os.path.expanduser(urls[0].toLocalFile()))
-                )[1].lower()
-                if extension in self.supported_model_extensions:
-                    event.acceptProposedAction()
-                    is_allowed = True
-
-        if not is_allowed:
-            print("Oh noooo!!!")
-
-        # return super().dragEnterEvent(event)

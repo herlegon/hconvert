@@ -1,3 +1,6 @@
+from PySide6.QtCore import (
+        QSize,
+)
 from PySide6.QtWidgets import (
     QTableWidgetItem,
     QWidget,
@@ -7,6 +10,7 @@ from PySide6.QtWidgets import (
     QAbstractSpinBox,
     QLineEdit,
     QComboBox,
+    QSizePolicy,
 )
 
 from .designer.ui_onnx_widget import Ui_OnnxWidget
@@ -29,11 +33,17 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         self.combobox_resolution.clear()
         self.combobox_resolution_custom.clear()
 
+        size_policy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.lineedit_resolution = QLineEdit()
         self.lineedit_resolution.setReadOnly(True)
+        self.lineedit_resolution.setSizePolicy(size_policy)
+        self.lineedit_resolution.setMaximumSize(QSize(80, 16777215))
+
 
         self.lineedit_resolution_custom = QLineEdit()
         self.lineedit_resolution_custom.setReadOnly(True)
+        self.lineedit_resolution_custom.setSizePolicy(size_policy)
+        self.lineedit_resolution_custom.setMaximumSize(QSize(80, 16777215))
 
         self.widget_resolution_custom: QLineEdit | QComboBox = self.combobox_resolution_custom
         self.widget_resolution: QLineEdit | QComboBox = self.combobox_resolution
