@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="ModelWidget" name="widget" native="true"/>
+     <widget class="ModelWidget" name="widget_model" native="true"/>
     </item>
     <item>
      <widget class="QLabel" name="label_3">

@@ -23,7 +23,8 @@ class Ui_PyTorchWidget(object):
     def setupUi(self, PyTorchWidget):
         if not PyTorchWidget.objectName():
             PyTorchWidget.setObjectName(u"PyTorchWidget")
-        PyTorchWidget.resize(351, 183)
+        PyTorchWidget.resize(381, 183)
+        PyTorchWidget.setMaximumSize(QSize(16777210, 16777215))
         self.verticalLayout = QVBoxLayout(PyTorchWidget)
         self.verticalLayout.setSpacing(0)
         self.verticalLayout.setObjectName(u"verticalLayout")
@@ -53,7 +54,8 @@ class Ui_PyTorchWidget(object):
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.lineedit_arch_name.sizePolicy().hasHeightForWidth())
         self.lineedit_arch_name.setSizePolicy(sizePolicy1)
-        self.lineedit_arch_name.setMaximumSize(QSize(100, 16777215))
+        self.lineedit_arch_name.setMinimumSize(QSize(200, 0))
+        self.lineedit_arch_name.setMaximumSize(QSize(200, 16777215))
         self.lineedit_arch_name.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lineedit_arch_name.setReadOnly(True)
 
@@ -71,7 +73,7 @@ class Ui_PyTorchWidget(object):
 
         self.horizontalLayout.addWidget(self.pushbutton_link)
 
-        self.horizontalSpacer_5 = QSpacerItem(10, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_5 = QSpacerItem(5, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout.addItem(self.horizontalSpacer_5)
 

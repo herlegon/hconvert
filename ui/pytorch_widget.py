@@ -7,6 +7,7 @@ from pynnlib import (
 
 from PySide6.QtCore import (
     QCoreApplication,
+    Qt,
 )
 
 from PySide6.QtWidgets import (
@@ -26,13 +27,19 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.setupUi(self)
-        self.clear_fields()
-
+        self.clear()
         self.setEnabled(False)
+        self.lineedit_arch_name.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.pushbutton_link.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.lineedit_scale.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.lineedit_type.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.lineedit_size_constraints_min.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.lineedit_size_constraints_modulo.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+
         self.adjustSize()
 
 
-    def clear_fields(self) -> None:
+    def clear(self) -> None:
         self.lineedit_arch_name.clear()
         self.lineedit_arch_name.setReadOnly(True)
         self.pushbutton_link.setVisible(False)
@@ -47,10 +54,13 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
         self.lineedit_size_constraints_modulo.setReadOnly(True)
 
 
-    def display_model_info(self, model: NnModel | None) -> None:
+    def refresh_model_info(self, model: NnModel | None) -> None:
+        self.clear()
         if model is None:
-            self.clear_fields()
+            self.setEnabled(False)
             return
+
+        self.setEnabled(True)
 
         if model.framework.type == NnFrameworkType.PYTORCH:
             title = QCoreApplication.translate("PyTorchWidget", u"PyTorch", None)
@@ -66,11 +76,12 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
             self.pushbutton_link.setEnabled(False)
 
         if model.scale != 0:
-            self.lineedit_scale.setText(model.scale)
+            self.lineedit_scale.setText(f"{model.scale}")
         else:
             self.lineedit_scale.setText("?")
 
-        w, h = model.size_constraint.min
-        self.lineedit_size_constraints_min.setText(f"{w}x{h}")
-        self.lineedit_size_constraints_modulo.setText(f"{model.size_constraint.modulo}")
+        if model.size_constraint is not None:
+            w, h = model.size_constraint.min
+            self.lineedit_size_constraints_min.setText(f"{w}x{h}")
+            self.lineedit_size_constraints_modulo.setText(f"{model.size_constraint.modulo}")
 

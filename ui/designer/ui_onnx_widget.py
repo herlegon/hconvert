@@ -48,18 +48,18 @@ class Ui_OnnxWidget(object):
 
         self.main_layout.setWidget(0, QFormLayout.ItemRole.LabelRole, self.label_version)
 
-        self.spinbox_version = QSpinBox(self.groupbox_onnx_conversion)
-        self.spinbox_version.setObjectName(u"spinbox_version")
+        self.spinbox_opset = QSpinBox(self.groupbox_onnx_conversion)
+        self.spinbox_opset.setObjectName(u"spinbox_opset")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.spinbox_version.sizePolicy().hasHeightForWidth())
-        self.spinbox_version.setSizePolicy(sizePolicy1)
-        self.spinbox_version.setMinimum(15)
-        self.spinbox_version.setMaximum(21)
-        self.spinbox_version.setValue(20)
+        sizePolicy1.setHeightForWidth(self.spinbox_opset.sizePolicy().hasHeightForWidth())
+        self.spinbox_opset.setSizePolicy(sizePolicy1)
+        self.spinbox_opset.setMinimum(15)
+        self.spinbox_opset.setMaximum(21)
+        self.spinbox_opset.setValue(20)
 
-        self.main_layout.setWidget(0, QFormLayout.ItemRole.FieldRole, self.spinbox_version)
+        self.main_layout.setWidget(0, QFormLayout.ItemRole.FieldRole, self.spinbox_opset)
 
         self.label_datatype = QLabel(self.groupbox_onnx_conversion)
         self.label_datatype.setObjectName(u"label_datatype")

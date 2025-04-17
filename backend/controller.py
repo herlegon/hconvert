@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pprint import pprint
+import time
 from PySide6.QtCore import (
     QObject,
     Signal,
@@ -7,16 +8,25 @@ from PySide6.QtCore import (
 )
 
 from backend.user_preferences import UserPreferences
+from pynnlib.utils import get_extension
 from ui.main_window import MainWindow
-
+from pynnlib import (
+    NnModel,
+    nnlib,
+    get_supported_model_extensions,
+    NnFrameworkType,
+)
 
 class Controller(QObject):
     signal_progress: Signal = Signal(dict)
     signal_out_fp: Signal = Signal(dict)
+    signal_model_parsed: Signal = Signal()
 
     def __init__(self, dev: bool):
         super().__init__()
         self.view: MainWindow = None
+
+        self.in_model: NnModel = None
 
         self.user_preferences: UserPreferences = UserPreferences()
         self.user_preferences.settings['system']['dev'] = dev
@@ -42,10 +52,78 @@ class Controller(QObject):
         self.view = view
         view.apply_user_preferences(self.user_preferences)
         print("preferences: set_view")
+        self.view.model_widget.signal_model_loaded.connect(self.parse_model)
 
 
-    def parse_model(self, object: dict) -> None:
+
+    def parse_model(self, model_fp: str) -> None:
         self.signal_progress.emit(
             {'action': 'start', 'progress': 0}
         )
-        model_path: str = object['filepath']
+        print(f"parse_model: {model_fp}")
+
+        ext = get_extension(model_fp)
+        trt_extensions: tuple[int] = get_supported_model_extensions(NnFrameworkType.TENSORRT)
+
+        device = 'cuda' if ext in trt_extensions else 'cpu'
+        start_time = time.time()
+        self.in_model: NnModel = nnlib.open(model_fp, device=device)
+        elapsed = time.time() - start_time
+
+        self.signal_progress.emit(
+            {'action': 'stop', 'progress': 100}
+        )
+        print(f"parsed in {1000*elapsed:.03f}ms")
+        # Send a null signal because the object cannot be sent via a signal
+        self.signal_model_parsed.emit()
+
+
+
+    def get_in_model_details(self) -> NnModel:
+        # Use this function to avoid converting to/from dict
+        return self.in_model
+
+
+
+# import asyncio
+# from PySide6.QtCore import QObject, Signal
+# from qasync import QEventLoop, asyncSlot
+# from PySide6.QtWidgets import QApplication
+
+# class Worker(QObject):
+#     started = Signal()
+
+#     def __init__(self):
+#         super().__init__()
+#         self.task = None
+#         self.started.connect(self.on_started)
+
+#     @asyncSlot()
+#     async def on_started(self):
+#         print("Worker signal received, starting async task...")
+
+#         async def do_work():
+#             try:
+#                 for i in range(5):
+#                     print(f"Working... {i}")
+#                     await asyncio.sleep(1)
+#                 print("Async task finished.")
+#             except asyncio.CancelledError:
+#                 print("Task cancelled!")
+
+#         self.task = asyncio.create_task(do_work())
+
+# # ---- Run the application and asyncio loop ----
+# if __name__ == "__main__":
+#     import sys
+#     from qasync import QEventLoop
+
+#     app = QApplication(sys.argv)
+#     loop = QEventLoop(app)
+#     asyncio.set_event_loop(loop)
+
+#     worker = Worker()
+#     worker.started.emit()  # Fire the signal to trigger the async task
+
+#     with loop:
+#         loop.run_forever()

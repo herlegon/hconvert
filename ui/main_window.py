@@ -25,16 +25,23 @@ from PySide6.QtWidgets import (
     QComboBox,
 )
 
+from ui.model_widget import ModelWidget
+
 from .designer.ui_main_window import Ui_MainWindow
 if TYPE_CHECKING:
     from backend.controller import Controller
+
+
+from pynnlib import (
+    NnModel,
+)
+
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     signal_preview_modified = Signal(dict)
     signal_get_out_fp = Signal(str)
     signal_convert_action = Signal(dict)
-    signal_model_loaded = Signal(str)
 
     def __init__(self, controller: Controller):
         super().__init__()
@@ -46,8 +53,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
         self.widget_onnx_conversion.set_editable(True)
+
+        self.model_widget = self.findChild(ModelWidget, "widget_model")
         # set_stylesheet(self)
         self.installEventFilter(self)
+        self.controller.signal_model_parsed.connect(self.event_model_parsed)
 
 
     def apply_user_preferences(self, user_preferences: dict):
@@ -155,3 +165,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.button_convert.setText("Cancel")
             self.button_convert.setEnabled(True)
 
+
+    def event_model_parsed(self) -> None:
+        model: NnModel = self.controller.get_in_model_details()
+        self.widget_model.model_parsed(model)

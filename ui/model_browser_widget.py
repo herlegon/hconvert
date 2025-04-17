@@ -4,42 +4,25 @@ from typing import Type
 from PySide6.QtCore import (
     QObject,
     QEvent,
-)
-
-from PySide6.QtGui import (
-    QDragEnterEvent,
-    QDropEvent,
+    Signal,
 )
 from PySide6.QtWidgets import (
     QWidget,
     QComboBox,
-    QAbstractItemView,
+    QFileDialog,
 )
 
 from .designer.ui_model_browser_widget import Ui_ModelBrowserWidget
-
-
-class DragForwarder(QObject):
-    def __init__(self, parent_widget):
-        super().__init__(parent_widget)
-        self.parent_widget = parent_widget
-
-    def eventFilter(self, obj, event: QEvent):
-        if event.type() == QEvent.DragEnter:
-            print("Redirected dragEnterEvent to parent")
-            self.parent_widget.dragEnterEvent(event)
-            return True  # Optional: stop event propagation
-        if event.type() == QEvent.Type.Drop:
-            print("Redirected dragEnterEvent to parent")
-            self.parent_widget.dragEnterEvent(event)
-            return True  # Optional: stop event propagation
-
-        print(f"{event.type():02x}")
-        return False
+from pynnlib import (
+    NnModel,
+)
 
 
 
 class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
+    signal_model_loaded = Signal(str)
+
+
     def __init__(self, parent):
         super().__init__(parent)
         self.setupUi(self)
@@ -52,13 +35,29 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         self.combobox_model_fp.clear()
         self.combobox_model_fp.clearEditText()
         self.combobox_model_fp.lineEdit().setReadOnly(True)
-        self.button_browse.clicked.connect(self.event_in_model_picker)
 
         self.clear_fields()
         self.setEnabled(True)
         self.adjustSize()
 
         self.combobox_model_fp.installEventFilter(self)
+        self.button_browse.released.connect(self.model_picker_event)
+
+        self.previous_directory: str = "~/ml_models"
+        self.supported_model_extensions: list[str] = [
+            ".engine",
+            ".onnx",
+            ".pt",
+            ".pth",
+            ".safetensor",
+            ".param",
+        ]
+
+        extensions = ' '.join([f"*{ext}" for ext in self.supported_model_extensions])
+        self.file_filter = f"Model ({extensions})"
+
+        print(self.file_filter)
+
 
     def set_parent_widget(self, parent: Type[QWidget]) -> None:
         self._parent = parent
@@ -69,21 +68,44 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
 
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        # if watched == self.combobox_model_fp:
+        if watched == self.combobox_model_fp:
 
-        if event.type() == QEvent.Type.DragEnter:
-            print(f"filtered, DragEnter")
-            self._parent.dragEnterEvent(event)
-            return True
+            if event.type() == QEvent.Type.DragEnter:
+                print(f"filtered, DragEnter")
+                self._parent.dragEnterEvent(event)
+                return True
 
-        elif event.type() == QEvent.Type.Drop:
-            print(f"filtered, Drop {event.mimeData().urls()}")
-            self._parent.dropEvent(event)
-            return True
+            elif event.type() == QEvent.Type.Drop:
+                print(f"filtered, Drop {event.mimeData().urls()}")
+                self._parent.dropEvent(event)
+                return True
 
+            elif event.type() == QEvent.Type.MouseButtonPress:
+                self.model_picker_event()
+                return True
 
         return super().eventFilter(watched, event)
 
 
-    def event_in_model_picker(self):
-        pass
+
+    def model_picker_event(self):
+        file_dialog = QFileDialog(
+            parent=self,
+            fileMode=QFileDialog.FileMode.ExistingFile,
+            directory=os.path.abspath(
+                os.path.expanduser(self.previous_directory)
+            )
+        )
+        model_fp = file_dialog.getOpenFileName(
+            self,
+            caption="Open model...",
+            filter=self.file_filter
+        )[0]
+        print(model_fp)
+        self.combobox_model_fp.clear()
+        self.combobox_model_fp.setCurrentText(model_fp)
+        file_dialog.close()
+        del file_dialog
+        self.signal_model_loaded.emit(model_fp)
+
+

@@ -32,10 +32,10 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.widget = ModelWidget(self.centralwidget)
-        self.widget.setObjectName(u"widget")
+        self.widget_model = ModelWidget(self.centralwidget)
+        self.widget_model.setObjectName(u"widget_model")
 
-        self.verticalLayout.addWidget(self.widget)
+        self.verticalLayout.addWidget(self.widget_model)
 
         self.label_3 = QLabel(self.centralwidget)
         self.label_3.setObjectName(u"label_3")
