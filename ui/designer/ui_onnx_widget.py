@@ -73,12 +73,16 @@ class Ui_OnnxWidget(object):
         self.buttonGroup.setObjectName(u"buttonGroup")
         self.buttonGroup.addButton(self.radiobutton_fp32)
         self.radiobutton_fp32.setObjectName(u"radiobutton_fp32")
+        self.radiobutton_fp32.setEnabled(True)
+        self.radiobutton_fp32.setCheckable(True)
+        self.radiobutton_fp32.setChecked(False)
 
         self.layout_datatype.addWidget(self.radiobutton_fp32)
 
         self.radiobutton_fp16 = QRadioButton(self.groupbox_onnx_conversion)
         self.buttonGroup.addButton(self.radiobutton_fp16)
         self.radiobutton_fp16.setObjectName(u"radiobutton_fp16")
+        self.radiobutton_fp16.setCheckable(True)
 
         self.layout_datatype.addWidget(self.radiobutton_fp16)
 

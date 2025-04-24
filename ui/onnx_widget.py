@@ -20,6 +20,23 @@ from PySide6.QtWidgets import (
 from pynnlib.utils.p_print import red
 from .designer.ui_onnx_widget import Ui_OnnxWidget
 
+
+predefined_shapes: dict[str, tuple[int, int]] = {
+    "480p 16:9 (DVD)": (854, 480),
+    "480p 4:3": (640, 480),
+    "480p NTSC": (720, 480),
+    "576p 4:3 sq": (768, 576),
+    "720p 4:3": (960, 720),
+    "720p (HD ready)": (1280, 720),
+    "1080p (Full HD)": (1920, 1080),
+    "2160p (4K UHDTV)": (3840, 2160)
+}
+
+predefined_shapes_inv: dict[str, str] = {
+    "x".join(map(str, v)): k for k, v in predefined_shapes.items()
+}
+
+
 class OnnxWidget(QWidget, Ui_OnnxWidget):
     def __init__(self, parent, editable: bool = False):
         super().__init__(parent)
@@ -139,12 +156,26 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         self.setEnabled(True)
         self.spinbox_opset.setValue(model.opset)
 
-        if model.shape_strategy.static:
+        self.widget_resolution.clear()
+        self.widget_resolution_custom.clear()
+        if 'static' in model.shape_strategy.type:
             self.radiobutton_static.setChecked(True)
+            self.label_shape.setEnabled(True)
+            k = 'x'.join(map(str, model.shape_strategy.opt_size))
+            l = predefined_shapes_inv.get(k, "")
+            if self.editable:
+                self.widget_resolution.setCurrentText(l)
+                self.widget_resolution_custom.setCurrentText(k)
+            else:
+                self.widget_resolution.setText(l)
+                self.widget_resolution_custom.setText(k)
+
         else:
             self.radiobutton_dynamic.setChecked(True)
-        self.radiobutton_static.setCheckable(False)
-        self.radiobutton_dynamic.setCheckable(False)
+            self.label_shape.setEnabled(True)
+
+        self.radiobutton_static.setEnabled(False)
+        self.radiobutton_dynamic.setEnabled(False)
 
         if 'fp32' in model.dtypes:
             self.radiobutton_fp32.setChecked(True)
