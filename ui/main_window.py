@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+from pprint import pprint
 import sys
 from typing import TYPE_CHECKING
 from PySide6.QtCore import (
@@ -170,5 +171,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def event_model_parsed(self) -> None:
         model: NnModel = self.controller.get_in_model_details()
         self.widget_model.model_parsed(model)
-
         self.widget_onnx_conversion.enable_conversion(model)
+        self.widget_tensorrt_conversion.enable_conversion(model)
+
+        print(model)
+        print(model.arch)
+
+
+        self.textedit_log.clear()
+        self.textedit_log.appendPlainText(
+            str(model)
+        )
+        self.textedit_log.appendPlainText(
+            str(model.arch)
+        )
+

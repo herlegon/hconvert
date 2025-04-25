@@ -21,22 +21,12 @@ from PySide6.QtWidgets import (
 
 from pynnlib.utils.p_print import red
 from .designer.ui_onnx_widget import Ui_OnnxWidget
+from .common import (
+    predefined_shapes,
+    predefined_shapes_inv,
+)
 
 
-predefined_shapes: dict[str, tuple[int, int]] = {
-    "480p 16:9 (DVD)": (854, 480),
-    "480p 4:3": (640, 480),
-    "480p NTSC": (720, 480),
-    "576p 4:3 sq": (768, 576),
-    "720p 4:3": (960, 720),
-    "720p (HD ready)": (1280, 720),
-    "1080p (Full HD)": (1920, 1080),
-    "2160p (4K UHDTV)": (3840, 2160)
-}
-
-predefined_shapes_inv: dict[str, str] = {
-    "x".join(map(str, v)): k for k, v in predefined_shapes.items()
-}
 
 
 class OnnxWidget(QWidget, Ui_OnnxWidget):
@@ -44,7 +34,8 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         super().__init__(parent)
         self.setupUi(self)
         self.editable: bool | None = editable
-        self.saved_shape: dict[str, str] = {}
+        self._saved_shape: tuple[int]= (0, 0)
+        self._is_static: bool = False
 
         for w in (self.lineedit_w, self.lineedit_h,):
             w.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -59,24 +50,29 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
 
         self.combobox_resolution.clear()
         self.combobox_resolution.addItems(list(predefined_shapes.keys()))
-        self.combobox_resolution.setCurrentIndex(1)
-        self.combobox_resolution.setCurrentText("")
+        self.combobox_resolution.setCurrentIndex(-1)
 
         self.clear()
         self.setEnabled(False)
         self.adjustSize()
 
-        self.combobox_resolution.currentIndexChanged.connect(self.resolution_selected)
-        self.spinbox_h.valueChanged.connect(self.resolution_changed)
         self.radiobutton_fp16.toggled.connect(self.datatype_changed)
+        self.radiobutton_static.toggled.connect(self.shape_strategy_changed)
+
+        self.spinbox_w.valueChanged.connect(self.size_modified)
+        self.spinbox_h.valueChanged.connect(self.size_modified)
+        self.combobox_resolution.currentIndexChanged.connect(self.resolution_selected)
+
 
 
     def block_signals(self, b: bool) -> None:
-        self.radiobutton_fp32.blockSignals(b)
-        self.radiobutton_fp16.blockSignals(b)
-        self.spinbox_w.blockSignals(b)
-        self.spinbox_h.blockSignals(b)
-        self.combobox_resolution.blockSignals(b)
+        if self.editable:
+            self.radiobutton_fp32.blockSignals(b)
+            self.radiobutton_fp16.blockSignals(b)
+            self.spinbox_w.blockSignals(b)
+            self.spinbox_h.blockSignals(b)
+            self.combobox_resolution.blockSignals(b)
+
 
 
     def clear(self) -> None:
@@ -94,7 +90,6 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
             self.spinbox_h.lineEdit().clear()
             self.spinbox_w.clear()
             self.spinbox_h.clear()
-            self.combobox_resolution.setCurrentText("")
             self.block_signals(False)
 
         if not self.editable:
@@ -107,27 +102,31 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         self.spinbox_opset.setMaximumWidth(spinbox_width)
 
 
+
     def set_editable(self, editable: bool) -> None:
         # Allow once only
         if self.editable is not None:
             return
 
         self.spinbox_opset.lineEdit().setReadOnly(not editable)
-        self.spinbox_opset.lineEdit().setFocusPolicy(Qt.FocusPolicy.NoFocus)
-
+        focus_policy: Qt.FocusPolicy = Qt.FocusPolicy.NoFocus
         if editable:
+            focus_policy = Qt.FocusPolicy.WheelFocus
             self.main_layout.removeRow(4)
+            self.spinbox_w.lineEdit().setFocusPolicy(focus_policy)
+            self.spinbox_h.lineEdit().setFocusPolicy(focus_policy)
         else:
             self.main_layout.removeRow(3)
             self.main_layout.removeRow(1)
 
+        self.spinbox_opset.lineEdit().setFocusPolicy(focus_policy)
         self.editable = editable
         self.clear()
 
 
+
     def refresh_model_info(self, model: NnModel | None) -> None:
         self.clear()
-        print(model)
         if model is None or model.framework.type != NnFrameworkType.ONNX:
             return
 
@@ -159,25 +158,35 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
             or model.framework.type != NnFrameworkType.PYTORCH
             or model.arch.to_onnx is None
         ):
+            self.radiobutton_fp32.setChecked(False)
+            self.radiobutton_fp16.setChecked(False)
+            self.radiobutton_dynamic.setChecked(False)
+            self.radiobutton_static.setChecked(False)
             self.setEnabled(False)
             return
 
+        # Enable conversion
+        self.block_signals(True)
         self.spinbox_opset.lineEdit().setText(str(self.spinbox_opset.value()))
+        self.spinbox_opset.lineEdit().setReadOnly(False)
+        self.spinbox_opset.setReadOnly(False)
+        self.spinbox_opset.setEnabled(True)
+
         self.radiobutton_fp32.setChecked(True)
         self.radiobutton_dynamic.setChecked(True)
-        if self.radiobutton_static:
+
+        self.radiobutton_static.setChecked(True)
+        self._is_static = self.radiobutton_static.isChecked()
+        if self._is_static:
             self.spinbox_h.lineEdit().setText(str(self.spinbox_h.value()))
             self.spinbox_w.lineEdit().setText(str(self.spinbox_w.value()))
-        for w in (
-            self.spinbox_opset,
-            self.spinbox_w,
-            self.spinbox_h,
-        ):
-            w.setReadOnly(False)
-            w.setEnabled(True)
-            w.lineEdit().setReadOnly(False)
+            self.update_resolution_text()
 
-        pprint(model.arch)
+        for w in (self.spinbox_w, self.spinbox_h):
+            w.lineEdit().setReadOnly(not self._is_static)
+            w.setReadOnly(not self._is_static)
+            w.setEnabled(self._is_static)
+
         if "fp16" in model.arch.dtypes:
             self.radiobutton_fp16.setCheckable(True)
             self.radiobutton_fp32.setCheckable(True)
@@ -186,36 +195,86 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
             self.radiobutton_fp32.setCheckable(False)
 
         size_constraint: SizeConstraint = model.arch.size_constraint
-        self.spinbox_w.setMinimum(size_constraint.min[0])
-        self.spinbox_w.setSingleStep(size_constraint.modulo)
-        self.spinbox_h.setMinimum(size_constraint.min[1])
-        self.spinbox_h.setSingleStep(size_constraint.modulo)
+        if size_constraint is not None:
+            self.spinbox_w.setMinimum(size_constraint.min[0])
+            self.spinbox_w.setSingleStep(size_constraint.modulo)
+            self.spinbox_h.setMinimum(size_constraint.min[1])
+            self.spinbox_h.setSingleStep(size_constraint.modulo)
+        else:
+            self.spinbox_w.setMinimum(8)
+            self.spinbox_w.setSingleStep(1)
+            self.spinbox_h.setMinimum(8)
+            self.spinbox_h.setSingleStep(1)
 
         self.setEnabled(True)
+        self.block_signals(False)
+
+
+
+
+    def datatype_changed(self, state: bool) -> None:
+        print("datatype_changed to")
+
+
+
+    def shape_strategy_changed(self, state: bool) -> None:
+        if not self.editable:
+            return
+        self.block_signals(True)
+        is_static = self.radiobutton_static.isChecked()
+        if self._is_static and not is_static:
+            # static -> dynamic
+            self._saved_shape = (
+                self.spinbox_w.value(), self.spinbox_h.value()
+            )
+            self.spinbox_w.lineEdit().clear()
+            self.spinbox_h.lineEdit().clear()
+            self.combobox_resolution.setCurrentIndex(-1)
+
+        if not self._is_static and is_static:
+            # dynamic -> static
+            self.spinbox_w.setValue(self._saved_shape[0])
+            self.spinbox_h.setValue(self._saved_shape[1])
+            # focus_policy = Qt.FocusPolicy.WheelFocus
+            # self.spinbox_w.lineEdit().setFocusPolicy(focus_policy)
+            # self.spinbox_h.lineEdit().setFocusPolicy(focus_policy)
+            self.update_resolution_text()
+
+        self.spinbox_w.setEnabled(is_static)
+        self.spinbox_h.setEnabled(is_static)
+        self.combobox_resolution.setEnabled(is_static)
+
+        self._is_static = is_static
+        self.block_signals(False)
+
+
+
+    def update_resolution_text(self) -> None:
+        w, h = self.spinbox_w.value(), self.spinbox_h.value()
+        t = predefined_shapes_inv.get("x".join(map(str, (w, h))), "")
+        self.combobox_resolution.setCurrentIndex(
+            self.combobox_resolution.findText(t)
+        )
+
+
+
+    def size_modified(self, value: int) -> None:
+        self.combobox_resolution.blockSignals(True)
+        self.update_resolution_text()
+        self.spinbox_w.lineEdit().deselect()
+        self.spinbox_h.lineEdit().deselect()
+        self.combobox_resolution.blockSignals(False)
+
 
 
     def resolution_selected(self, index: int) -> None:
         current_text: str = self.combobox_resolution.currentText()
         w, h = predefined_shapes[current_text]
         self.spinbox_w.blockSignals(True)
+        self.spinbox_h.blockSignals(True)
         self.spinbox_w.setValue(w)
-        self.spinbox_w.blockSignals(False)
-        self.spinbox_h.blockSignals(True)
         self.spinbox_h.setValue(h)
-        self.spinbox_h.blockSignals(True)
-
-
-    def resolution_changed(self, value: int) -> None:
-        w, h = self.spinbox_w.value(), self.spinbox_h.value()
-        k = "x".join(map(str, (w, h)))
-        t = predefined_shapes_inv.get(k, "")
-
-        self.combobox_resolution.blockSignals(True)
-        self.combobox_resolution.setCurrentIndex(
-            self.combobox_resolution.findText(t)
-        )
-        self.combobox_resolution.blockSignals(False)
-
-
-    def datatype_changed(self, state: bool) -> None:
-        print("changed to")
+        self.spinbox_w.lineEdit().deselect()
+        self.spinbox_h.lineEdit().deselect()
+        self.spinbox_w.blockSignals(False)
+        self.spinbox_h.blockSignals(False)
