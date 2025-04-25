@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 
 from pynnlib import (
     NnModel,
+    NnFrameworkType,
 )
 
 
@@ -169,3 +170,5 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def event_model_parsed(self) -> None:
         model: NnModel = self.controller.get_in_model_details()
         self.widget_model.model_parsed(model)
+
+        self.widget_onnx_conversion.enable_conversion(model)
