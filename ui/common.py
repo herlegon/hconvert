@@ -1,5 +1,9 @@
 
-predefined_shapes: dict[str, tuple[int, int]] = {
+from typing import Literal
+
+DEFAULT_SIZE: tuple[int] = (720, 480)
+
+PREDEFINED_SIZE: dict[str, tuple[int, int]] = {
     "480p 16:9 (DVD)": (854, 480),
     "480p 4:3": (640, 480),
     "480p NTSC": (720, 480),
@@ -11,5 +15,8 @@ predefined_shapes: dict[str, tuple[int, int]] = {
 }
 
 predefined_shapes_inv: dict[str, str] = {
-    "x".join(map(str, v)): k for k, v in predefined_shapes.items()
+    "x".join(map(str, v)): k for k, v in PREDEFINED_SIZE.items()
 }
+
+
+ShapeStrategyName = Literal['static', 'dynamic', 'fixed']

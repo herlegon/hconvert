@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pprint import pprint
+from typing import Tuple
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -8,8 +9,10 @@ from pynnlib import (
 )
 
 from PySide6.QtCore import (
-        QSize,
-        Qt,
+    QSize,
+    Qt,
+    Signal,
+    Slot,
 )
 from PySide6.QtWidgets import (
     QWidget,
@@ -22,7 +25,8 @@ from PySide6.QtWidgets import (
 from pynnlib.utils.p_print import red
 from .designer.ui_onnx_widget import Ui_OnnxWidget
 from .common import (
-    predefined_shapes,
+    DEFAULT_SIZE,
+    PREDEFINED_SIZE,
     predefined_shapes_inv,
 )
 
@@ -30,12 +34,16 @@ from .common import (
 
 
 class OnnxWidget(QWidget, Ui_OnnxWidget):
+    # ShapeStrategyName, size as tuple (w, h)
+    event_shape_strategy_changed = Signal(str, object)
+
     def __init__(self, parent, editable: bool | None = None):
         super().__init__(parent)
         self.setupUi(self)
         self.editable: bool | None = editable
-        self._saved_shape: tuple[int]= (0, 0)
+        self._saved_shape: tuple[int] = DEFAULT_SIZE
         self._is_static: bool = False
+        self._tensorrt_static_shape: tuple[int, int] = DEFAULT_SIZE
 
         for w in (self.lineedit_w, self.lineedit_h,):
             w.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -49,7 +57,7 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
             w.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
 
         self.combobox_resolution.clear()
-        self.combobox_resolution.addItems(list(predefined_shapes.keys()))
+        self.combobox_resolution.addItems(list(PREDEFINED_SIZE.keys()))
         self.combobox_resolution.setCurrentIndex(-1)
 
         self.clear()
@@ -175,8 +183,9 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         self.radiobutton_fp32.setChecked(True)
         self.radiobutton_dynamic.setChecked(True)
 
-        self.radiobutton_static.setChecked(True)
-        self._is_static = self.radiobutton_static.isChecked()
+        # Update widgets with default model shape strategy
+        self._is_static = bool(model.shape_strategy.type != 'dynamic')
+        self.radiobutton_static.setChecked(self._is_static)
         if self._is_static:
             self.spinbox_h.lineEdit().setText(str(self.spinbox_h.value()))
             self.spinbox_w.lineEdit().setText(str(self.spinbox_w.value()))
@@ -194,6 +203,7 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
             self.radiobutton_fp16.setCheckable(False)
             self.radiobutton_fp32.setCheckable(False)
 
+        # Use the size constraints to set min/max values
         size_constraint: SizeConstraint = model.arch.size_constraint
         if size_constraint is not None:
             self.spinbox_w.setMinimum(size_constraint.min[0])
@@ -207,6 +217,8 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
             self.spinbox_h.setSingleStep(1)
 
         self.setEnabled(True)
+        # Inform other widgets that the size has been modified
+        self.size_modified(-1)
         self.block_signals(False)
 
 
@@ -222,23 +234,37 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
             return
         self.block_signals(True)
         is_static = self.radiobutton_static.isChecked()
+        self._current_shape = (
+            self.spinbox_w.value(), self.spinbox_h.value()
+        )
+
         if self._is_static and not is_static:
             # static -> dynamic
+            print("onnx: static -> dynamic")
             self._saved_shape = (
                 self.spinbox_w.value(), self.spinbox_h.value()
             )
             self.spinbox_w.lineEdit().clear()
             self.spinbox_h.lineEdit().clear()
             self.combobox_resolution.setCurrentIndex(-1)
+            self.event_shape_strategy_changed.emit('dynamic', self._current_shape)
+
+            if all(self._tensorrt_static_shape):
+                self.spinbox_w.setValue(self._tensorrt_static_shape[0])
+                self.spinbox_h.setValue(self._tensorrt_static_shape[1])
+                self.update_resolution_text()
+
 
         if not self._is_static and is_static:
             # dynamic -> static
+            print("onnx: dynamic -> static")
             self.spinbox_w.setValue(self._saved_shape[0])
             self.spinbox_h.setValue(self._saved_shape[1])
             # focus_policy = Qt.FocusPolicy.WheelFocus
             # self.spinbox_w.lineEdit().setFocusPolicy(focus_policy)
             # self.spinbox_h.lineEdit().setFocusPolicy(focus_policy)
             self.update_resolution_text()
+            self.event_shape_strategy_changed.emit('static', self._current_shape)
 
         self.spinbox_w.setEnabled(is_static)
         self.spinbox_h.setEnabled(is_static)
@@ -263,18 +289,33 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         self.update_resolution_text()
         self.spinbox_w.lineEdit().deselect()
         self.spinbox_h.lineEdit().deselect()
+        if self._is_static:
+            print(f"size_modified: {self.spinbox_w.value()}")
+
+            self.event_shape_strategy_changed.emit(
+                'static', (self.spinbox_w.value(), self.spinbox_h.value())
+            )
         self.combobox_resolution.blockSignals(False)
 
 
 
     def resolution_selected(self, index: int) -> None:
         current_text: str = self.combobox_resolution.currentText()
-        w, h = predefined_shapes[current_text]
+        w, h = PREDEFINED_SIZE[current_text]
         self.spinbox_w.blockSignals(True)
         self.spinbox_h.blockSignals(True)
         self.spinbox_w.setValue(w)
         self.spinbox_h.setValue(h)
         self.spinbox_w.lineEdit().deselect()
         self.spinbox_h.lineEdit().deselect()
+
+        if self._is_static:
+            self.event_shape_strategy_changed.emit('static', (w, h))
+
         self.spinbox_w.blockSignals(False)
         self.spinbox_h.blockSignals(False)
+
+
+    def tensorrt_static_shape_modified(self, size: tuple[int, int]) -> None:
+        print(f"save tensorrt shape: {size}")
+        self._tensorrt_static_shape = size

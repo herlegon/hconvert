@@ -8,5 +8,5 @@ pyside6-uic ./ui/designer/ui_tensorrt_conversion_widget.ui -o ./ui/designer/ui_t
 pyside6-uic ./ui/designer/ui_model_browser_widget.ui -o ./ui/designer/ui_model_browser_widget.py
 pyside6-uic ./ui/designer/ui_model_widget.ui -o ./ui/designer/ui_model_widget.py
 
-
+export QT_QPA_PLATFORM=xcb
 python pynnlib_gui.py

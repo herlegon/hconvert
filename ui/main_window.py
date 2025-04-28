@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 from pprint import pprint
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 from PySide6.QtCore import (
     Signal,
     Slot,
@@ -26,7 +26,8 @@ from PySide6.QtWidgets import (
     QComboBox,
 )
 
-from ui.model_widget import ModelWidget
+from .common import ShapeStrategyName
+from .model_widget import ModelWidget
 
 from .designer.ui_main_window import Ui_MainWindow
 if TYPE_CHECKING:
@@ -59,7 +60,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.model_widget = self.findChild(ModelWidget, "widget_model")
         # set_stylesheet(self)
         self.installEventFilter(self)
+
+        self.widget_onnx_conversion.event_shape_strategy_changed.connect(
+            self.shape_strategy_changed
+        )
+        self.widget_tensorrt_conversion.event_static_shape_modified.connect(
+            self.widget_onnx_conversion.tensorrt_static_shape_modified
+        )
         self.controller.signal_model_parsed.connect(self.event_model_parsed)
+
 
 
     def apply_user_preferences(self, user_preferences: dict):
@@ -121,7 +130,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
 
-
     def get_conversion_settings(self) -> dict:
         return {}
 
@@ -129,6 +137,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def event_out_dir_picker(self):
         pass
+
+
 
     def event_out_autonaming(self):
         auto_naming: bool = self.checkbox_out_autonaming.isChecked()
@@ -143,14 +153,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.label_out_type.setText(label_text)
 
 
+
     def event_out_fp_refreshed(self, name: str) -> None:
         self.combobox_out_name.setCurrentText(name)
+
 
 
     def event_convert(self) -> None:
         # Can be either start or cancel
         self.signal_convert_action.emit()
         self.button_convert.setEnabled(False)
+
 
 
     def event_convert_state_changed(self, status: dict) -> None:
@@ -168,15 +181,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.button_convert.setEnabled(True)
 
 
+
     def event_model_parsed(self) -> None:
         model: NnModel = self.controller.get_in_model_details()
         self.widget_model.model_parsed(model)
-        self.widget_onnx_conversion.enable_conversion(model)
-        self.widget_tensorrt_conversion.enable_conversion(model)
-
         print(model)
         print(model.arch)
+        print("- event_model_parsed: TensorRT")
+        self.widget_tensorrt_conversion.enable_conversion(model)
 
+        if False:
+            # Hide conversion to ONNX if already an ONNX model
+            print("- event_model_parsed: ONNX")
+            if model.framework.type == NnFrameworkType.ONNX:
+                self.widget_onnx_conversion.setVisible(False)
+            else:
+                self.widget_onnx_conversion.setVisible(True)
+                self.widget_onnx_conversion.enable_conversion(model)
+
+        # Enable conversion to TensorRT and update shape strategy/size
+        # self.widget_tensorrt_conversion.constraint_shape_strategy(
+        #     strategy=model.shape_strategy.type,
+        #     size=model.shape_strategy.opt_size
+        # )
 
         self.textedit_log.clear()
         self.textedit_log.appendPlainText(
@@ -184,5 +211,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         )
         self.textedit_log.appendPlainText(
             str(model.arch)
+        )
+
+
+    def shape_strategy_changed(
+        self,
+        strategy: ShapeStrategyName,
+        size: tuple[int, int],
+    ) -> None:
+        self.widget_tensorrt_conversion.constraint_shape_strategy(
+            strategy, size
         )
 
