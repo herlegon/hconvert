@@ -153,7 +153,7 @@
         <item row="2" column="1">
          <layout class="QHBoxLayout" name="layout_shape_strategy">
           <item>
-           <widget class="QCheckBox" name="radiobutton_dynamic">
+           <widget class="QCheckBox" name="checkbox_dynamic">
             <property name="text">
              <string>dynamic</string>
             </property>
@@ -172,7 +172,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="radiobutton_static">
+           <widget class="QCheckBox" name="checkbox_static">
             <property name="text">
              <string>static</string>
             </property>

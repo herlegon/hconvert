@@ -61,12 +61,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # set_stylesheet(self)
         self.installEventFilter(self)
 
+
         self.widget_onnx_conversion.event_shape_strategy_changed.connect(
-            self.shape_strategy_changed
+            self.widget_tensorrt_conversion.constraint_shape_strategy
         )
         self.widget_tensorrt_conversion.event_static_shape_modified.connect(
             self.widget_onnx_conversion.tensorrt_static_shape_modified
         )
+
         self.controller.signal_model_parsed.connect(self.event_model_parsed)
 
 
@@ -190,14 +192,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         print("- event_model_parsed: TensorRT")
         self.widget_tensorrt_conversion.enable_conversion(model)
 
-        if False:
-            # Hide conversion to ONNX if already an ONNX model
-            print("- event_model_parsed: ONNX")
-            if model.framework.type == NnFrameworkType.ONNX:
-                self.widget_onnx_conversion.setVisible(False)
-            else:
-                self.widget_onnx_conversion.setVisible(True)
-                self.widget_onnx_conversion.enable_conversion(model)
+        # Hide conversion to ONNX if already an ONNX model
+        print("- event_model_parsed: ONNX")
+        if model.framework.type == NnFrameworkType.ONNX:
+            self.widget_onnx_conversion.setVisible(False)
+        else:
+            self.widget_onnx_conversion.setVisible(True)
+            self.widget_onnx_conversion.enable_conversion(model)
 
         # Enable conversion to TensorRT and update shape strategy/size
         # self.widget_tensorrt_conversion.constraint_shape_strategy(
@@ -211,15 +212,5 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         )
         self.textedit_log.appendPlainText(
             str(model.arch)
-        )
-
-
-    def shape_strategy_changed(
-        self,
-        strategy: ShapeStrategyName,
-        size: tuple[int, int],
-    ) -> None:
-        self.widget_tensorrt_conversion.constraint_shape_strategy(
-            strategy, size
         )
 
