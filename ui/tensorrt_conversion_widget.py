@@ -207,7 +207,10 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         # PyTorch/ONNX only
         # Conversion must be possible for the arch
         # Has a Nvidia GPU
-        print(model.framework.type)
+        if model is None:
+            self.clear()
+            return
+
         print(model.framework.type)
         is_torch_to_tensorrt_possible = bool(
             model.framework.type == NnFrameworkType.PYTORCH

@@ -67,6 +67,12 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         self.combobox_model_fp.clear()
 
 
+    def update_model_fp(self, model_fp: str) -> None:
+        self.combobox_model_fp.blockSignals(True)
+        self.combobox_model_fp.lineEdit().setText(model_fp)
+        self.combobox_model_fp.blockSignals(False)
+
+
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if watched == self.combobox_model_fp:
 

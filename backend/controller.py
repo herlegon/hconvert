@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 from pprint import pprint
 import time
 from PySide6.QtCore import (
@@ -7,6 +8,7 @@ from PySide6.QtCore import (
     Slot,
 )
 
+from backend.path_utils import absolute_path
 from backend.user_preferences import UserPreferences
 from pynnlib.utils import get_extension
 from ui.main_window import MainWindow
@@ -20,9 +22,10 @@ from pynnlib import (
 class Controller(QObject):
     signal_progress: Signal = Signal(dict)
     signal_out_fp: Signal = Signal(dict)
-    signal_model_parsed: Signal = Signal()
+    signal_model_parsed: Signal = Signal(str)
 
-    def __init__(self, dev: bool):
+
+    def __init__(self, model_fp: str, dev: bool):
         super().__init__()
         self.view: MainWindow = None
 
@@ -30,6 +33,10 @@ class Controller(QObject):
 
         self.user_preferences: UserPreferences = UserPreferences()
         self.user_preferences.settings['system']['dev'] = dev
+
+        self.initial_model: str = absolute_path(model_fp)
+        if not os.path.exists(self.initial_model):
+            self.initial_model = ""
 
 
     def exit(self):
@@ -53,7 +60,9 @@ class Controller(QObject):
         view.apply_user_preferences(self.user_preferences)
         print("preferences: set_view")
         self.view.model_widget.signal_model_loaded.connect(self.parse_model)
-
+        if self.initial_model:
+            self.parse_model(self.initial_model)
+            self.initial_model = ""
 
 
     def parse_model(self, model_fp: str) -> None:
@@ -75,8 +84,7 @@ class Controller(QObject):
         )
         print(f"parsed in {1000*elapsed:.03f}ms")
         # Send a null signal because the object cannot be sent via a signal
-        self.signal_model_parsed.emit()
-
+        self.signal_model_parsed.emit(model_fp)
 
 
     def get_in_model_details(self) -> NnModel:

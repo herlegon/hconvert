@@ -32,6 +32,7 @@ from .model_widget import ModelWidget
 from .designer.ui_main_window import Ui_MainWindow
 if TYPE_CHECKING:
     from backend.controller import Controller
+    from backend.user_preferences import UserPreferences
 
 
 from pynnlib import (
@@ -73,10 +74,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
 
-    def apply_user_preferences(self, user_preferences: dict):
+    def apply_user_preferences(self, user_preferences: UserPreferences):
+        print(f"apply_user_preferences: {user_preferences.settings}")
         try:
-            w: list[int] = user_preferences['window']
-            self.setGeometry(*w[self.app_type])
+            w: list[int] = user_preferences.settings['window']['geometry']
+            self.setGeometry(*w)
         except:
             self.setGeometry(0, 0, 640, 800)
         self.show()
@@ -163,7 +165,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def event_convert(self) -> None:
         # Can be either start or cancel
-        self.signal_convert_action.emit()
+        self.signal_convert_action.emit(self.widget_onnx_conversion.values())
         self.button_convert.setEnabled(False)
 
 
@@ -184,33 +186,42 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
 
-    def event_model_parsed(self) -> None:
+    def event_model_parsed(self, model_fp: str) -> None:
+        self.widget_model.widget_model_browser.update_model_fp(model_fp=model_fp)
+
         model: NnModel = self.controller.get_in_model_details()
         self.widget_model.model_parsed(model)
         print(model)
-        print(model.arch)
+        if model is not None:
+            print(model.arch)
         print("- event_model_parsed: TensorRT")
         self.widget_tensorrt_conversion.enable_conversion(model)
 
         # Hide conversion to ONNX if already an ONNX model
         print("- event_model_parsed: ONNX")
-        if model.framework.type == NnFrameworkType.ONNX:
-            self.widget_onnx_conversion.setVisible(False)
+        if model is not None:
+            if model.framework.type == NnFrameworkType.ONNX:
+                self.widget_onnx_conversion.setVisible(False)
+            else:
+                self.widget_onnx_conversion.setVisible(True)
+                self.widget_onnx_conversion.enable_conversion(model)
         else:
+            print("Set Editable to False")
             self.widget_onnx_conversion.setVisible(True)
-            self.widget_onnx_conversion.enable_conversion(model)
+            self.widget_onnx_conversion.setEnabled(False)
 
         # Enable conversion to TensorRT and update shape strategy/size
+        if model is None:
+            self.widget_tensorrt_conversion.setVisible(False)
+        else:
+            self.widget_tensorrt_conversion.setVisible(True)
         # self.widget_tensorrt_conversion.constraint_shape_strategy(
         #     strategy=model.shape_strategy.type,
         #     size=model.shape_strategy.opt_size
         # )
 
         self.textedit_log.clear()
-        self.textedit_log.appendPlainText(
-            str(model)
-        )
-        self.textedit_log.appendPlainText(
-            str(model.arch)
-        )
+        if model is not None:
+            self.textedit_log.appendPlainText(str(model))
+            self.textedit_log.appendPlainText(str(model.arch))
 

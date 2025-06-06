@@ -9,4 +9,4 @@ pyside6-uic ./ui/designer/ui_model_browser_widget.ui -o ./ui/designer/ui_model_b
 pyside6-uic ./ui/designer/ui_model_widget.ui -o ./ui/designer/ui_model_widget.py
 
 export QT_QPA_PLATFORM=xcb
-python pynnlib_gui.py
+python pynnlib_gui.py --model ~/ml_models/1x_Anime1080Fixer_SuperUltraCompact.pth

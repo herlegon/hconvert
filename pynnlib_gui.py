@@ -24,11 +24,20 @@ def main():
         help="Unlock all for dev"
     )
 
+    parser.add_argument(
+        "--model",
+        "-m",
+        type=str,
+        default="",
+        required=False,
+        help="Load this model"
+    )
+
     arguments = parser.parse_args()
 
     application = QApplication(sys.argv)
     application.setStyle("Fusion")
-    controller = Controller(dev=arguments.dev)
+    controller = Controller(model_fp=arguments.model, dev=arguments.dev)
 
     from ui.main_window import MainWindow
     main_window = MainWindow(controller=controller)

@@ -359,3 +359,13 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
     def tensorrt_static_shape_modified(self, size: tuple[int, int]) -> None:
         print(f"save tensorrt shape: {size}")
         self._tensorrt_static_shape = size
+
+
+    def values(self) -> dict[str, str | tuple[int, int]]:
+        values: dict[str, str | int | tuple[int, int]] = {
+            'opset': self.spinbox_opset.value(),
+            'datatype': 'fp32' if self.radiobutton_fp32.isChecked() else 'fp16',
+            'shape_strategy': 'static' if self.checkbox_static.isChecked() else 'dynamic',
+            'shape': (self.spinbox_w.value(), self.spinbox_h.value()),
+        }
+        return values
