@@ -75,11 +75,9 @@ class ModelWidget(QWidget, Ui_ModelWidget):
     def dragEnterEvent(self, event: QDragEnterEvent):
         if self.is_loading:
             return
-        print("dragging")
         is_allowed: bool = False
         if event.mimeData().hasUrls():
             urls = event.mimeData().urls()
-            print(event.mimeData().urls())
             if len(urls) == 1:
                 extension = os.path.splitext(
                     os.path.abspath(os.path.expanduser(urls[0].toLocalFile()))

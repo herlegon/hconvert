@@ -77,12 +77,10 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         if watched == self.combobox_model_fp:
 
             if event.type() == QEvent.Type.DragEnter:
-                print(f"filtered, DragEnter")
                 self._parent.dragEnterEvent(event)
                 return True
 
             elif event.type() == QEvent.Type.Drop:
-                print(f"filtered, Drop {event.mimeData().urls()}")
                 self._parent.dropEvent(event)
                 return True
 
