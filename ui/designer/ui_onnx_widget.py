@@ -31,6 +31,7 @@ class Ui_OnnxWidget(object):
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.groupbox_onnx_conversion = QGroupBox(OnnxWidget)
         self.groupbox_onnx_conversion.setObjectName(u"groupbox_onnx_conversion")
+        self.groupbox_onnx_conversion.setCheckable(True)
         self.verticalLayout_4 = QVBoxLayout(self.groupbox_onnx_conversion)
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
         self.verticalLayout_4.setContentsMargins(6, 6, 6, 6)

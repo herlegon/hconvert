@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 from pprint import pprint
 import sys
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from PySide6.QtCore import (
     Signal,
     Slot,
@@ -63,14 +63,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.installEventFilter(self)
 
 
-        self.widget_onnx_conversion.event_shape_strategy_changed.connect(
+        self.widget_onnx_conversion.signal_shape_strategy_changed.connect(
             self.widget_tensorrt_conversion.constraint_shape_strategy
         )
-        self.widget_tensorrt_conversion.event_static_shape_modified.connect(
+        self.widget_tensorrt_conversion.signal_static_shape_modified.connect(
             self.widget_onnx_conversion.tensorrt_static_shape_modified
         )
-
+        self.widget_tensorrt_conversion.signal_is_enabled.connect(
+            self.widget_onnx_conversion.tensorrt_conversion_enabled
+        )
         self.controller.signal_model_parsed.connect(self.event_model_parsed)
+
+        self.is_converting: bool = False
 
 
 
@@ -111,7 +115,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             widget.close()
         self.close()
         # Not clean but avoid ghost processes: clean this
-        sys.exit()
+        # sys.exit()
 
 
     def init_gui(self):
@@ -165,9 +169,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def event_convert(self) -> None:
         # Can be either start or cancel
-        self.signal_convert_action.emit(self.widget_onnx_conversion.values())
-        self.button_convert.setEnabled(False)
+        if not self.is_converting:
+            self.is_converting = True
+            self.widget_onnx_conversion.setEnabled(False)
+            self.widget_tensorrt_conversion.setEnabled(False)
+            self.button_convert.setEnabled(False)
+            conversion_values: dict[str, dict[str, Any]] = {
+                'onnx': self.widget_onnx_conversion.values(),
+                'tensorrt': self.widget_tensorrt_conversion.values(),
+            }
+            self.signal_convert_action.emit(conversion_values)
+            print("start converting")
+            pprint(conversion_values)
 
+            # remove this once backend send ack
+            self.button_convert.setText("Cancel")
+            self.button_convert.setEnabled(True)
+
+        else:
+            self.widget_onnx_conversion.setEnabled(True)
+            self.widget_tensorrt_conversion.setEnabled(True)
+            self.signal_convert_action.emit("stop")
+
+            # remove this once backend send ack
+            self.button_convert.setText("Convert")
+            self.button_convert.setEnabled(True)
+            self.is_converting = False
 
 
     def event_convert_state_changed(self, status: dict) -> None:
@@ -189,7 +216,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def event_model_parsed(self, model_fp: str) -> None:
         self.widget_model.widget_model_browser.update_model_fp(model_fp=model_fp)
 
-        model: NnModel = self.controller.get_in_model_details()
+        model: NnModel = self.controller.get_in_model_info()
         self.widget_model.model_parsed(model)
         print(model)
         if model is not None:

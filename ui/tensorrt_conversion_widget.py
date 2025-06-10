@@ -1,6 +1,6 @@
 from __future__ import annotations
 from functools import partial
-from typing import Literal
+from typing import Any, Literal
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -34,12 +34,13 @@ from .common import (
 
 
 class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
-    event_static_shape_modified: Signal = Signal(object)
+    signal_static_shape_modified: Signal = Signal(object)
+    signal_is_enabled: Signal = Signal(bool)
 
     def __init__(self, parent):
         super().__init__(parent)
         self.setupUi(self)
-        self._gpus = dict[str, int]
+        self._gpus: dict[str, int] = {}
         self.shape_strategy: ShapeStrategyName = 'dynamic'
         self.previous_shapes: dict[str, tuple[int, int]] = {
             "min": DEFAULT_SIZE,
@@ -91,6 +92,11 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             sb_h.valueChanged.connect(partial(self.size_modified, sw))
             cb_r.currentIndexChanged.connect(partial(self.resolution_selected, sw))
 
+        self.groupbox_tensorrt_conversion.clicked.connect(self.event_conversion_enabled)
+
+
+    def event_conversion_enabled(self, checked: bool) -> bool:
+        self.signal_is_enabled.emit(self.groupbox_tensorrt_conversion.isChecked())
 
 
     def set_available_gpus(self, gpus: dict[str, int]) -> None:
@@ -315,7 +321,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         # current static/fixed shape has been modified
         # It will be used to set the default size value for other widgets
         if self.shape_strategy in ('fixed', 'static'):
-            self.event_static_shape_modified.emit(size)
+            self.signal_static_shape_modified.emit(size)
 
         cb_r.blockSignals(False)
 
@@ -340,7 +346,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         # current static/fixed shape has been modified
         # It will be used to set the default size value for other widgets
         if self.shape_strategy in ('fixed', 'static'):
-            self.event_static_shape_modified.emit((w, h))
+            self.signal_static_shape_modified.emit((w, h))
 
         sb_w.blockSignals(False)
         sp_h.blockSignals(False)
@@ -430,3 +436,25 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
         is_valid: bool = bool(len(wrong_values))
+
+
+    def values(self) -> dict[str, str | tuple[int, int]]:
+        dtypes: list[str] = ["fp32"]
+        if self.checkbox_fp16.isChecked():
+            dtypes.append("fp16")
+        if self.checkbox_bf16.isChecked():
+            dtypes.append("bf16")
+        gpu: str = ""
+        if self._gpus:
+            gpu = self._gpus.get(self.combobox_gpu.currentText(), "")
+        values: dict[str, str | int | tuple[int, int]] = {
+            'enabled': self.groupbox_tensorrt_conversion.isChecked(),
+            'gpu': gpu,
+            'dtypes': dtypes,
+            'shape_strategy': 'fixed' if self.checkbox_fixed.isChecked() else 'dynamic',
+            'shape_min': (self.spinbox_w_min.value(), self.spinbox_h_min.value()),
+            'shape_opt': (self.spinbox_w_opt.value(), self.spinbox_h_opt.value()),
+            'shape_max': (self.spinbox_w_max.value(), self.spinbox_h_max.value()),
+        }
+        return values
+

@@ -18,6 +18,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QSizePolicy,
     QSpacerItem, QVBoxLayout, QWidget)
 
+from ui.metadata_widget import MetadataWidget
 from ui.model_browser_widget import ModelBrowserWidget
 from ui.onnx_widget import OnnxWidget
 from ui.pytorch_widget import PyTorchWidget
@@ -27,7 +28,7 @@ class Ui_ModelWidget(object):
     def setupUi(self, ModelWidget):
         if not ModelWidget.objectName():
             ModelWidget.setObjectName(u"ModelWidget")
-        ModelWidget.resize(531, 85)
+        ModelWidget.resize(513, 171)
         self.verticalLayout = QVBoxLayout(ModelWidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -62,18 +63,32 @@ class Ui_ModelWidget(object):
         self.layout_model.setContentsMargins(12, -1, -1, 12)
         self.widget_pytorch_model = PyTorchWidget(ModelWidget)
         self.widget_pytorch_model.setObjectName(u"widget_pytorch_model")
+        self.widget_pytorch_model.setMinimumSize(QSize(100, 100))
 
-        self.layout_model.addWidget(self.widget_pytorch_model, 0, Qt.AlignmentFlag.AlignTop)
+        self.layout_model.addWidget(self.widget_pytorch_model, 0, Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
 
+        self.verticalLayout_2 = QVBoxLayout()
+        self.verticalLayout_2.setSpacing(12)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.widget_onnx_model = OnnxWidget(ModelWidget)
         self.widget_onnx_model.setObjectName(u"widget_onnx_model")
 
-        self.layout_model.addWidget(self.widget_onnx_model, 0, Qt.AlignmentFlag.AlignTop)
+        self.verticalLayout_2.addWidget(self.widget_onnx_model, 0, Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
 
         self.widget_tensorrt_model = TensorRTWidget(ModelWidget)
         self.widget_tensorrt_model.setObjectName(u"widget_tensorrt_model")
+        self.widget_tensorrt_model.setMinimumSize(QSize(100, 100))
 
-        self.layout_model.addWidget(self.widget_tensorrt_model, 0, Qt.AlignmentFlag.AlignTop)
+        self.verticalLayout_2.addWidget(self.widget_tensorrt_model, 0, Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
+
+
+        self.layout_model.addLayout(self.verticalLayout_2)
+
+        self.widget_metadata = MetadataWidget(ModelWidget)
+        self.widget_metadata.setObjectName(u"widget_metadata")
+        self.widget_metadata.setMinimumSize(QSize(20, 20))
+
+        self.layout_model.addWidget(self.widget_metadata, 0, Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
 
         self.horizontalSpacer_10 = QSpacerItem(0, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 

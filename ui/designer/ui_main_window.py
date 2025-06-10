@@ -28,7 +28,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(500, 558)
+        MainWindow.resize(500, 408)
         MainWindow.setMaximumSize(QSize(16777215, 960))
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
@@ -51,17 +51,32 @@ class Ui_MainWindow(object):
         self.layout_conversion = QHBoxLayout()
         self.layout_conversion.setObjectName(u"layout_conversion")
         self.layout_conversion.setContentsMargins(12, -1, -1, -1)
+        self.verticalLayout_2 = QVBoxLayout()
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.checkbox_safetensor = QCheckBox(self.centralwidget)
+        self.checkbox_safetensor.setObjectName(u"checkbox_safetensor")
+
+        self.verticalLayout_2.addWidget(self.checkbox_safetensor, 0, Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
+
         self.widget_onnx_conversion = OnnxWidget(self.centralwidget)
         self.widget_onnx_conversion.setObjectName(u"widget_onnx_conversion")
+        self.widget_onnx_conversion.setMinimumSize(QSize(20, 20))
 
-        self.layout_conversion.addWidget(self.widget_onnx_conversion, 0, Qt.AlignmentFlag.AlignTop)
+        self.verticalLayout_2.addWidget(self.widget_onnx_conversion)
+
+        self.verticalSpacer = QSpacerItem(20, 10, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout_2.addItem(self.verticalSpacer)
+
+
+        self.layout_conversion.addLayout(self.verticalLayout_2)
 
         self.widget_tensorrt_conversion = TensorRTConversionWidget(self.centralwidget)
         self.widget_tensorrt_conversion.setObjectName(u"widget_tensorrt_conversion")
 
         self.layout_conversion.addWidget(self.widget_tensorrt_conversion)
 
-        self.horizontalSpacer_11 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_11 = QSpacerItem(40, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
         self.layout_conversion.addItem(self.horizontalSpacer_11)
 
@@ -162,6 +177,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Model conversion", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"Conversion", None))
+        self.checkbox_safetensor.setText(QCoreApplication.translate("MainWindow", u"SafeTensor", None))
         self.label_out_type.setText(QCoreApplication.translate("MainWindow", u"Save as", None))
         self.button_out_browse.setText(QCoreApplication.translate("MainWindow", u"...", None))
         self.checkbox_out_autonaming.setText(QCoreApplication.translate("MainWindow", u"Auto", None))

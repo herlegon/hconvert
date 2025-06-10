@@ -87,7 +87,7 @@ class Controller(QObject):
         self.signal_model_parsed.emit(model_fp)
 
 
-    def get_in_model_details(self) -> NnModel:
+    def get_in_model_info(self) -> NnModel:
         # Use this function to avoid converting to/from dict
         return self.in_model
 

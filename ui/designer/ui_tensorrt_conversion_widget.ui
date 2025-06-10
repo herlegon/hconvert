@@ -75,6 +75,9 @@
             <property name="text">
              <string>fp16</string>
             </property>
+            <attribute name="buttonGroup">
+             <string notr="true">buttonGroup</string>
+            </attribute>
            </widget>
           </item>
           <item>
@@ -85,6 +88,9 @@
             <property name="text">
              <string>bf16</string>
             </property>
+            <attribute name="buttonGroup">
+             <string notr="true">buttonGroup</string>
+            </attribute>
            </widget>
           </item>
           <item>
@@ -528,6 +534,6 @@
  <connections/>
  <buttongroups>
   <buttongroup name="buttongroup_shape_strategy"/>
-  <buttongroup name="buttongroup_datatype"/>
+  <buttongroup name="buttonGroup"/>
  </buttongroups>
 </ui>

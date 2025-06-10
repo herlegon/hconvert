@@ -101,6 +101,7 @@ class ModelWidget(QWidget, Ui_ModelWidget):
         self.setEnabled(True)
         self.widget_pytorch_model.refresh_model_info(model)
         self.widget_onnx_model.refresh_model_info(model)
+        self.widget_metadata.refresh_model_info(model)
 
 
 

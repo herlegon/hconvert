@@ -36,12 +36,14 @@ from .common import (
 
 class OnnxWidget(QWidget, Ui_OnnxWidget):
     # ShapeStrategyName, size as tuple (w, h)
-    event_shape_strategy_changed = Signal(str, object)
+    signal_shape_strategy_changed = Signal(str, object)
 
     def __init__(self, parent, editable: bool | None = None):
         super().__init__(parent)
         self.setupUi(self)
         self.editable: bool | None = editable
+        if self.editable is not None:
+            self.groupbox_onnx_conversion.setCheckable(self.editable)
         self._saved_shape: tuple[int] = DEFAULT_SIZE
         self.shape_strategy: ShapeStrategyName = 'dynamic'
         self._tensorrt_static_shape: tuple[int, int] = (0, 0)
@@ -118,6 +120,7 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         if self.editable is not None:
             return
 
+        self.groupbox_onnx_conversion.setCheckable(editable)
         self.spinbox_opset.lineEdit().setReadOnly(not editable)
         focus_policy: Qt.FocusPolicy = Qt.FocusPolicy.NoFocus
         if editable:
@@ -311,7 +314,7 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         self._current_size = (self.spinbox_w.value(), self.spinbox_h.value())
         self.shape_strategy = 'static' if to_static else 'dynamic'
         self.update_size_widgets(strategy=self.shape_strategy)
-        self.event_shape_strategy_changed.emit(self.shape_strategy, self._current_size)
+        self.signal_shape_strategy_changed.emit(self.shape_strategy, self._current_size)
 
         self.block_signals(False)
 
@@ -327,7 +330,7 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         if self.shape_strategy == 'static':
             # send a signal to other widgets, size doesn't matter
             # but let's send something  coherent
-            self.event_shape_strategy_changed.emit(
+            self.signal_shape_strategy_changed.emit(
                 'static', (self.spinbox_w.value(), self.spinbox_h.value())
             )
         self.combobox_resolution.blockSignals(False)
@@ -350,7 +353,7 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         if self.shape_strategy == 'static':
             # send a signal to other widgets, size doesn't matter
             # but let's send something  coherent
-            self.event_shape_strategy_changed.emit('static', (w, h))
+            self.signal_shape_strategy_changed.emit('static', (w, h))
 
         self.spinbox_w.blockSignals(False)
         self.spinbox_h.blockSignals(False)
@@ -361,10 +364,18 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         self._tensorrt_static_shape = size
 
 
+    def tensorrt_conversion_enabled(self, enabled: bool) -> None:
+        print("conversion changed")
+        if enabled:
+            self.radiobutton_fp32.setChecked(True)
+        self.radiobutton_fp32.setEnabled(not enabled)
+        self.radiobutton_fp16.setEnabled(not enabled)
+
+
     def values(self) -> dict[str, str | tuple[int, int]]:
         values: dict[str, str | int | tuple[int, int]] = {
             'opset': self.spinbox_opset.value(),
-            'datatype': 'fp32' if self.radiobutton_fp32.isChecked() else 'fp16',
+            'dtype': 'fp32' if self.radiobutton_fp32.isChecked() else 'fp16',
             'shape_strategy': 'static' if self.checkbox_static.isChecked() else 'dynamic',
             'shape': (self.spinbox_w.value(), self.spinbox_h.value()),
         }

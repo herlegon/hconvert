@@ -47,12 +47,16 @@ class Ui_TensorRTConversionWidget(object):
         self.layout_datatype.addWidget(self.checkbox_fp32)
 
         self.checkbox_fp16 = QCheckBox(self.groupbox_tensorrt_conversion)
+        self.buttonGroup = QButtonGroup(TensorRTConversionWidget)
+        self.buttonGroup.setObjectName(u"buttonGroup")
+        self.buttonGroup.addButton(self.checkbox_fp16)
         self.checkbox_fp16.setObjectName(u"checkbox_fp16")
         self.checkbox_fp16.setEnabled(True)
 
         self.layout_datatype.addWidget(self.checkbox_fp16)
 
         self.checkbox_bf16 = QCheckBox(self.groupbox_tensorrt_conversion)
+        self.buttonGroup.addButton(self.checkbox_bf16)
         self.checkbox_bf16.setObjectName(u"checkbox_bf16")
         self.checkbox_bf16.setEnabled(True)
 

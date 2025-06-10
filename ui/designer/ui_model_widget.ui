@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>531</width>
-    <height>85</height>
+    <width>513</width>
+    <height>171</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -70,19 +70,53 @@
      <property name="bottomMargin">
       <number>12</number>
      </property>
-     <item alignment="Qt::AlignmentFlag::AlignTop">
-      <widget class="PyTorchWidget" name="widget_pytorch_model" native="true"/>
+     <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
+      <widget class="PyTorchWidget" name="widget_pytorch_model" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>100</height>
+        </size>
+       </property>
+      </widget>
      </item>
-     <item alignment="Qt::AlignmentFlag::AlignTop">
-      <widget class="OnnxWidget" name="widget_onnx_model" native="true"/>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="spacing">
+        <number>12</number>
+       </property>
+       <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
+        <widget class="OnnxWidget" name="widget_onnx_model" native="true"/>
+       </item>
+       <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
+        <widget class="TensorRTWidget" name="widget_tensorrt_model" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>100</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
-     <item alignment="Qt::AlignmentFlag::AlignTop">
-      <widget class="TensorRTWidget" name="widget_tensorrt_model" native="true"/>
+     <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
+      <widget class="MetadataWidget" name="widget_metadata" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>20</width>
+         <height>20</height>
+        </size>
+       </property>
+      </widget>
      </item>
      <item>
       <spacer name="horizontalSpacer_10">
        <property name="orientation">
         <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Policy::Expanding</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
@@ -119,6 +153,12 @@
    <class>ModelBrowserWidget</class>
    <extends>QWidget</extends>
    <header>ui.model_browser_widget</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MetadataWidget</class>
+   <extends>QWidget</extends>
+   <header>ui.metadata_widget</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
