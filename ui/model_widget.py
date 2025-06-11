@@ -43,6 +43,9 @@ class ModelWidget(QWidget, Ui_ModelWidget):
 
         self.supported_model_extensions: list[str] = [
             '.engine',
+            '.trt',
+            '.trtzip',
+            '.trtz',
             '.onnx',
             '.pt',
             '.pth',

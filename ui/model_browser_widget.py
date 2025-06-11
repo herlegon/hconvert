@@ -46,6 +46,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         self.previous_directory: str = "~/ml_models"
         self.supported_model_extensions: list[str] = [
             ".engine",
+            ".trtzip",
             ".onnx",
             ".pt",
             ".pth",
