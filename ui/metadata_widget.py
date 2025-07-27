@@ -40,6 +40,6 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         self.lineedit_version.setText(model.metadata.get("version", ""))
         self.lineedit_author.setText(model.metadata.get("author", ""))
         self.lineedit_license.setText(model.metadata.get("license", ""))
-        self.textedit_comment.setText(model.metadata.get("comment", ""))
+        self.textedit_comment.setPlainText(model.metadata.get("comment", ""))
 
         self.setEnabled(True)
