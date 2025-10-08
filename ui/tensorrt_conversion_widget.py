@@ -81,6 +81,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
         self.clear()
         self.setEnabled(False)
+        self.set_enabled(False)
         self.adjustSize()
 
         # Signals
@@ -458,3 +459,12 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         }
         return values
 
+
+    def is_enabled(self) -> bool:
+        return self.groupbox_tensorrt_conversion.isChecked()
+
+
+    def set_enabled(self, b: bool) -> None:
+        self.block_signals(True)
+        self.groupbox_tensorrt_conversion.setChecked(b)
+        self.block_signals(False)

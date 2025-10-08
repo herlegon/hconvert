@@ -55,6 +55,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.init_gui()
 
+        self.checkbox_safetensor.setChecked(False)
+        self.checkbox_safetensor.setEnabled(False)
 
         self.widget_onnx_conversion.set_editable(True)
 
@@ -74,6 +76,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         )
         self.controller.signal_model_parsed.connect(self.event_model_parsed)
 
+        self.checkbox_safetensor.stateChanged.connect(self.event_safetensor_checked)
         self.is_converting: bool = False
 
 
@@ -135,6 +138,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.button_convert.clicked.connect(self.event_convert)
 
         self.controller.signal_out_fp.connect(self.event_out_fp_refreshed)
+
+
+    def event_safetensor_checked(self, state: bool) -> None:
+        if self.checkbox_safetensor.isChecked():
+            self.widget_onnx_conversion.set_enabled(False)
+            self.widget_tensorrt_conversion.set_enabled(False)
 
 
 

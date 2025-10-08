@@ -37,6 +37,7 @@ from .common import (
 class OnnxWidget(QWidget, Ui_OnnxWidget):
     # ShapeStrategyName, size as tuple (w, h)
     signal_shape_strategy_changed = Signal(str, object)
+    signal_is_enabled: Signal = Signal(bool)
 
     def __init__(self, parent, editable: bool | None = None):
         super().__init__(parent)
@@ -65,6 +66,7 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
 
         self.clear()
         self.setEnabled(False)
+        self.set_enabled(False)
         self.adjustSize()
 
         self.radiobutton_fp16.toggled.connect(self.datatype_changed)
@@ -75,6 +77,7 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         self.spinbox_h.valueChanged.connect(self.size_modified)
         self.combobox_resolution.currentIndexChanged.connect(self.resolution_selected)
 
+        self.groupbox_onnx_conversion.clicked.connect(self.event_conversion_enabled)
 
 
     def block_signals(self, b: bool) -> None:
@@ -136,6 +139,20 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         self.editable = editable
         self.clear()
 
+
+    def is_enabled(self) -> bool:
+        return self.groupbox_onnx_conversion.isChecked()
+
+
+    def set_enabled(self, b: bool) -> None:
+        self.block_signals(True)
+        self.groupbox_onnx_conversion.setChecked(b)
+        self.block_signals(False)
+
+
+    def event_conversion_enabled(self) -> None:
+        print("enabled changed")
+        self.signal_is_enabled.emit(self.groupbox_onnx_conversion.isChecked())
 
 
     def refresh_model_info(self, model: NnModel | None) -> None:
@@ -365,11 +382,22 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
 
 
     def tensorrt_conversion_enabled(self, enabled: bool) -> None:
-        print("conversion changed")
+        print(f"onnx: trensorrt conversion changed to {enabled}")
         if enabled:
             self.radiobutton_fp32.setChecked(True)
         self.radiobutton_fp32.setEnabled(not enabled)
         self.radiobutton_fp16.setEnabled(not enabled)
+
+        self.block_signals(True)
+        if enabled:
+            self.groupbox_onnx_conversion.setCheckable(False)
+            self.set_enabled(True)
+
+        else:
+            self.set_enabled(True)
+            self.groupbox_onnx_conversion.setCheckable(True)
+            self.groupbox_onnx_conversion.setChecked(True)
+        self.block_signals(False)
 
 
     def values(self) -> dict[str, str | tuple[int, int]]:
