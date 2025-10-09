@@ -47,13 +47,11 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         self._saved_shape: tuple[int] = DEFAULT_SIZE
         self.shape_strategy: ShapeStrategyName = 'dynamic'
         self._tensorrt_static_shape: tuple[int, int] = (0, 0)
-
-        for w in (self.lineedit_w, self.lineedit_h,):
-            w.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.lineedit_shape.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
         self.clear()
         self.setEnabled(False)
-        self.adjustSize()
+        # self.adjustSize()
 
         self.groupbox_onnx_conversion.clicked.connect(self.event_conversion_selected)
 
@@ -65,26 +63,19 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
 
         self.spinbox_opset.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
         spinbox_width = 35
-        self.lineedit_w.clear()
-        self.lineedit_h.clear()
+        self.lineedit_shape.clear()
         self.label_resolution.clear()
         self.spinbox_opset.setMinimumWidth(spinbox_width)
         self.spinbox_opset.setMaximumWidth(spinbox_width)
 
 
 
-    def set_editable(self, editable: bool) -> None:
-        # Allow once only
-        if self.editable is not None:
-            return
+    # def set_editable(self, editable: bool) -> None:
+    #     focus_policy: Qt.FocusPolicy = Qt.FocusPolicy.NoFocus
 
-        self.groupbox_onnx_conversion.setCheckable(editable)
-        self.spinbox_opset.lineEdit().setReadOnly(not editable)
-        focus_policy: Qt.FocusPolicy = Qt.FocusPolicy.NoFocus
-
-        self.spinbox_opset.lineEdit().setFocusPolicy(focus_policy)
-        self.editable = editable
-        self.clear()
+    #     self.spinbox_opset.lineEdit().setFocusPolicy(focus_policy)
+    #     self.editable = editable
+    #     self.clear()
 
 
     def event_conversion_selected(self, checked: bool) -> bool:
@@ -113,12 +104,6 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
             print(red("ERRROR, onnx has both fp16 and fp32"))
 
         self.setEnabled(False)
-
-
-
-    def datatype_changed(self, state: bool) -> None:
-        print("datatype_changed to")
-
 
 
     # def update_resolution_text(self) -> None:

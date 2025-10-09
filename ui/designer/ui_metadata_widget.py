@@ -16,22 +16,36 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QFormLayout, QGroupBox, QHBoxLayout,
-    QLabel, QLineEdit, QPlainTextEdit, QPushButton,
-    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
+    QLabel, QLayout, QLineEdit, QPlainTextEdit,
+    QPushButton, QSizePolicy, QSpacerItem, QVBoxLayout,
+    QWidget)
 
 class Ui_MetadataWidget(object):
     def setupUi(self, MetadataWidget):
         if not MetadataWidget.objectName():
             MetadataWidget.setObjectName(u"MetadataWidget")
-        MetadataWidget.resize(375, 326)
+        MetadataWidget.resize(375, 337)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(MetadataWidget.sizePolicy().hasHeightForWidth())
+        MetadataWidget.setSizePolicy(sizePolicy)
         self.verticalLayout = QVBoxLayout(MetadataWidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
+        self.verticalLayout.setContentsMargins(14, -1, -1, -1)
+        self.label_3 = QLabel(MetadataWidget)
+        self.label_3.setObjectName(u"label_3")
+        font = QFont()
+        font.setPointSize(11)
+        font.setBold(True)
+        self.label_3.setFont(font)
+
+        self.verticalLayout.addWidget(self.label_3)
+
         self.groupBox = QGroupBox(MetadataWidget)
         self.groupBox.setObjectName(u"groupBox")
         self.formLayout = QFormLayout(self.groupBox)
         self.formLayout.setObjectName(u"formLayout")
-        self.formLayout.setHorizontalSpacing(6)
-        self.formLayout.setContentsMargins(-1, 0, 0, 0)
         self.label_name = QLabel(self.groupBox)
         self.label_name.setObjectName(u"label_name")
 
@@ -90,19 +104,26 @@ class Ui_MetadataWidget(object):
 
         self.label_comment = QLabel(self.groupBox)
         self.label_comment.setObjectName(u"label_comment")
+        self.label_comment.setAlignment(Qt.AlignmentFlag.AlignLeading|Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
 
         self.formLayout.setWidget(5, QFormLayout.ItemRole.LabelRole, self.label_comment)
 
         self.textedit_comment = QPlainTextEdit(self.groupBox)
         self.textedit_comment.setObjectName(u"textedit_comment")
-        self.textedit_comment.setMinimumSize(QSize(0, 75))
-        self.textedit_comment.setMaximumSize(QSize(16777215, 75))
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.textedit_comment.sizePolicy().hasHeightForWidth())
+        self.textedit_comment.setSizePolicy(sizePolicy1)
+        self.textedit_comment.setMinimumSize(QSize(0, 60))
+        self.textedit_comment.setMaximumSize(QSize(16777215, 60))
         self.textedit_comment.setPlainText(u"")
 
         self.formLayout.setWidget(5, QFormLayout.ItemRole.FieldRole, self.textedit_comment)
 
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalLayout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout.addItem(self.horizontalSpacer)
@@ -131,7 +152,8 @@ class Ui_MetadataWidget(object):
 
     def retranslateUi(self, MetadataWidget):
         MetadataWidget.setWindowTitle(QCoreApplication.translate("MetadataWidget", u"Form", None))
-        self.groupBox.setTitle(QCoreApplication.translate("MetadataWidget", u"Metadata", None))
+        self.label_3.setText(QCoreApplication.translate("MetadataWidget", u"Metadata", None))
+        self.groupBox.setTitle("")
         self.label_name.setText(QCoreApplication.translate("MetadataWidget", u"Name", None))
         self.label_date.setText(QCoreApplication.translate("MetadataWidget", u"Date", None))
         self.label_version.setText(QCoreApplication.translate("MetadataWidget", u"Version", None))

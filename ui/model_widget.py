@@ -29,9 +29,8 @@ class ModelWidget(QWidget, Ui_ModelWidget):
         super().__init__(parent)
         self.setupUi(self)
 
-        self.is_loading: bool = False
+        self._is_loading: bool = False
 
-        self.widget_onnx_model.set_editable(False)
         self.widget_model_browser.set_parent_widget(self)
 
 
@@ -63,7 +62,7 @@ class ModelWidget(QWidget, Ui_ModelWidget):
 
 
     def dropEvent(self, event: QDropEvent):
-        if self.is_loading:
+        if self._is_loading:
             return
         model_fp: str = os.path.abspath(
             os.path.expanduser(event.mimeData().urls()[0].toLocalFile())
@@ -76,7 +75,7 @@ class ModelWidget(QWidget, Ui_ModelWidget):
 
 
     def dragEnterEvent(self, event: QDragEnterEvent):
-        if self.is_loading:
+        if self._is_loading:
             return
         is_allowed: bool = False
         if event.mimeData().hasUrls():
@@ -94,13 +93,13 @@ class ModelWidget(QWidget, Ui_ModelWidget):
 
 
     def model_loaded_event(self, model_fp: str) -> None:
-        self.is_loading = True
+        self._is_loading = True
         self.setEnabled(False)
         self.signal_model_loaded.emit(model_fp)
 
 
     def model_parsed(self, model: NnModel | None) -> None:
-        self.is_loading = False
+        self._is_loading = False
         self.setEnabled(True)
         self.widget_pytorch_model.refresh_model_info(model)
         self.widget_onnx_model.refresh_model_info(model)

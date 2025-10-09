@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>513</width>
-    <height>161</height>
+    <width>531</width>
+    <height>274</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,155 +19,8 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
-   <property name="bottomMargin">
-    <number>0</number>
-   </property>
-   <item>
-    <widget class="QLabel" name="label_4">
-     <property name="font">
-      <font>
-       <pointsize>11</pointsize>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>Model</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="layout_model_selection">
-     <property name="leftMargin">
-      <number>12</number>
-     </property>
-     <item>
-      <widget class="ModelBrowserWidget" name="widget_model_browser" native="true">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>500</width>
-         <height>0</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="layout_model">
-     <property name="leftMargin">
-      <number>12</number>
-     </property>
-     <property name="bottomMargin">
-      <number>12</number>
-     </property>
-     <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
-      <widget class="PyTorchWidget" name="widget_pytorch_model" native="true">
-       <property name="minimumSize">
-        <size>
-         <width>100</width>
-         <height>100</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
-       <property name="spacing">
-        <number>12</number>
-       </property>
-       <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
-        <widget class="OnnxWidget" name="widget_onnx_model" native="true"/>
-       </item>
-       <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
-        <widget class="TensorRTWidget" name="widget_tensorrt_model" native="true">
-         <property name="minimumSize">
-          <size>
-           <width>100</width>
-           <height>100</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
-      <widget class="MetadataWidget" name="widget_metadata" native="true">
-       <property name="minimumSize">
-        <size>
-         <width>20</width>
-         <height>20</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer_10">
-       <property name="orientation">
-        <enum>Qt::Orientation::Horizontal</enum>
-       </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Policy::Expanding</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>0</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-    </layout>
-   </item>
-  </layout>
+  <layout class="QVBoxLayout" name="verticalLayout"/>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>OnnxWidget</class>
-   <extends>QWidget</extends>
-   <header>ui.onnx_widget</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>PyTorchWidget</class>
-   <extends>QWidget</extends>
-   <header>ui.pytorch_widget</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>TensorRTWidget</class>
-   <extends>QWidget</extends>
-   <header>ui.tensorrt_widget</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>ModelBrowserWidget</class>
-   <extends>QWidget</extends>
-   <header>ui.model_browser_widget</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>MetadataWidget</class>
-   <extends>QWidget</extends>
-   <header>ui.metadata_widget</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

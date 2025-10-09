@@ -39,6 +39,7 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
         self.checkbox_static.setCheckable(False)
         self.lineedit_shape.clear()
         self.lineedit_shape.setReadOnly(True)
+        self.label_resolution.clear()
 
 
     def display_model_info(self, model: NnModel | None) -> None:

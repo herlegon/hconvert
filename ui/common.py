@@ -1,6 +1,6 @@
 from typing import Literal
 
-DEFAULT_SIZE: tuple[int] = (720, 480)
+DEFAULT_SIZE: tuple[int] = (720, 540)
 
 PREDEFINED_SIZE: dict[str, tuple[int, int]] = {
     "480p 16:9 (DVD)": (854, 480),
@@ -19,3 +19,11 @@ predefined_shapes_inv: dict[str, str] = {
 }
 
 ShapeStrategyName = Literal['static', 'dynamic', 'fixed']
+
+
+ONNX_DEFAULT_CONVERSION_SETTINGS: dict[str, str | bool | int] = {
+    'version': 20,
+    'dtype': 'fp32',
+    'shape_strategy': 'static',
+    'shape': (720, 540)
+}

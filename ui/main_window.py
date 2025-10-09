@@ -28,8 +28,6 @@ from PySide6.QtWidgets import (
     QComboBox,
 )
 
-from .common import ShapeStrategyName
-from .model_widget import ModelWidget
 
 from .designer.ui_main_window import Ui_MainWindow
 if TYPE_CHECKING:
@@ -48,6 +46,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     signal_preview_modified = Signal(dict)
     signal_get_out_fp = Signal(str)
     signal_convert_action = Signal(dict)
+    signal_model_loaded = Signal(str)
+
 
     def __init__(self, controller: Controller):
         super().__init__()
@@ -58,17 +58,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.init_gui()
 
 
-        self.model_widget = self.findChild(ModelWidget, "widget_model")
+        # self.model_widget = self.findChild(ModelWidget, "widget_model")
         # set_stylesheet(self)
         self.installEventFilter(self)
 
 
-        self.widget_onnx_conversion.signal_shape_strategy_changed.connect(
-            self.widget_tensorrt_conversion.constraint_shape_strategy
-        )
-        self.widget_tensorrt_conversion.signal_static_shape_modified.connect(
-            self.widget_onnx_conversion.tensorrt_static_shape_modified
-        )
+        # self.widget_onnx_conversion.signal_shape_strategy_changed.connect(
+        #     self.widget_tensorrt_conversion.constraint_shape_strategy
+        # )
+        # self.widget_tensorrt_conversion.signal_static_shape_modified.connect(
+        #     self.widget_onnx_conversion.tensorrt_static_shape_modified
+        # )
         self.controller.signal_model_parsed.connect(self.event_model_parsed)
 
         # Conversion selected changed
@@ -87,16 +87,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def apply_user_preferences(self, user_preferences: UserPreferences):
         print(f"apply_user_preferences: {user_preferences.settings}")
-        try:
-            w: list[int] = user_preferences.settings['window']['geometry']
-            self.setGeometry(*w)
-        except:
-            self.setGeometry(0, 0, 640, 800)
+        # try:
+        #     w: list[int] = user_preferences.settings['window']['geometry']
+        #     self.setGeometry(*w)
+        # except:
+        #     self.setGeometry(0, 0, 640, 800)
 
         self.show()
         self.checkbox_safetensor.setCheckState(Qt.CheckState.Checked)
         self.conversion_selection_changed('safetensor', True)
-        print("GFDSDFGHJKL**************************************")
+        self.adjustSize()
 
 
     def get_user_preferences(self) -> dict:
@@ -154,24 +154,30 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.groupBox_tensorrt.blockSignals(b)
 
 
-# : Literal['safetensor', 'onnx', 'tensorrt']
-    def conversion_selection_changed(self, k: str, state: bool) -> None:
+    def adjust_height(self) -> None:
+        w = self.geometry().width()
+        self.adjustSize()
+        x, y, _, h = self.geometry().getRect()
+        print(f"to: {x}, {y}: {w}x{h}")
+        self.setGeometry(x, y, w, h)
+        print(f"new: {self.geometry().getRect()}")
+
+
+    def conversion_selection_changed(self, k: Literal['safetensor', 'onnx', 'tensorrt'], state: bool) -> None:
         self.block_conversion_signal(True)
-        print(self.checkbox_safetensor.checkState())
-        print(self.groupBox_onnx.isChecked())
-        print(self.groupBox_tensorrt.isChecked())
 
         if k == 'safetensor':
             if self.checkbox_safetensor.checkState() != Qt.CheckState.Checked:
                 self.checkbox_safetensor.setCheckState(Qt.CheckState.Checked)
             else:
-                print("redtfyghnguybftvcdvgbhjngbyfvhj")
                 self.widget_onnx_conversion.set_selected(False)
                 self.widget_tensorrt_conversion.set_selected(False)
                 self.groupBox_onnx.setChecked(False)
                 self.groupBox_tensorrt.setChecked(False)
                 self.widget_onnx_conversion.hide()
                 self.widget_tensorrt_conversion.hide()
+                # self.textedit_log.hide()
+                self.adjust_height()
 
         elif k == 'onnx':
             if not self.groupBox_onnx.isChecked():
@@ -181,9 +187,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.groupBox_tensorrt.setChecked(False)
                 self.checkbox_safetensor.setCheckState(Qt.CheckState.Unchecked)
                 self.widget_tensorrt_conversion.hide()
-                self.widget_tensorrt_conversion.setGeometry
+                self.widget_onnx_conversion.set_selected(True)
                 self.widget_onnx_conversion.show()
                 self.widget_onnx_conversion.adjustSize()
+                # self.textedit_log.show()
+                self.adjust_height()
 
         elif k == 'tensorrt':
             if not self.groupBox_tensorrt.isChecked():
@@ -192,9 +200,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.widget_onnx_conversion.set_selected(False)
                 self.groupBox_onnx.setChecked(False)
                 self.checkbox_safetensor.setCheckState(Qt.CheckState.Unchecked)
+                self.widget_tensorrt_conversion.set_selected(True)
+                self.widget_onnx_conversion.hide()
                 self.widget_tensorrt_conversion.show()
                 self.widget_tensorrt_conversion.adjustSize()
-                self.widget_onnx_conversion.hide()
+                # self.textedit_log.show()
+                self.adjust_height()
 
         self.block_conversion_signal(False)
 
@@ -276,10 +287,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def event_model_parsed(self, model_fp: str) -> None:
-        self.widget_model.widget_model_browser.update_model_fp(model_fp=model_fp)
+        self.widget_model_browser.update_model_fp(model_fp=model_fp)
 
         model: NnModel = self.controller.get_in_model_info()
-        self.widget_model.model_parsed(model)
+
+        # self.setEnabled(True)
+        self.widget_pytorch_model.refresh_model_info(model)
+        self.widget_onnx_model.refresh_model_info(model)
+        self.widget_metadata.refresh_model_info(model)
+
         print(model)
         if model is not None:
             print(model.arch)
@@ -309,8 +325,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #     size=model.shape_strategy.opt_size
         # )
 
-        self.textedit_log.clear()
-        if model is not None:
-            self.textedit_log.appendPlainText(str(model))
-            self.textedit_log.appendPlainText(str(model.arch))
-
+        # self.textedit_log.clear()
+        # if model is not None:
+        #     self.textedit_log.appendPlainText(str(model))
+        #     self.textedit_log.appendPlainText(str(model.arch))

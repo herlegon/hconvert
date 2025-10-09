@@ -29,14 +29,14 @@ from .common import (
     PREDEFINED_SIZE,
     predefined_shapes_inv,
     ShapeStrategyName,
+    ONNX_DEFAULT_CONVERSION_SETTINGS,
 )
-
 
 
 
 class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
     # ShapeStrategyName, size as tuple (w, h)
-    signal_shape_strategy_changed = Signal(str, object)
+    # signal_shape_strategy_changed = Signal(str, object)
 
 
     def __init__(self, parent, editable: bool | None = None):
@@ -60,13 +60,21 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.combobox_resolution.setCurrentIndex(-1)
 
         self.clear()
+        self.spinbox_opset.setValue(ONNX_DEFAULT_CONVERSION_SETTINGS['version'])
+        self.radiobutton_fp32.setChecked(bool(ONNX_DEFAULT_CONVERSION_SETTINGS['dtype'] == 'fp32'))
+        self.radiobutton_static.setChecked(bool(ONNX_DEFAULT_CONVERSION_SETTINGS['shape_strategy'] == 'static'))
+        self.spinbox_w.setValue(ONNX_DEFAULT_CONVERSION_SETTINGS['shape'][0])
+        self.spinbox_h.setValue(ONNX_DEFAULT_CONVERSION_SETTINGS['shape'][1])
+        self.update_resolution_text()
+        self.shape_strategy_changed(True)
+
         self.setEnabled(False)
         self.set_selected(False)
         self.adjustSize()
 
-        self.radiobutton_fp16.toggled.connect(self.datatype_changed)
-        self.checkbox_static.toggled.connect(self.shape_strategy_changed)
-        # self.checkbox_dynamic.toggled.connect(self.shape_strategy_changed)
+        # self.radiobutton_fp16.toggled.connect(self.datatype_changed)
+        self.radiobutton_static.toggled.connect(self.shape_strategy_changed)
+        self.radiobutton_dynamic.toggled.connect(self.shape_strategy_changed)
 
         self.spinbox_w.valueChanged.connect(self.size_modified)
         self.spinbox_h.valueChanged.connect(self.size_modified)
@@ -83,21 +91,19 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
 
     def clear(self) -> None:
+        self.block_signals(True)
         self.spinbox_opset.clear()
         spinbox_width = 50
-        self.checkbox_dynamic.setChecked(False)
-        self.checkbox_static.setChecked(False)
+        self.radiobutton_dynamic.setChecked(False)
+        self.radiobutton_static.setChecked(False)
 
-        if self.editable:
-            self.block_signals(True)
-            self.spinbox_opset.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.PlusMinus)
-            self.radiobutton_fp32.setChecked(False)
-            self.radiobutton_fp16.setChecked(False)
-            self.spinbox_w.lineEdit().clear()
-            self.spinbox_h.lineEdit().clear()
-            self.spinbox_w.clear()
-            self.spinbox_h.clear()
-            self.block_signals(False)
+        self.spinbox_opset.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.PlusMinus)
+        self.radiobutton_fp32.setChecked(False)
+        self.radiobutton_fp16.setChecked(False)
+        self.spinbox_w.lineEdit().clear()
+        self.spinbox_h.lineEdit().clear()
+        self.spinbox_w.clear()
+        self.spinbox_h.clear()
 
         # if not self.editable:
         #     self.spinbox_opset.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
@@ -105,6 +111,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
         self.spinbox_opset.setMinimumWidth(spinbox_width)
         self.spinbox_opset.setMaximumWidth(spinbox_width)
+        self.block_signals(False)
 
 
 
@@ -139,26 +146,26 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.block_signals(False)
 
 
-    def refresh_model_info(self, model: NnModel | None) -> None:
-        self.clear()
-        if model is None or model.framework.type != NnFrameworkType.ONNX:
-            return
+    # def refresh_model_info(self, model: NnModel | None) -> None:
+    #     self.clear()
+    #     if model is None or model.framework.type != NnFrameworkType.ONNX:
+    #         return
 
-        self.setEnabled(True)
-        self.spinbox_opset.setValue(model.opset)
+    #     self.setEnabled(True)
+    #     self.spinbox_opset.setValue(model.opset)
 
-        if 'static' in model.shape_strategy.type:
-            self.checkbox_static.setChecked(True)
-            # self.lineedit_w.setText(str(model.shape_strategy.opt_size[0]))
-            # self.lineedit_h.setText(str(model.shape_strategy.opt_size[1]))
+    #     if 'static' in model.shape_strategy.type:
+    #         self.radiobutton_static.setChecked(True)
+    #         # self.lineedit_w.setText(str(model.shape_strategy.opt_size[0]))
+    #         # self.lineedit_h.setText(str(model.shape_strategy.opt_size[1]))
 
-        else:
-            self.checkbox_dynamic.setChecked(True)
+    #     else:
+    #         self.checkbox_dynamic.setChecked(True)
 
-        if 'fp32' in model.dtypes and 'fp16' in model.dtypes:
-            print(red("ERRROR, onnx has both fp16 and fp32"))
+    #     if 'fp32' in model.dtypes and 'fp16' in model.dtypes:
+    #         print(red("ERRROR, onnx has both fp16 and fp32"))
 
-        self.setEnabled(False)
+    #     self.setEnabled(False)
 
 
 
@@ -220,7 +227,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             self.radiobutton_fp32.setChecked(False)
             self.radiobutton_fp16.setChecked(False)
             self.checkbox_dynamic.setChecked(False)
-            self.checkbox_static.setChecked(False)
+            self.radiobutton_static.setChecked(False)
             self.setEnabled(False)
             return
 
@@ -245,7 +252,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
         is_dynamic: bool = bool(self.shape_strategy == 'dynamic')
         self.checkbox_dynamic.setChecked(is_dynamic)
-        self.checkbox_static.setChecked(not is_dynamic)
+        self.radiobutton_static.setChecked(not is_dynamic)
 
         self.update_size_widgets(self.shape_strategy)
         if self.shape_strategy == 'static':
@@ -286,10 +293,8 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
     def shape_strategy_changed(self, state: bool) -> None:
         """User action to set from/to dynamic, fixed/static
         """
-        if not self.editable:
-            return
         self.block_signals(True)
-        to_static = self.checkbox_static.isChecked()
+        to_static = self.radiobutton_static.isChecked()
         print(f"current strategy: {self.shape_strategy}, to static: {to_static}")
 
 
@@ -315,8 +320,6 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self._current_size = (self.spinbox_w.value(), self.spinbox_h.value())
         self.shape_strategy = 'static' if to_static else 'dynamic'
         self.update_size_widgets(strategy=self.shape_strategy)
-        self.signal_shape_strategy_changed.emit(self.shape_strategy, self._current_size)
-
         self.block_signals(False)
 
 
@@ -351,10 +354,10 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.spinbox_w.lineEdit().deselect()
         self.spinbox_h.lineEdit().deselect()
 
-        if self.shape_strategy == 'static':
-            # send a signal to other widgets, size doesn't matter
-            # but let's send something  coherent
-            self.signal_shape_strategy_changed.emit('static', (w, h))
+        # if self.shape_strategy == 'static':
+        #     # send a signal to other widgets, size doesn't matter
+        #     # but let's send something  coherent
+        #     self.signal_shape_strategy_changed.emit('static', (w, h))
 
         self.spinbox_w.blockSignals(False)
         self.spinbox_h.blockSignals(False)
@@ -365,30 +368,30 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self._tensorrt_static_shape = size
 
 
-    def tensorrt_conversion_enabled(self, enabled: bool) -> None:
-        print(f"onnx: trensorrt conversion changed to {enabled}")
-        if enabled:
-            self.radiobutton_fp32.setChecked(True)
-        self.radiobutton_fp32.setEnabled(not enabled)
-        self.radiobutton_fp16.setEnabled(not enabled)
+    # def tensorrt_conversion_enabled(self, enabled: bool) -> None:
+    #     print(f"onnx: trensorrt conversion changed to {enabled}")
+    #     if enabled:
+    #         self.radiobutton_fp32.setChecked(True)
+    #     self.radiobutton_fp32.setEnabled(not enabled)
+    #     self.radiobutton_fp16.setEnabled(not enabled)
 
-        self.block_signals(True)
-        if enabled:
-            # self.groupbox_onnx_conversion.setCheckable(False)
-            self.set_selected(False)
+    #     self.block_signals(True)
+    #     if enabled:
+    #         # self.groupbox_onnx_conversion.setCheckable(False)
+    #         self.set_selected(False)
 
-        else:
-            self.set_selected(True)
-            # self.groupbox_onnx_conversion.setCheckable(True)
-            # self.groupbox_onnx_conversion.setChecked(True)
-        self.block_signals(False)
+    #     else:
+    #         self.set_selected(True)
+    #         # self.groupbox_onnx_conversion.setCheckable(True)
+    #         # self.groupbox_onnx_conversion.setChecked(True)
+    #     self.block_signals(False)
 
 
     def values(self) -> dict[str, str | tuple[int, int]]:
         values: dict[str, str | int | tuple[int, int]] = {
             'opset': self.spinbox_opset.value(),
             'dtype': 'fp32' if self.radiobutton_fp32.isChecked() else 'fp16',
-            'shape_strategy': 'static' if self.checkbox_static.isChecked() else 'dynamic',
+            'shape_strategy': 'static' if self.radiobutton_static.isChecked() else 'dynamic',
             'shape': (self.spinbox_w.value(), self.spinbox_h.value()),
         }
         return values
