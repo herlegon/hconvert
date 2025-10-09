@@ -18,7 +18,6 @@ from pynnlib import (
 )
 
 
-
 class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
     signal_model_loaded = Signal(str)
 
@@ -56,7 +55,6 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
 
         extensions = ' '.join([f"*{ext}" for ext in self.supported_model_extensions])
         self.file_filter = f"Model ({extensions})"
-
         print(self.file_filter)
 
 
@@ -92,7 +90,6 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         return super().eventFilter(watched, event)
 
 
-
     def model_picker_event(self):
         file_dialog = QFileDialog(
             parent=self,
@@ -112,5 +109,3 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         file_dialog.close()
         del file_dialog
         self.signal_model_loaded.emit(model_fp)
-
-

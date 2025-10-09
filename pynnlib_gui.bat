@@ -2,7 +2,6 @@ pyside6-uic .\ui\designer\ui_main_window.ui -o .\ui\designer\ui_main_window.py
 :: python .\ui\patch_ui.py --file .\ui\designer\ui_main_window.py
 
 pyside6-uic .\ui\designer\ui_model_browser_widget.ui -o .\ui\designer\ui_model_browser_widget.py
-pyside6-uic .\ui\designer\ui_model_widget.ui -o .\ui\designer\ui_model_widget.py
 pyside6-uic .\ui\designer\ui_metadata_widget.ui -o .\ui\designer\ui_metadata_widget.py
 
 pyside6-uic .\ui\designer\ui_pytorch_widget.ui -o .\ui\designer\ui_pytorch_widget.py

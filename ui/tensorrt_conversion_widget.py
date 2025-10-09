@@ -80,7 +80,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             cb_r.setCurrentIndex(-1)
 
         self.clear()
-        self.setEnabled(False)
         self.set_selected(False)
         self.adjustSize()
 

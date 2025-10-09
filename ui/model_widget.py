@@ -33,7 +33,6 @@ class ModelWidget(QWidget, Ui_ModelWidget):
 
         self.widget_model_browser.set_parent_widget(self)
 
-
         self.clear_fields()
         self.setAcceptDrops(True)
         self.setEnabled(True)
@@ -49,11 +48,6 @@ class ModelWidget(QWidget, Ui_ModelWidget):
             '.pt',
             '.pth',
         ]
-
-        self.widget_model_browser.signal_model_loaded.connect(
-            self.model_loaded_event
-        )
-
 
 
     def clear_fields(self) -> None:

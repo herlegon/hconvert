@@ -1,25 +1,17 @@
 from __future__ import annotations
 from pprint import pprint
-from typing import Tuple
 from pynnlib import (
     NnModel,
     NnFrameworkType,
-    OnnxModel,
     SizeConstraint,
 )
 
 from PySide6.QtCore import (
-    QSize,
     Qt,
-    Signal,
-    Slot,
 )
 from PySide6.QtWidgets import (
     QWidget,
     QAbstractSpinBox,
-    QLineEdit,
-    QComboBox,
-    QSizePolicy,
 )
 
 from pynnlib.utils.p_print import red
@@ -35,9 +27,6 @@ from .common import (
 
 
 class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
-    # ShapeStrategyName, size as tuple (w, h)
-    # signal_shape_strategy_changed = Signal(str, object)
-
 
     def __init__(self, parent, editable: bool | None = None):
         super().__init__(parent)
