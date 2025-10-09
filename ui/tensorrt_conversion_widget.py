@@ -35,7 +35,7 @@ from .common import (
 
 class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
     signal_static_shape_modified: Signal = Signal(object)
-    signal_is_enabled: Signal = Signal(bool)
+
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -81,7 +81,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
         self.clear()
         self.setEnabled(False)
-        self.set_enabled(False)
+        self.set_selected(False)
         self.adjustSize()
 
         # Signals
@@ -93,11 +93,15 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             sb_h.valueChanged.connect(partial(self.size_modified, sw))
             cb_r.currentIndexChanged.connect(partial(self.resolution_selected, sw))
 
-        self.groupbox_tensorrt_conversion.clicked.connect(self.event_conversion_enabled)
+
+    def is_selected(self) -> bool:
+        return self.isEnabled()
 
 
-    def event_conversion_enabled(self, checked: bool) -> bool:
-        self.signal_is_enabled.emit(self.groupbox_tensorrt_conversion.isChecked())
+    def set_selected(self, b: bool) -> None:
+        self.block_signals(True)
+        self.setEnabled(b)
+        self.block_signals(False)
 
 
     def set_available_gpus(self, gpus: dict[str, int]) -> None:
@@ -460,11 +464,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         return values
 
 
-    def is_enabled(self) -> bool:
-        return self.groupbox_tensorrt_conversion.isChecked()
-
-
-    def set_enabled(self, b: bool) -> None:
         self.block_signals(True)
         self.groupbox_tensorrt_conversion.setChecked(b)
         self.block_signals(False)

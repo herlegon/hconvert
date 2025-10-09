@@ -187,3 +187,4 @@ concat*.bat
 davinci/
 inputs
 cg/*.drp
+ui/designer/*.py

@@ -58,7 +58,7 @@ class Controller(QObject):
     def set_view(self, view: MainWindow):
         self.view = view
         view.apply_user_preferences(self.user_preferences)
-        print("preferences: set_view")
+        print("preferences: set_viewezfzfzfze")
         self.view.model_widget.signal_model_loaded.connect(self.parse_model)
         if self.initial_model:
             self.parse_model(self.initial_model)

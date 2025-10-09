@@ -1,14 +1,16 @@
 from __future__ import annotations
+from functools import partial
 import os
 from pprint import pprint
 import sys
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Literal
 from PySide6.QtCore import (
     Signal,
     Slot,
     QEvent,
     QObject,
     Slot,
+    Qt,
 )
 from PySide6.QtGui import (
     QCloseEvent,
@@ -55,10 +57,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.init_gui()
 
-        self.checkbox_safetensor.setChecked(False)
-        self.checkbox_safetensor.setEnabled(False)
-
-        self.widget_onnx_conversion.set_editable(True)
 
         self.model_widget = self.findChild(ModelWidget, "widget_model")
         # set_stylesheet(self)
@@ -71,12 +69,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_tensorrt_conversion.signal_static_shape_modified.connect(
             self.widget_onnx_conversion.tensorrt_static_shape_modified
         )
-        self.widget_tensorrt_conversion.signal_is_enabled.connect(
-            self.widget_onnx_conversion.tensorrt_conversion_enabled
-        )
         self.controller.signal_model_parsed.connect(self.event_model_parsed)
 
-        self.checkbox_safetensor.stateChanged.connect(self.event_safetensor_checked)
+        # Conversion selected changed
+        self.checkbox_safetensor.setCheckable(True)
+        self.checkbox_safetensor.setCheckState(Qt.CheckState.Unchecked)
+        self.checkbox_safetensor.stateChanged.connect(
+            partial(self.conversion_selection_changed, 'safetensor'))
+        self.groupBox_onnx.toggled.connect(
+            partial(self.conversion_selection_changed, 'onnx'))
+        self.groupBox_tensorrt.toggled.connect(
+            partial(self.conversion_selection_changed, 'tensorrt'))
+
         self.is_converting: bool = False
 
 
@@ -88,7 +92,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.setGeometry(*w)
         except:
             self.setGeometry(0, 0, 640, 800)
+
         self.show()
+        self.checkbox_safetensor.setCheckState(Qt.CheckState.Checked)
+        self.conversion_selection_changed('safetensor', True)
+        print("GFDSDFGHJKL**************************************")
 
 
     def get_user_preferences(self) -> dict:
@@ -140,10 +148,55 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.controller.signal_out_fp.connect(self.event_out_fp_refreshed)
 
 
-    def event_safetensor_checked(self, state: bool) -> None:
-        if self.checkbox_safetensor.isChecked():
-            self.widget_onnx_conversion.set_enabled(False)
-            self.widget_tensorrt_conversion.set_enabled(False)
+    def block_conversion_signal(self, b: bool) -> None:
+        self.checkbox_safetensor.blockSignals(b)
+        self.groupBox_onnx.blockSignals(b)
+        self.groupBox_tensorrt.blockSignals(b)
+
+
+# : Literal['safetensor', 'onnx', 'tensorrt']
+    def conversion_selection_changed(self, k: str, state: bool) -> None:
+        self.block_conversion_signal(True)
+        print(self.checkbox_safetensor.checkState())
+        print(self.groupBox_onnx.isChecked())
+        print(self.groupBox_tensorrt.isChecked())
+
+        if k == 'safetensor':
+            if self.checkbox_safetensor.checkState() != Qt.CheckState.Checked:
+                self.checkbox_safetensor.setCheckState(Qt.CheckState.Checked)
+            else:
+                print("redtfyghnguybftvcdvgbhjngbyfvhj")
+                self.widget_onnx_conversion.set_selected(False)
+                self.widget_tensorrt_conversion.set_selected(False)
+                self.groupBox_onnx.setChecked(False)
+                self.groupBox_tensorrt.setChecked(False)
+                self.widget_onnx_conversion.hide()
+                self.widget_tensorrt_conversion.hide()
+
+        elif k == 'onnx':
+            if not self.groupBox_onnx.isChecked():
+                self.groupBox_onnx.setChecked(True)
+            else:
+                self.widget_tensorrt_conversion.set_selected(False)
+                self.groupBox_tensorrt.setChecked(False)
+                self.checkbox_safetensor.setCheckState(Qt.CheckState.Unchecked)
+                self.widget_tensorrt_conversion.hide()
+                self.widget_tensorrt_conversion.setGeometry
+                self.widget_onnx_conversion.show()
+                self.widget_onnx_conversion.adjustSize()
+
+        elif k == 'tensorrt':
+            if not self.groupBox_tensorrt.isChecked():
+                self.groupBox_tensorrt.setChecked(True)
+            else:
+                self.widget_onnx_conversion.set_selected(False)
+                self.groupBox_onnx.setChecked(False)
+                self.checkbox_safetensor.setCheckState(Qt.CheckState.Unchecked)
+                self.widget_tensorrt_conversion.show()
+                self.widget_tensorrt_conversion.adjustSize()
+                self.widget_onnx_conversion.hide()
+
+        self.block_conversion_signal(False)
 
 
 
@@ -237,20 +290,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         print("- event_model_parsed: ONNX")
         if model is not None:
             if model.framework.type == NnFrameworkType.ONNX:
-                self.widget_onnx_conversion.setVisible(False)
+                self.groupBox_onnx.setVisible(False)
             else:
-                self.widget_onnx_conversion.setVisible(True)
-                self.widget_onnx_conversion.enable_conversion(model)
+                self.groupBox_onnx.setVisible(True)
+                # self.groupBox_onnx.enable_conversion(model)
         else:
             print("Set Editable to False")
-            self.widget_onnx_conversion.setVisible(True)
-            self.widget_onnx_conversion.setEnabled(False)
+            self.groupBox_onnx.setVisible(True)
+            self.groupBox_onnx.setEnabled(False)
 
         # Enable conversion to TensorRT and update shape strategy/size
         if model is None:
-            self.widget_tensorrt_conversion.setVisible(False)
+            self.groupBox_tensorrt.setVisible(False)
         else:
-            self.widget_tensorrt_conversion.setVisible(True)
+            self.groupBox_tensorrt.setVisible(True)
         # self.widget_tensorrt_conversion.constraint_shape_strategy(
         #     strategy=model.shape_strategy.type,
         #     size=model.shape_strategy.opt_size
