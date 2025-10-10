@@ -452,7 +452,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         if self._gpus:
             gpu = self._gpus.get(self.combobox_gpu.currentText(), "")
         values: dict[str, str | int | tuple[int, int]] = {
-            'enabled': self.groupbox_tensorrt_conversion.isChecked(),
             'gpu': gpu,
             'dtypes': dtypes,
             'shape_strategy': 'fixed' if self.checkbox_fixed.isChecked() else 'dynamic',

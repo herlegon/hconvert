@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 import os
 from pprint import pprint
 import time
@@ -17,12 +18,14 @@ from pynnlib import (
     nnlib,
     get_supported_model_extensions,
     NnFrameworkType,
+    save_as,
 )
 
 class Controller(QObject):
     signal_progress: Signal = Signal(dict)
     signal_out_fp: Signal = Signal(dict)
     signal_model_parsed: Signal = Signal(str)
+    signal_task_ended: Signal = Signal(str)
 
 
     def __init__(self, model_fp: str, dev: bool):
@@ -60,6 +63,7 @@ class Controller(QObject):
         view.apply_user_preferences(self.user_preferences)
         print("preferences: set_viewezfzfzfze")
         self.view.signal_model_loaded.connect(self.parse_model)
+        self.view.signal_inject_metadata.connect(self.event_inject_metadata)
         if self.initial_model:
             self.parse_model(self.initial_model)
             self.initial_model = ""
@@ -92,6 +96,17 @@ class Controller(QObject):
         return self.in_model
 
 
+    def event_inject_metadata(self, action: dict[str, str | dict[str, str]]) -> None:
+        self.in_model.metadata = action['metadata'].copy()
+        model_fp: str = action['filepath']
+        try:
+            save_as(model_fp=model_fp, model=self.in_model)
+        except Exception as e:
+            self.signal_task_ended.emit(str(e))
+            return
+
+        self.parse_model(model_fp)
+        self.signal_task_ended.emit("")
 
 # import asyncio
 # from PySide6.QtCore import QObject, Signal

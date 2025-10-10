@@ -27,3 +27,13 @@ ONNX_DEFAULT_CONVERSION_SETTINGS: dict[str, str | bool | int] = {
     'shape_strategy': 'static',
     'shape': (720, 540)
 }
+
+
+SUPPORTED_MODEL_EXTENSIONS: tuple[str] = (
+    '.engine',
+    '.trt',
+    '.trtzip',
+    '.onnx',
+    '.pt',
+    '.pth',
+)
