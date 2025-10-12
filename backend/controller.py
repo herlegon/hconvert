@@ -61,7 +61,6 @@ class Controller(QObject):
     def set_view(self, view: MainWindow):
         self.view = view
         view.apply_user_preferences(self.user_preferences)
-        print("preferences: set_viewezfzfzfze")
         self.view.signal_model_loaded.connect(self.parse_model)
         self.view.signal_inject_metadata.connect(self.event_inject_metadata)
         if self.initial_model:
@@ -80,7 +79,12 @@ class Controller(QObject):
 
         device = 'cuda' if ext in trt_extensions else 'cpu'
         start_time = time.time()
-        self.in_model: NnModel = nnlib.open(model_fp, device=device)
+        self.in_model = None
+        try:
+            self.in_model: NnModel = nnlib.open(model_fp, device=device)
+        except Exception as e:
+            print("error")
+            print(str(e))
         elapsed = time.time() - start_time
 
         self.signal_progress.emit(
@@ -88,7 +92,11 @@ class Controller(QObject):
         )
         print(f"parsed in {1000*elapsed:.03f}ms")
         # Send a null signal because the object cannot be sent via a signal
-        self.signal_model_parsed.emit(model_fp)
+        if self.in_model is not None:
+            self.signal_model_parsed.emit(model_fp)
+        else:
+            self.signal_model_parsed.emit(None)
+
 
 
     def get_in_model_info(self) -> NnModel:

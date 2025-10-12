@@ -205,6 +205,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         """Called when a new model is parsed
         """
         self.clear()
+        print(red("4dd468qs46dsq5d46qs6d4qs4d6qs5d465qs4dq53sd1sqd451"))
 
         # PyTorch only
         # Conversion must be possible for the arch
@@ -270,13 +271,10 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             self.spinbox_h.setMinimum(8)
             self.spinbox_h.setSingleStep(1)
 
-
-
         self.setEnabled(True)
         # Inform other widgets that the size has been modified
         self.size_modified(-1)
         self.block_signals(False)
-
 
 
     def shape_strategy_changed(self, state: bool) -> None:
@@ -284,8 +282,6 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         """
         self.block_signals(True)
         to_static = self.radiobutton_static.isChecked()
-        print(f"current strategy: {self.shape_strategy}, to static: {to_static}")
-
 
         if  self.shape_strategy == 'static' and not to_static:
             # static -> dynamic
@@ -312,7 +308,6 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.block_signals(False)
 
 
-
     def size_modified(self, value: int) -> None:
         """User modified width/height
         """
@@ -320,14 +315,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.update_resolution_text()
         self.spinbox_w.lineEdit().deselect()
         self.spinbox_h.lineEdit().deselect()
-        if self.shape_strategy == 'static':
-            # send a signal to other widgets, size doesn't matter
-            # but let's send something  coherent
-            self.signal_shape_strategy_changed.emit(
-                'static', (self.spinbox_w.value(), self.spinbox_h.value())
-            )
         self.combobox_resolution.blockSignals(False)
-
 
 
     def resolution_selected(self, index: int) -> None:
@@ -335,45 +323,16 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         Update the size widgets
         """
         current_text: str = self.combobox_resolution.currentText()
-        w, h = PREDEFINED_SIZE[current_text]
-        self.spinbox_w.blockSignals(True)
-        self.spinbox_h.blockSignals(True)
-        self.spinbox_w.setValue(w)
-        self.spinbox_h.setValue(h)
-        self.spinbox_w.lineEdit().deselect()
-        self.spinbox_h.lineEdit().deselect()
-
-        # if self.shape_strategy == 'static':
-        #     # send a signal to other widgets, size doesn't matter
-        #     # but let's send something  coherent
-        #     self.signal_shape_strategy_changed.emit('static', (w, h))
-
-        self.spinbox_w.blockSignals(False)
-        self.spinbox_h.blockSignals(False)
-
-
-    def tensorrt_static_shape_modified(self, size: tuple[int, int]) -> None:
-        print(f"save tensorrt shape: {size}")
-        self._tensorrt_static_shape = size
-
-
-    # def tensorrt_conversion_enabled(self, enabled: bool) -> None:
-    #     print(f"onnx: trensorrt conversion changed to {enabled}")
-    #     if enabled:
-    #         self.radiobutton_fp32.setChecked(True)
-    #     self.radiobutton_fp32.setEnabled(not enabled)
-    #     self.radiobutton_fp16.setEnabled(not enabled)
-
-    #     self.block_signals(True)
-    #     if enabled:
-    #         # self.groupbox_onnx_conversion.setCheckable(False)
-    #         self.set_selected(False)
-
-    #     else:
-    #         self.set_selected(True)
-    #         # self.groupbox_onnx_conversion.setCheckable(True)
-    #         # self.groupbox_onnx_conversion.setChecked(True)
-    #     self.block_signals(False)
+        if current_text:
+            w, h = PREDEFINED_SIZE[current_text]
+            self.spinbox_w.blockSignals(True)
+            self.spinbox_h.blockSignals(True)
+            self.spinbox_w.setValue(w)
+            self.spinbox_h.setValue(h)
+            self.spinbox_w.lineEdit().deselect()
+            self.spinbox_h.lineEdit().deselect()
+            self.spinbox_w.blockSignals(False)
+            self.spinbox_h.blockSignals(False)
 
 
     def values(self) -> dict[str, str | tuple[int, int]]:

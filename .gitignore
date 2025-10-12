@@ -178,9 +178,7 @@ cython_debug/
 **/*.mxf
 cache/
 frames/
-external/*
-1_audio.bat
-2_deinterlace.bat
+external/
 profiling.bat
 result.json
 concat*.bat
@@ -188,3 +186,7 @@ davinci/
 inputs
 cg/*.drp
 ui/designer/*.py
+*.pth
+*.onnx
+*.trtzip
+*.safetensor

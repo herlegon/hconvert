@@ -1,25 +1,17 @@
 from __future__ import annotations
 from functools import partial
-from typing import Any, Literal
+from typing import Literal
 from pynnlib import (
     NnModel,
     NnFrameworkType,
-    PyTorchModel,
 )
-
 from PySide6.QtCore import (
-    QCoreApplication,
     Signal,
+    Qt,
 )
-
 from PySide6.QtWidgets import (
-    QTableWidgetItem,
     QWidget,
     QCheckBox,
-    QHBoxLayout,
-    QSlider,
-    QAbstractSpinBox,
-    QLineEdit,
     QComboBox,
     QSpinBox,
 )
@@ -32,10 +24,9 @@ from .common import (
     ShapeStrategyName,
 )
 
+from pynnlib.utils.p_print import *
 
 class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
-    signal_static_shape_modified: Signal = Signal(object)
-
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -47,23 +38,12 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             "opt": DEFAULT_SIZE,
             "max": DEFAULT_SIZE,
         }
-        self._strategy_constraint: Literal['static', 'fixed'] = 'fixed'
+        self._strategy_constraint: Literal['dynamic', 'static', 'fixed'] = 'fixed'
 
         self.editable_widgets: tuple[type[QWidget]] = (
-            self.combobox_gpu,
-            self.checkbox_fp16,
-            self.checkbox_bf16,
-            self.checkbox_dynamic,
-            self.checkbox_fixed,
-            self.spinbox_w_min,
-            self.spinbox_h_min,
-            self.combobox_resolution_min,
-            self.spinbox_w_opt,
-            self.spinbox_h_opt,
-            self.combobox_resolution_opt,
-            self.spinbox_w_max,
-            self.spinbox_h_max,
-            self.combobox_resolution_max,
+            *self.findChildren(QComboBox),
+            *self.findChildren(QCheckBox),
+            *self.findChildren(QSpinBox),
         )
 
         self.size_widgets: tuple[tuple[QSpinBox, QSpinBox, QComboBox]] = (
@@ -71,7 +51,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             (self.spinbox_w_opt, self.spinbox_h_opt, self.combobox_resolution_opt),
             (self.spinbox_w_max, self.spinbox_h_max, self.combobox_resolution_max),
         )
-
         for sb_w, sb_h, cb_r in self.size_widgets:
             sb_w.setValue(DEFAULT_SIZE[0])
             sb_h.setValue(DEFAULT_SIZE[1])
@@ -84,7 +63,8 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         self.adjustSize()
 
         # Signals
-        self.checkbox_fixed.toggled.connect(self.shape_strategy_changed)
+        self.radiobutton_fixed.toggled.connect(self.shape_strategy_changed)
+        self.radiobutton_static.toggled.connect(self.shape_strategy_changed)
         for sw in self.size_widgets:
             # w, h, resolution
             sb_w, sb_h, cb_r = sw
@@ -122,8 +102,8 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         self.checkbox_fp16.setChecked(False)
         self.checkbox_bf16.setChecked(False)
 
-        self.checkbox_dynamic.setChecked(False)
-        self.checkbox_fixed.setChecked(False)
+        self.radiobutton_dynamic.setChecked(False)
+        self.radiobutton_fixed.setChecked(False)
 
         for sb_w, sb_h, cb_r in self.size_widgets:
             sb_w.lineEdit().clear()
@@ -156,18 +136,12 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
     def update_size_widgets(self, strategy: ShapeStrategyName) -> None:
-        self.checkbox_fixed.setText(
-            "static" if self._strategy_constraint == 'static' else "fixed"
-        )
-
         if strategy == 'static':
-            self.checkbox_fixed.setChecked(True)
-            self.checkbox_dynamic.setCheckable(False)
-            self.checkbox_dynamic.setEnabled(False)
-
+            self.radiobutton_static.setChecked(True)
+        elif strategy == 'fixed':
+            self.radiobutton_fixed.setChecked(True)
         else:
-            self.checkbox_dynamic.setEnabled(True)
-            self.checkbox_dynamic.setCheckable(True)
+            self.radiobutton_dynamic.setCheckable(True)
 
         if strategy == 'dynamic':
             for i, (sb_w, sb_h, cb_r) in enumerate(self.size_widgets):
@@ -221,7 +195,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             self.clear()
             return
 
-        print(model.framework.type)
         is_torch_to_tensorrt_possible = bool(
             model.framework.type == NnFrameworkType.PYTORCH
             and model.arch.to_onnx is not None
@@ -230,35 +203,63 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             model.framework.type == NnFrameworkType.ONNX
             and model.arch.to_tensorrt is not None
         )
-        print(f"enable_conversion")
+        print(lightcyan(f"tensorrt_conversion_widget: enable_conversion(model)"))
         print(f"  torch-> tensorrt: {is_torch_to_tensorrt_possible}")
         print(f"  onnx-> tensorrt: {is_onnx_to_tensorrt_possible}")
-
-
-        if not is_torch_to_tensorrt_possible and not is_onnx_to_tensorrt_possible:
-            print("not supported")
-            self.setEnabled(False)
-            return
+        # if not is_torch_to_tensorrt_possible and not is_onnx_to_tensorrt_possible:
+        #     print("  not supported")
+        #     self.setEnabled(False)
+        #     return
 
         # Enable conversion
-        print(f"enable_conversion: model strategy: {model.shape_strategy}")
         self.block_signals(True)
+
         # Use the default shape strategy
         self.save_current_sizes()
         if model.framework.type == NnFrameworkType.ONNX:
-            if model.shape_strategy.type == 'static':
-                self._strategy_constraint = 'static'
-            else:
-                self._strategy_constraint = 'fixed'
+            self._strategy_constraint = 'static' if model.shape_strategy.type == 'static' else 'fixed'
 
             self.shape_strategy = model.shape_strategy.type
             self.update_size_widgets(self.shape_strategy)
+            if self.shape_strategy == 'static':
+                for r in (self.radiobutton_fixed, self.radiobutton_dynamic):
+                    r.setCheckable(False)
+                    r.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+                    r.setEnabled(False)
+
+                    self.radiobutton_static.setCheckable(False)
+                    self.radiobutton_static.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+                    self.radiobutton_static.setChecked(True)
+
+            else:
+                for r in (self.radiobutton_fixed, self.radiobutton_dynamic):
+                    r.setEnabled(True)
+                    r.setCheckable(True)
+                    r.setAttribute(Qt.WA_TransparentForMouseEvents, False)
+
+                    self.radiobutton_static.setCheckable(False)
+                    self.radiobutton_static.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+                    self.radiobutton_static.setEnabled(False)
+
+        elif model.framework.type == NnFrameworkType.PYTORCH:
+            # Set default strategy to dynamic
+            #
+
+            self.shape_strategy = 'dynamic'
+            for r in (
+                self.radiobutton_static,
+                self.radiobutton_fixed,
+                self.radiobutton_dynamic,
+            ):
+                r.setEnabled(True)
+                r.setCheckable(True)
+                r.setAttribute(Qt.WA_TransparentForMouseEvents, False)
 
         else:
-            self.shape_strategy = 'dynamic'
+            raise NotImplementedError(f"{model.framework.type}")
 
         # Fill the size values
-        if self.shape_strategy == 'static':
+        if self.shape_strategy in ('fixed', 'static'):
             self.spinbox_w_opt.setValue(model.shape_strategy.opt_size[0])
             self.spinbox_h_opt.setValue(model.shape_strategy.opt_size[1])
             self.update_opt_resolution_text()
@@ -270,42 +271,44 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             self.update_resolution_text()
             self.restore_sizes()
 
-
-        is_dynamic: bool = bool(self.shape_strategy == 'dynamic')
-        self.checkbox_dynamic.setChecked(is_dynamic)
-        self.checkbox_fixed.setChecked(not is_dynamic)
+        if self.shape_strategy == 'dynamic':
+            self.radiobutton_dynamic.setChecked(True)
+        elif self.shape_strategy == 'fixed':
+            self.radiobutton_fixed.setChecked(True)
+        elif self.shape_strategy == 'static':
+            self.radiobutton_fixed.setChecked(True)
 
         self.setEnabled(True)
         self.block_signals(False)
 
 
 
-    def shape_strategy_changed(self, state: bool) -> None:
+    def shape_strategy_changed(self) -> None:
         """User action to set from/to dynamic, fixed/static
         """
         self.block_signals(True)
-        to_fixed = self.checkbox_fixed.isChecked()
-        print(f"current strategy: {self.shape_strategy}, to fixed: {to_fixed}")
+        current_strategy: str = self.shape_strategy
+        to_fixed: bool = self.radiobutton_fixed.isChecked()
+        to_static: bool = self.radiobutton_static.isChecked()
+        print(f"current strategy: {current_strategy}, to fixed: {to_fixed}, to static: {to_static}")
 
-        if self.shape_strategy != 'dynamic' and not to_fixed:
+        if current_strategy != 'dynamic' and not to_fixed and not to_static:
             # fixed/static -> dynamic
             print("shape_strategy_changed: fixed/static -> dynamic")
             self.shape_strategy = 'dynamic'
             self.update_size_widgets(strategy=self.shape_strategy)
             self.restore_sizes(ignore_opt=True)
 
-        elif self.shape_strategy == 'dynamic' and to_fixed:
+        elif current_strategy == 'dynamic' and (to_fixed or to_static):
             print("shape_strategy_changed: dynamic -> fixed")
             # dynamic -> fixed
             # Save to restor min/max values when changing from fixed to dynamic
             self.save_current_sizes()
-            self.shape_strategy = (
-                'static' if self._strategy_constraint == 'static' else 'fixed'
-            )
+            self.shape_strategy = 'static' if to_static else 'fixed'
             self.update_size_widgets(strategy=self.shape_strategy)
             # self.restore_sizes(ignore_opt=True)
 
-        print(f"  new strategy: {self.shape_strategy}")
+        print(lightgreen(f"  new strategy: {self.shape_strategy}"))
         self.block_signals(False)
 
 
@@ -324,8 +327,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         # Emit a signal to infor Onnx conversion that the
         # current static/fixed shape has been modified
         # It will be used to set the default size value for other widgets
-        if self.shape_strategy in ('fixed', 'static'):
-            self.signal_static_shape_modified.emit(size)
 
         cb_r.blockSignals(False)
 
@@ -349,8 +350,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         # Emit a signal to infor Onnx conversion that the
         # current static/fixed shape has been modified
         # It will be used to set the default size value for other widgets
-        if self.shape_strategy in ('fixed', 'static'):
-            self.signal_static_shape_modified.emit((w, h))
 
         sb_w.blockSignals(False)
         sp_h.blockSignals(False)
@@ -364,52 +363,48 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
 
-    def constraint_shape_strategy(
-        self,
-        strategy: ShapeStrategyName,
-        size: tuple[int, int],
-    ) -> None:
-        print(f" tensorrt constraint_shape_strategy: {strategy}, size: {size}, current strategy: {self.shape_strategy}")
-        if strategy != self.shape_strategy:
-            print("  update")
-            self.block_signals(True)
-            # Update constraint
-            self._strategy_constraint = (
-                'static' if strategy == 'static' else 'fixed'
-            )
-            self.checkbox_fixed.setText(
-                "static" if self._strategy_constraint == 'static' else "fixed"
-            )
+    # def constraint_shape_strategy(
+    #     self,
+    #     strategy: ShapeStrategyName,
+    #     size: tuple[int, int],
+    # ) -> None:
+    #     print(f" tensorrt constraint_shape_strategy: {strategy}, size: {size}, current strategy: {self.shape_strategy}")
+    #     if strategy != self.shape_strategy:
+    #         print("  update")
+    #         self.block_signals(True)
+    #         # Update constraint
+    #         self._strategy_constraint = (
+    #             'static' if strategy == 'static' else 'fixed'
+    #         )
+    #         # Modify shape strategy
+    #         if strategy == 'static':
+    #             print("force to static")
+    #             self.save_current_sizes()
+    #             self.shape_strategy = 'static'
 
-            # Modify shape strategy
-            if strategy == 'static':
-                print("force to static")
-                self.save_current_sizes()
-                self.shape_strategy = 'static'
+    #         elif self.shape_strategy != 'dynamic':
+    #             print("force to fixed")
+    #             self.shape_strategy = 'fixed'
 
-            elif self.shape_strategy != 'dynamic':
-                print("force to fixed")
-                self.shape_strategy = 'fixed'
+    #         self.update_size_widgets(strategy=self.shape_strategy)
+    #         if self.shape_strategy in ('static', 'fixed'):
+    #             self.spinbox_w_opt.setValue(size[0])
+    #             self.spinbox_h_opt.setValue(size[1])
+    #             self.update_opt_resolution_text()
 
-            self.update_size_widgets(strategy=self.shape_strategy)
-            if self.shape_strategy in ('static', 'fixed'):
-                self.spinbox_w_opt.setValue(size[0])
-                self.spinbox_h_opt.setValue(size[1])
-                self.update_opt_resolution_text()
+    #         # When in static, the size is constrainted by the ONNX model
+    #         if self.shape_strategy == 'static':
+    #             self.set_opt_modifications_enabled(False)
+    #         else:
+    #             self.set_opt_modifications_enabled(True)
+    #         self.block_signals(False)
 
-            # When in static, the size is constrainted by the ONNX model
-            if self.shape_strategy == 'static':
-                self.set_opt_modifications_enabled(False)
-            else:
-                self.set_opt_modifications_enabled(True)
-            self.block_signals(False)
-
-        if self.shape_strategy == 'static':
-            self.block_signals(True)
-            self.spinbox_w_opt.setValue(size[0])
-            self.spinbox_h_opt.setValue(size[1])
-            self.update_opt_resolution_text()
-            self.block_signals(False)
+    #     if self.shape_strategy == 'static':
+    #         self.block_signals(True)
+    #         self.spinbox_w_opt.setValue(size[0])
+    #         self.spinbox_h_opt.setValue(size[1])
+    #         self.update_opt_resolution_text()
+    #         self.block_signals(False)
 
 
     def validate_shapes(self) -> None:
@@ -443,18 +438,26 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
     def values(self) -> dict[str, str | tuple[int, int]]:
+        gpu: str = ""
+        if self._gpus:
+            gpu = self._gpus.get(self.combobox_gpu.currentText(), "")
+
         dtypes: list[str] = ["fp32"]
         if self.checkbox_fp16.isChecked():
             dtypes.append("fp16")
         if self.checkbox_bf16.isChecked():
             dtypes.append("bf16")
-        gpu: str = ""
-        if self._gpus:
-            gpu = self._gpus.get(self.combobox_gpu.currentText(), "")
+
+        shape_strategy: str = 'dynamic'
+        if self.radiobutton_fixed.isChecked():
+            shape_strategy = 'fixed'
+        elif self.radiobutton_static.isChecked():
+            shape_strategy = 'static'
+
         values: dict[str, str | int | tuple[int, int]] = {
             'gpu': gpu,
             'dtypes': dtypes,
-            'shape_strategy': 'fixed' if self.checkbox_fixed.isChecked() else 'dynamic',
+            'shape_strategy': shape_strategy,
             'shape_min': (self.spinbox_w_min.value(), self.spinbox_h_min.value()),
             'shape_opt': (self.spinbox_w_opt.value(), self.spinbox_h_opt.value()),
             'shape_max': (self.spinbox_w_max.value(), self.spinbox_h_max.value()),

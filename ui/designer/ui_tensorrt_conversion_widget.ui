@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>446</width>
+    <width>459</width>
     <height>246</height>
    </rect>
   </property>
@@ -62,7 +62,7 @@
      <item row="1" column="0">
       <widget class="QLabel" name="label_version">
        <property name="text">
-        <string>ONNX version</string>
+        <string>ONNX  opset</string>
        </property>
       </widget>
      </item>
@@ -193,7 +193,7 @@
         <number>9</number>
        </property>
        <item>
-        <widget class="QRadioButton" name="checkbox_dynamic">
+        <widget class="QRadioButton" name="radiobutton_dynamic">
          <property name="text">
           <string>dynamic</string>
          </property>
@@ -209,7 +209,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QRadioButton" name="checkbox_fixed">
+        <widget class="QRadioButton" name="radiobutton_fixed">
          <property name="text">
           <string>fixed</string>
          </property>
@@ -225,7 +225,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QRadioButton" name="checkbox_static">
+        <widget class="QRadioButton" name="radiobutton_static">
          <property name="text">
           <string>static</string>
          </property>
@@ -241,7 +241,7 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer_7">
+        <spacer name="horizontalSpacer_shape_strategy">
          <property name="orientation">
           <enum>Qt::Orientation::Horizontal</enum>
          </property>
@@ -322,7 +322,7 @@
         <widget class="QComboBox" name="combobox_resolution_min">
          <property name="minimumSize">
           <size>
-           <width>130</width>
+           <width>120</width>
            <height>0</height>
           </size>
          </property>
@@ -341,9 +341,6 @@
          <property name="frame">
           <bool>true</bool>
          </property>
-         <property name="labelDrawingMode">
-          <enum>QComboBox::LabelDrawingMode::UseStyle</enum>
-         </property>
          <item>
           <property name="text">
            <string>2160p (4K UHDTV)</string>
@@ -357,7 +354,7 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer_8">
+        <spacer name="horizontalSpacer_min">
          <property name="orientation">
           <enum>Qt::Orientation::Horizontal</enum>
          </property>
@@ -457,9 +454,6 @@
          <property name="frame">
           <bool>true</bool>
          </property>
-         <property name="labelDrawingMode">
-          <enum>QComboBox::LabelDrawingMode::UseStyle</enum>
-         </property>
          <item>
           <property name="text">
            <string>2160p (4K UHDTV)</string>
@@ -473,7 +467,7 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer_9">
+        <spacer name="horizontalSpacer_opt">
          <property name="orientation">
           <enum>Qt::Orientation::Horizontal</enum>
          </property>
@@ -570,9 +564,6 @@
          <property name="frame">
           <bool>true</bool>
          </property>
-         <property name="labelDrawingMode">
-          <enum>QComboBox::LabelDrawingMode::UseStyle</enum>
-         </property>
          <item>
           <property name="text">
            <string>2160p (4K UHDTV)</string>
@@ -586,7 +577,7 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer_10">
+        <spacer name="horizontalSpacer_max">
          <property name="orientation">
           <enum>Qt::Orientation::Horizontal</enum>
          </property>

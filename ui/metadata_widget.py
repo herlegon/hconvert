@@ -39,6 +39,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
             *self.findChildren(QPlainTextEdit, options=Qt.FindChildOption.FindChildrenRecursively),
             *self.findChildren(QTextEdit, options=Qt.FindChildOption.FindChildrenRecursively)
         )
+        self.textedit_comment.setAcceptDrops(False)
 
         self.clear()
 
