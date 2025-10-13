@@ -75,7 +75,6 @@ class Controller(QObject):
         self.signal_progress.emit(
             {'action': 'start', 'progress': 0}
         )
-        print(f"parse_model: {model_fp}")
 
         ext = get_extension(model_fp)
         trt_extensions: tuple[int] = get_supported_model_extensions(NnFrameworkType.TENSORRT)
@@ -86,8 +85,7 @@ class Controller(QObject):
         try:
             self.in_model: NnModel = nnlib.open(model_fp, device=device)
         except Exception as e:
-            print("error")
-            print(str(e))
+            raise ValueError(str(e))
         elapsed = time.time() - start_time
 
         self.signal_progress.emit(
@@ -98,7 +96,7 @@ class Controller(QObject):
         if self.in_model is not None:
             self.signal_model_parsed.emit(model_fp)
         else:
-            self.signal_model_parsed.emit(None)
+            self.signal_model_parsed.emit("")
 
 
 

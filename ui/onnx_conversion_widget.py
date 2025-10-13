@@ -26,10 +26,9 @@ from .designer.ui_onnx_conversion_widget import Ui_OnnxConversionWidget
 
 class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
-    def __init__(self, parent, editable: bool | None = None):
+    def __init__(self, parent):
         super().__init__(parent)
         self.setupUi(self)
-        self.editable: bool | None = editable
         self._saved_shape: tuple[int, int] = DEFAULT_SIZE
         self.shape_strategy: ShapeStrategyName = 'dynamic'
         self._tensorrt_static_shape: tuple[int, int] = (0, 0)
@@ -67,12 +66,11 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
 
     def block_signals(self, b: bool) -> None:
-        if self.editable:
-            self.radiobutton_fp32.blockSignals(b)
-            self.radiobutton_fp16.blockSignals(b)
-            self.spinbox_w.blockSignals(b)
-            self.spinbox_h.blockSignals(b)
-            self.combobox_resolution.blockSignals(b)
+        self.radiobutton_fp32.blockSignals(b)
+        self.radiobutton_fp16.blockSignals(b)
+        self.spinbox_w.blockSignals(b)
+        self.spinbox_h.blockSignals(b)
+        self.combobox_resolution.blockSignals(b)
 
 
     def clear(self) -> None:
@@ -133,27 +131,9 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
     def enable_conversion(self, model: NnModel) -> None:
         """Called when a new model is parsed
         """
-        self.clear()
-
-        # PyTorch only
-        # Conversion must be possible for the arch
-        if (
-            not self.editable
-            or model.framework.type != NnFrameworkType.PYTORCH
-            or model.arch.to_onnx is None
-        ):
-            self.radiobutton_fp32.setChecked(False)
-            self.radiobutton_fp16.setChecked(False)
-            self.radiobutton_dynamic.setChecked(False)
-            self.radiobutton_static.setChecked(False)
+        print("ONNX CONV WIDGET")
+        if model.framework.type != NnFrameworkType.PYTORCH:
             return
-
-        # Enable conversion
-        self.block_signals(True)
-        self.spinbox_opset.lineEdit().setText(str(self.spinbox_opset.value()))
-        self.spinbox_opset.lineEdit().setReadOnly(False)
-        self.spinbox_opset.setReadOnly(False)
-        self.spinbox_opset.setEnabled(True)
 
         # Datatype
         self.radiobutton_fp32.setChecked(True)
@@ -162,19 +142,20 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             self.radiobutton_fp32.setCheckable(True)
         else:
             self.radiobutton_fp16.setCheckable(False)
+            self.radiobutton_fp32.setChecked(True)
             self.radiobutton_fp32.setCheckable(False)
 
         # Shape strategy
-        self.shape_strategy == 'static' if 'static' in model.shape_strategy.type else 'dynamic'
-        self.radiobutton_dynamic.setChecked(bool(self.shape_strategy == 'dynamic'))
+        # self.shape_strategy == 'static' if 'static' in model.shape_strategy.type else 'dynamic'
+        # self.radiobutton_dynamic.setChecked(bool(self.shape_strategy == 'dynamic'))
 
-        self.update_size_widgets(self.shape_strategy)
-        if self.shape_strategy == 'static':
-            # self.spinbox_h.lineEdit().setText(str(self.spinbox_h.value()))
-            # self.spinbox_w.lineEdit().setText(str(self.spinbox_w.value()))
-            self.spinbox_w.setValue(model.shape_strategy.opt_size[0])
-            self.spinbox_h.setValue(model.shape_strategy.opt_size[1])
-            self.update_resolution_text()
+        # self.update_size_widgets(self.shape_strategy)
+        # if self.shape_strategy == 'static':
+        #     # self.spinbox_h.lineEdit().setText(str(self.spinbox_h.value()))
+        #     # self.spinbox_w.lineEdit().setText(str(self.spinbox_w.value()))
+        #     self.spinbox_w.setValue(model.shape_strategy.opt_size[0])
+        #     self.spinbox_h.setValue(model.shape_strategy.opt_size[1])
+        #     self.update_resolution_text()
 
         # Use the size constraints to set min/max values
         size_constraint: SizeConstraint = model.arch.size_constraint
@@ -189,8 +170,6 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             self.spinbox_h.setMinimum(8)
             self.spinbox_h.setSingleStep(1)
 
-        self.setEnabled(True)
-        # Inform other widgets that the size has been modified
         self.size_modified(-1)
         self.block_signals(False)
 

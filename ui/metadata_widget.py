@@ -4,7 +4,6 @@ from pynnlib import (
     NnModel,
 )
 from PySide6.QtCore import (
-    QEvent,
     Qt,
     Signal,
 )
@@ -45,6 +44,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
         for w in self.text_widgets:
             w: QLineEdit | QTextEdit
+            w.setAcceptDrops(False)
             w.textChanged.connect(self.event_edition_started)
         self.textedit_comment.textChanged.connect(self.event_edition_started)
         self.pushbutton_undo.released.connect(self.event_undo)

@@ -81,26 +81,30 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.progress.hide()
 
 
-
     def apply_user_preferences(self, user_preferences: UserPreferences):
         try:
             w: list[int] = user_preferences.settings['window']['geometry']
             self.setGeometry(*w)
         except:
             pass
-        self.widget_conversion.apply_user_preferences(user_preferences)
+        user_prefs = user_preferences.get('user', {})
+        if user_prefs:
+            self.widget_conversion.apply_user_preferences()
         self.show()
 
 
     def get_user_preferences(self) -> dict:
-        preferences = {
+        return {
             'window': {
                 'screen': 0,
                 'geometry': self.geometry().getRect()
             },
-            'user': {},
+            'user': {
+                **self.widget_model_browser.get_user_preferences(),
+                **self.widget_conversion.get_user_preferences(),
+                **self.widget_conversion.widget_select_out_dir.get_user_preferences(),
+            },
         }
-        return preferences
 
 
     def closeEvent(self, event: QCloseEvent):
@@ -159,7 +163,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.widget_onnx_model,
             self.widget_tensorrt_model,
             self.widget_metadata,
-            self.widget_conversion,
         ):
             w.clear()
         self.signal_model_loaded.emit(model_fp)
@@ -227,7 +230,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def event_task_ended(self, exception: str | None) -> None:
-        print("Injection ended")
         # self.setEnabled(True)
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
@@ -251,6 +253,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             conversion_settings: dict[str, dict[str, Any]] = self.widget_conversion.settings()
             if conversion_settings is None:
                 return
+            self.button_convert.setEnabled(False)
             conversion_settings.update({
                 'metadata': self.widget_metadata.values()
             })
@@ -262,8 +265,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             # remove this once backend send ack
             self.button_convert.setText("Cancel")
-            self.button_convert.setEnabled(True)
+
+
+            self.progress.show()
+            self.progress.setRange(0, 0)
+            self.progress.setValue(0)
+
+            self.setEnabled(False)
+
             self.signal_convert_action.emit(conversion_settings)
+            self.button_convert.setEnabled(True)
+
 
         else:
             self.signal_cancel_action.emit()

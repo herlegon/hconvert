@@ -23,6 +23,8 @@ if TYPE_CHECKING:
     from .main_window import MainWindow
 
 
+ConversionChoices = Literal['safetensors', 'onnx', 'tensorrt']
+
 class ConversionWidget(QWidget, Ui_ConversionWidget):
     signal_conversion_selection_changed = Signal()
 
@@ -30,6 +32,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         super().__init__(parent)
         self.setupUi(self)
         self._main_window: MainWindow = None
+        self._initial_selection: ConversionChoices = 'safetensors'
 
         self.setEnabled(False)
         self.adjustSize()
@@ -37,7 +40,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         # Conversion selection changed
         self.radioButton_safetensor.setChecked(True)
         self.radioButton_safetensor.clicked.connect(
-            partial(self.conversion_selection_changed, 'safetensor'))
+            partial(self.conversion_selection_changed, 'safetensors'))
         self.radioButton_onnx.clicked.connect(
             partial(self.conversion_selection_changed, 'onnx'))
         self.radioButton_tensorrt.clicked.connect(
@@ -48,15 +51,16 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         self._main_window = main_window
 
 
-    def apply_user_preferences(self, user_preferences: UserPreferences):
-        try:
-            w: list[int] = user_preferences.settings['window']['geometry']
-            self.setGeometry(*w)
-        except:
-            pass
+    def apply_user_preferences(self, prefs: dict) -> None:
         self.groupBox_onnx.setVisible(False)
         self.groupBox_tensorrt.setVisible(False)
-        self.conversion_selection_changed('safetensor')
+        self._initial_selection = prefs.get('selection', '')
+
+
+    def get_user_preferences(self) -> dict:
+        return {
+            'selected_conversion': self.selected()
+        }
 
 
     def block_signals(self, b: bool) -> None:
@@ -133,24 +137,39 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
                 self.radioButton_tensorrt.setChecked(True)
 
 
-    def conversion_selection_changed(self, k: Literal['safetensor', 'onnx', 'tensorrt']) -> None:
+            if self._initial_selection:
+                if (
+                    self._initial_selection == 'safetensors'
+                    and self.radioButton_safetensor.isEnabled()
+                ):
+                    self.radioButton_safetensor.setChecked(True)
+
+                elif (
+                    self._initial_selection == 'onnx'
+                    and self.radioButton_onnx.isEnabled()
+                ):
+                    self.radioButton_onnx.setChecked(True)
+
+                elif (
+                    self._initial_selection == 'tensorrt'
+                    and self.radioButton_tensorrt.isEnabled()
+                ):
+                    self.radioButton_tensorrt.setChecked(True)
+                self._initial_selection = ""
+
+
+    def conversion_selection_changed(self, k: ConversionChoices) -> None:
         self.block_signals(True)
 
-        if k == 'safetensor':
-            # self.widget_onnx_conversion.set_selected(False)
-            # self.widget_tensorrt_conversion.set_selected(False)
+        if k == 'safetensors':
             self.groupBox_onnx.setVisible(False)
             self.groupBox_tensorrt.setVisible(False)
 
         elif k == 'onnx':
-            # self.widget_tensorrt_conversion.set_selected(False)
-            # self.widget_onnx_conversion.set_selected(True)
             self.groupBox_tensorrt.setVisible(False)
             self.groupBox_onnx.setVisible(True)
 
         elif k == 'tensorrt':
-            # self.widget_onnx_conversion.set_selected(False)
-            # self.widget_tensorrt_conversion.set_selected(True)
             self.groupBox_onnx.setVisible(False)
             self.groupBox_tensorrt.setVisible(True)
 
@@ -173,26 +192,30 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             self.widget_tensorrt_conversion.setEnabled(True)
 
 
+    def selected(self) -> ConversionChoices | None:
+        if self.radioButton_safetensor.isChecked():
+            return 'safetensors'
+        elif self.radioButton_onnx.isChecked():
+            return 'onnx'
+        elif self.radioButton_tensorrt.isChecked():
+            return 'tensorrt'
+        return None
+
+
     def settings(self) -> dict[str, str | dict[str, Any]] | None:
-        settings: dict[str, str | dict[str, Any]] | None =  None
-        if self.radioButton_safetensor:
-            settings = {
-                'to': 'safetensors',
-                'out_dir': self.widget_select_out_dir.values()
-            }
+        selected = self.selected()
+        if selected is None:
+            return None
 
-        elif self.radioButton_onnx:
-            settings = {
-                'to': 'onnx',
-                'values': self.widget_onnx_conversion.values(),
-                'out_dir': self.widget_select_out_dir.values()
-            }
+        settings: dict[str, str | dict[str, Any]] = {
+            'to': self.selected(),
+            'out_dir': self.widget_select_out_dir.values(),
+        }
 
-        elif self.radioButton_tensorrt:
-            settings = {
-                'to': 'tensorrt',
-                'values': self.widget_tensorrt_conversion.values(),
-                'out_dir': self.widget_select_out_dir.values()
-            }
+        if selected == 'onnx':
+            settings['values'] = self.widget_onnx_conversion.values()
+
+        elif selected == 'tensorrt':
+            settings['values'] = self.widget_tensorrt_conversion.values()
 
         return settings
