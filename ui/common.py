@@ -1,6 +1,6 @@
 from typing import Literal
 
-DEFAULT_SIZE: tuple[int] = (720, 540)
+DEFAULT_SIZE: tuple[int, int] = (720, 540)
 
 PREDEFINED_SIZE: dict[str, tuple[int, int]] = {
     "480p 16:9 (DVD)": (854, 480),
@@ -30,11 +30,12 @@ ONNX_DEFAULT_CONVERSION_SETTINGS: dict[str, str | bool | int | tuple[int, int]] 
 
 
 SUPPORTED_MODEL_EXTENSIONS: tuple[str] = (
-    '.engine',
-    '.trt',
-    '.trtzip',
-    '.onnx',
-    '.pt',
-    '.pth',
-    '.safetensors',
+    ".engine",
+    ".trtzip",
+    ".onnx",
+    ".pt",
+    ".pth",
+    ".safetensors",
+    ".param",
+    ".ncnn",
 )

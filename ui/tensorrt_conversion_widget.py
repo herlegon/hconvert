@@ -59,7 +59,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             cb_r.setCurrentIndex(-1)
 
         self.clear()
-        self.set_selected(False)
         self.adjustSize()
 
         # Signals
@@ -75,12 +74,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
     def is_selected(self) -> bool:
         return self.isEnabled()
-
-
-    def set_selected(self, b: bool) -> None:
-        self.block_signals(True)
-        self.setEnabled(b)
-        self.block_signals(False)
 
 
     def set_available_gpus(self, gpus: dict[str, int]) -> None:
@@ -203,6 +196,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             model.framework.type == NnFrameworkType.ONNX
             and model.arch.to_tensorrt is not None
         )
+        print(red("TODO: sysinfo"))
         print(lightcyan(f"tensorrt_conversion_widget: enable_conversion(model)"))
         print(f"  torch-> tensorrt: {is_torch_to_tensorrt_possible}")
         print(f"  onnx-> tensorrt: {is_onnx_to_tensorrt_possible}")
@@ -224,21 +218,21 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             if self.shape_strategy == 'static':
                 for r in (self.radiobutton_fixed, self.radiobutton_dynamic):
                     r.setCheckable(False)
-                    r.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+                    r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
                     r.setEnabled(False)
 
                     self.radiobutton_static.setCheckable(False)
-                    self.radiobutton_static.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+                    self.radiobutton_static.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
                     self.radiobutton_static.setChecked(True)
 
             else:
                 for r in (self.radiobutton_fixed, self.radiobutton_dynamic):
                     r.setEnabled(True)
                     r.setCheckable(True)
-                    r.setAttribute(Qt.WA_TransparentForMouseEvents, False)
+                    r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
 
                     self.radiobutton_static.setCheckable(False)
-                    self.radiobutton_static.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+                    self.radiobutton_static.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
                     self.radiobutton_static.setEnabled(False)
 
         elif model.framework.type == NnFrameworkType.PYTORCH:
@@ -253,7 +247,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             ):
                 r.setEnabled(True)
                 r.setCheckable(True)
-                r.setAttribute(Qt.WA_TransparentForMouseEvents, False)
+                r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
 
         else:
             raise NotImplementedError(f"{model.framework.type}")
@@ -437,7 +431,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         is_valid: bool = bool(len(wrong_values))
 
 
-    def settings(self) -> dict[str, str | tuple[int, int]]:
+    def values(self) -> dict[str, str | tuple[int, int] | list[str]]:
         gpu: str = ""
         if self._gpus:
             gpu = self._gpus.get(self.combobox_gpu.currentText(), "")

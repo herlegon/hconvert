@@ -1,16 +1,20 @@
 from __future__ import annotations
 from pprint import pprint
+from typing import TYPE_CHECKING
 from warnings import warn
+from .common import (
+    predefined_shapes_inv,
+)
 
 from pynnlib import (
     NnModel,
     NnFrameworkType,
 )
+from pynnlib.utils.p_print import *
 
 from PySide6.QtCore import (
     Qt,
 )
-
 from PySide6.QtWidgets import (
     QWidget,
     QCheckBox,
@@ -19,20 +23,16 @@ from PySide6.QtWidgets import (
     QLayout,
     QMainWindow,
 )
-
-from pynnlib.utils.p_print import *
-
 from .designer.ui_tensorrt_widget import Ui_TensorRTWidget
-from .common import (
-    predefined_shapes_inv,
-)
+if TYPE_CHECKING:
+    from .main_window import MainWindow
 
 
 class TensorRTWidget(QWidget, Ui_TensorRTWidget):
     def __init__(self, parent: QMainWindow):
         super().__init__(parent)
         self.setupUi(self)
-        self._parent: QMainWindow = parent
+        self._main_window: MainWindow = None
 
         self.size_widgets: tuple[tuple[QLineEdit, QLineEdit, QLineEdit]] = (
             (self.label_size_min, self.lineedit_shape_min, self.label_resolution_min),
@@ -58,6 +58,10 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
         )
 
 
+    def set_main_window(self, main_window: MainWindow) -> None:
+        self._main_window = main_window
+
+
     def clear(self) -> None:
         for w in (
             *self.findChildren(QCheckBox),
@@ -70,10 +74,6 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
         self.label_resolution_min.clear()
         self.label_resolution_opt.clear()
         self.label_resolution_max.clear()
-
-
-    def set_parent(self, parent: QMainWindow) -> None:
-        self._parent = parent
 
 
     def set_row_visible(self, rows: tuple[int], visible: bool) -> None:

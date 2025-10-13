@@ -23,7 +23,7 @@ def path_split(fp: str) -> tuple[str, str, str]:
     return directory, basename, extension.lower()
 
 
-def os_path_basename(fp: str) -> str:
+def path_basename(fp: str) -> str:
     """Return the basename without extension"""
     return os.path.splitext(os.path.basename(fp))[0]
 

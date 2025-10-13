@@ -113,7 +113,6 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
 
             # Check if the folder is writable
             if is_access_granted(selected, 'w'):
-                print("granted")
                 selected_dir = selected
                 break
 
@@ -129,3 +128,6 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
         self.button_input_folder.setChecked(bool(selected_dir == self.in_model_dir))
         self.lineEdit_out_dir.setText(selected_dir)
 
+
+    def values(self) -> str:
+        return self.lineEdit_out_dir.text()

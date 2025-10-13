@@ -1,6 +1,10 @@
 from __future__ import annotations
-import os
-from typing import Type
+from typing import TYPE_CHECKING
+from backend.path_utils import absolute_path, parent_directory
+from pynnlib import (
+    NnModel,
+)
+
 from PySide6.QtCore import (
     QObject,
     QEvent,
@@ -12,20 +16,19 @@ from PySide6.QtWidgets import (
     QFileDialog,
 )
 
+from .common import SUPPORTED_MODEL_EXTENSIONS
 from .designer.ui_model_browser_widget import Ui_ModelBrowserWidget
-from pynnlib import (
-    NnModel,
-)
+if TYPE_CHECKING:
+    from .main_window import MainWindow
 
 
 class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
     signal_model_loaded = Signal(str)
 
-
     def __init__(self, parent):
         super().__init__(parent)
         self.setupUi(self)
-        self._parent: type[QWidget] = None
+        self._main_window: MainWindow = None
 
         # self.setAcceptDrops(True)
         self.combobox_model_fp.setAcceptDrops(True)
@@ -35,35 +38,26 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         self.combobox_model_fp.clearEditText()
         self.combobox_model_fp.lineEdit().setReadOnly(True)
 
-        self.clear_fields()
+        self.clear()
         self.setEnabled(True)
         self.adjustSize()
 
         self.combobox_model_fp.installEventFilter(self)
         self.button_browse.released.connect(self.model_picker_event)
 
-        self.previous_directory: str = "~/ml_models"
-        self.supported_model_extensions: list[str] = [
-            ".engine",
-            ".trtzip",
-            ".onnx",
-            ".pt",
-            ".pth",
-            ".safetensors",
-            ".param",
-        ]
-
-        extensions = ' '.join([f"*{ext}" for ext in self.supported_model_extensions])
+        self.previous_directory: str = absolute_path("~")
+        extensions = ' '.join([f"*{ext}" for ext in SUPPORTED_MODEL_EXTENSIONS])
         self.file_filter = f"Model ({extensions})"
-        print(self.file_filter)
 
 
-    def set_parent_widget(self, parent: Type[QWidget]) -> None:
-        self._parent = parent
+    def set_main_window(self, main_window: MainWindow) -> None:
+        self._main_window = main_window
 
 
-    def clear_fields(self) -> None:
+    def clear(self) -> None:
+        self.combobox_model_fp.blockSignals(True)
         self.combobox_model_fp.clear()
+        self.combobox_model_fp.blockSignals(False)
 
 
     def update_model_fp(self, model_fp: str) -> None:
@@ -76,11 +70,11 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         if watched == self.combobox_model_fp:
 
             if event.type() == QEvent.Type.DragEnter:
-                self._parent.dragEnterEvent(event)
+                self._main_window.dragEnterEvent(event)
                 return True
 
             elif event.type() == QEvent.Type.Drop:
-                self._parent.dropEvent(event)
+                self._main_window.dropEvent(event)
                 return True
 
             elif event.type() == QEvent.Type.MouseButtonPress:
@@ -94,9 +88,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         file_dialog = QFileDialog(
             parent=self,
             fileMode=QFileDialog.FileMode.ExistingFile,
-            directory=os.path.abspath(
-                os.path.expanduser(self.previous_directory)
-            )
+            directory=absolute_path(self.previous_directory)
         )
         model_fp = file_dialog.getOpenFileName(
             self,
@@ -104,6 +96,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
             filter=self.file_filter
         )[0]
         print(model_fp)
+        self.previous_directory = parent_directory(model_fp)
         self.combobox_model_fp.clear()
         self.combobox_model_fp.setCurrentText(model_fp)
         file_dialog.close()

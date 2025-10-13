@@ -8,6 +8,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import (
     QCloseEvent,
+    QCursor,
     QDragEnterEvent,
     QDropEvent,
 )
@@ -37,6 +38,7 @@ from pynnlib.utils.p_print import *
 class MainWindow(QMainWindow, Ui_MainWindow):
     signal_preview_modified = Signal(dict)
     signal_convert_action = Signal(dict)
+    signal_cancel_action = Signal()
     signal_model_loaded = Signal(str)
     signal_inject_metadata = Signal(dict)
 
@@ -51,16 +53,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.init_gui()
         # set_stylesheet(self)
-        self.widget_tensorrt_model.set_parent(self)
-        self.widget_metadata.signal_inject_metadata.connect(self.event_inject_metadata)
+        self.widget_model_browser.set_main_window(self)
+        self.widget_tensorrt_model.set_main_window(self)
         self.widget_conversion.set_main_window(self)
+
+        self.widget_metadata.signal_inject_metadata.connect(self.event_inject_metadata)
 
         # Signals from the backend
         self.controller.signal_model_parsed.connect(self.event_model_parsed)
         self.controller.signal_task_ended.connect(self.event_task_ended)
-
-        # Other events
-        self.installEventFilter(self)
 
         # Drop model in the windo, whatever the position
         self.setAcceptDrops(True)
@@ -74,13 +75,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def init_gui(self):
         # Put here all initialization settings fro each widget.
         # so that it will be easier for refactoring
-        self.widget_model_browser.set_parent_widget(self)
-
+        self.button_convert.clicked.connect(self.event_convert)
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
         self.progress.hide()
 
-        self.button_convert.clicked.connect(self.event_convert)
 
 
     def apply_user_preferences(self, user_preferences: UserPreferences):
@@ -154,64 +153,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def model_loaded_event(self, model_fp: str) -> None:
         self._is_loading = True
         self.setEnabled(False)
+        QApplication.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
+        for w in (
+            self.widget_pytorch_model,
+            self.widget_onnx_model,
+            self.widget_tensorrt_model,
+            self.widget_metadata,
+            self.widget_conversion,
+        ):
+            w.clear()
         self.signal_model_loaded.emit(model_fp)
 
 
     def adjust_height(self) -> None:
-        print(f"Adjust height")
         self.setMaximumHeight(4096)
         w = self.geometry().width()
         self.centralWidget().adjustSize()
         self.adjustSize()
-        x, y, _, h = self.geometry().getRect()
+        x, y, _, h = list(self.geometry().getRect())
         self.setGeometry(x, y, w, h)
         self.setMaximumHeight(h)
-
-
-
-    def get_conversion_settings(self) -> dict:
-        return {}
-
-
-    def event_convert(self) -> None:
-        # Can be either start or cancel
-        if not self.is_converting:
-            self.is_converting = True
-            self.widget_conversion.started(False)
-            self.button_convert.setEnabled(False)
-            conversion_values: dict[str, dict[str, Any]] = self.widget_conversion.settings()
-            self.signal_convert_action.emit(conversion_values)
-            print("start converting")
-            pprint(conversion_values)
-
-            # remove this once backend send ack
-            self.button_convert.setText("Cancel")
-            self.button_convert.setEnabled(True)
-
-        else:
-            self.widget_conversion.started(True)
-            self.signal_convert_action.emit("stop")
-
-            # remove this once backend send ack
-            self.button_convert.setText("Convert")
-            self.button_convert.setEnabled(True)
-            self.is_converting = False
-
-
-    def event_convert_state_changed(self, status: dict) -> None:
-        # status: dict(
-        #   'state': Literal['stopped', 'running'],
-        #   'type': Literal['progress', 'undetermined'],
-        #   'progress': int,
-        # )
-        if status['state'] == 'stopped':
-            self.button_convert.setText("Convert")
-            self.button_convert.setEnabled(True)
-
-        elif status['state'] == 'running':
-            self.button_convert.setText("Cancel")
-            self.button_convert.setEnabled(True)
-
 
 
     def refresh_model_info(self, model: NnModel) -> None:
@@ -238,6 +199,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def event_model_parsed(self, model_fp: str) -> None:
+        QApplication.restoreOverrideCursor()
         self._is_loading = False
         self.widget_model_browser.update_model_fp(model_fp=model_fp)
         model: NnModel = self.controller.get_in_model_info()
@@ -282,3 +244,47 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 QMessageBox.StandardButton.Ok
             )
 
+
+    def event_convert(self) -> None:
+        # Can be either start or cancel
+        if not self.is_converting:
+            conversion_settings: dict[str, dict[str, Any]] = self.widget_conversion.settings()
+            if conversion_settings is None:
+                return
+            conversion_settings.update({
+                'metadata': self.widget_metadata.values()
+            })
+            print("start converting")
+            pprint(conversion_settings)
+            self.is_converting = True
+            self.widget_conversion.started(False)
+            self.button_convert.setEnabled(False)
+
+            # remove this once backend send ack
+            self.button_convert.setText("Cancel")
+            self.button_convert.setEnabled(True)
+            self.signal_convert_action.emit(conversion_settings)
+
+        else:
+            self.signal_cancel_action.emit()
+            self.widget_conversion.started(True)
+
+            # remove this once backend send ack
+            self.button_convert.setText("Convert")
+            self.button_convert.setEnabled(True)
+            self.is_converting = False
+
+
+    def event_convert_state_changed(self, status: dict) -> None:
+        # status: dict(
+        #   'state': Literal['stopped', 'running'],
+        #   'type': Literal['progress', 'undetermined'],
+        #   'progress': int,
+        # )
+        if status['state'] == 'stopped':
+            self.button_convert.setText("Convert")
+            self.button_convert.setEnabled(True)
+
+        elif status['state'] == 'running':
+            self.button_convert.setText("Cancel")
+            self.button_convert.setEnabled(True)

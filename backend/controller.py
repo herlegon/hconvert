@@ -3,23 +3,24 @@ from copy import deepcopy
 import os
 from pprint import pprint
 import time
+from typing import Any
 from PySide6.QtCore import (
     QObject,
     Signal,
-    Slot,
 )
-
-from backend.path_utils import absolute_path
+from backend.path_utils import absolute_path, path_basename, path_split
 from backend.user_preferences import UserPreferences
 from pynnlib.utils import get_extension
-from ui.main_window import MainWindow
 from pynnlib import (
     NnModel,
     nnlib,
     get_supported_model_extensions,
     NnFrameworkType,
     save_as,
+    ShapeStrategy,
 )
+from pynnlib.utils.p_print import lightcyan
+from ui.main_window import MainWindow
 
 class Controller(QObject):
     signal_progress: Signal = Signal(dict)
@@ -63,6 +64,8 @@ class Controller(QObject):
         view.apply_user_preferences(self.user_preferences)
         self.view.signal_model_loaded.connect(self.parse_model)
         self.view.signal_inject_metadata.connect(self.event_inject_metadata)
+        self.view.signal_convert_action.connect(self.event_start_conversion)
+
         if self.initial_model:
             self.parse_model(self.initial_model)
             self.initial_model = ""
@@ -115,6 +118,57 @@ class Controller(QObject):
 
         self.parse_model(model_fp)
         self.signal_task_ended.emit("")
+
+
+    def event_start_conversion(self, settings: dict[str, str | dict[str, Any]]) -> None:
+        print(lightcyan("Start conversion"))
+        pprint(settings)
+        saved_metadata = deepcopy(self.in_model.metadata)
+        self.in_model.metadata = settings['metadata']
+
+        if settings['to'] == 'safetensors':
+            out_model_fp: str = os.path.join(
+                settings['out_dir'], f"{path_basename(self.in_model.filepath)}.safetensors"
+            )
+            print(f"out path: {out_model_fp}")
+            save_as(model_fp=out_model_fp, model=self.in_model)
+            self.signal_task_ended.emit("")
+
+        elif settings['to'] == 'onnx':
+            # use the first gpu that supports fp16. Requires sysinfo
+            args = settings['values']
+            device: str = 'cpu'
+            if args['dtype'] != 'fp32':
+                device = 'cuda:0'
+
+            exception: str = ""
+            # try:
+            nnlib.convert_to_onnx(
+                model=self.in_model,
+                opset=args['opset'],
+                dtype=args['dtype'],
+                device=device,
+                shape_strategy=ShapeStrategy(
+                    type=args['shape_strategy'],
+                    opt_size=args['shape']
+                ),
+                out_dir=settings['out_dir']
+            )
+            # except Exception as e:
+            #     exception = str(e)
+
+            self.signal_task_ended.emit(exception)
+
+
+        elif settings['to'] == 'tensorrt':
+            self.convert_to_tensorrt(settings['values'])
+
+        self.in_model.metadata = saved_metadata
+
+
+
+    def convert_to_tensorrt(self, args: dict[str, str | dict[str, Any]]):
+        pass
 
 # import asyncio
 # from PySide6.QtCore import QObject, Signal

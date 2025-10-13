@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from backend.path_utils import get_extension, os_path_basename
+from backend.path_utils import get_extension, path_basename
 
 
 

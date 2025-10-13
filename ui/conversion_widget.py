@@ -8,6 +8,7 @@ from pynnlib import (
     NnFrameworkType,
     SizeConstraint,
 )
+from pynnlib.utils.p_print import *
 
 from PySide6.QtCore import (
     Qt,
@@ -17,10 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QMainWindow,
 )
-
-from pynnlib.utils.p_print import *
 from .designer.ui_conversion_widget import Ui_ConversionWidget
-
 if TYPE_CHECKING:
     from .main_window import MainWindow
 
@@ -72,7 +70,12 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
     def clear(self) -> None:
         self.block_signals(True)
-
+        for w in (
+            self.widget_onnx_conversion,
+            self.widget_tensorrt_conversion,
+            self.widget_select_out_dir,
+        ):
+            w.clear()
         self.block_signals(False)
 
 
@@ -80,7 +83,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         self.setMaximumHeight(4096)
         w = self.geometry().width()
         self.adjustSize()
-        x, y, _, h = self.geometry().getRect()
+        x, y, _, h = list(self.geometry().getRect())
         self.setGeometry(x, y, w, h)
         self.setMaximumHeight(h)
 
@@ -134,20 +137,20 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         self.block_signals(True)
 
         if k == 'safetensor':
-            self.widget_onnx_conversion.set_selected(False)
-            self.widget_tensorrt_conversion.set_selected(False)
+            # self.widget_onnx_conversion.set_selected(False)
+            # self.widget_tensorrt_conversion.set_selected(False)
             self.groupBox_onnx.setVisible(False)
             self.groupBox_tensorrt.setVisible(False)
 
         elif k == 'onnx':
-            self.widget_tensorrt_conversion.set_selected(False)
-            self.widget_onnx_conversion.set_selected(True)
+            # self.widget_tensorrt_conversion.set_selected(False)
+            # self.widget_onnx_conversion.set_selected(True)
             self.groupBox_tensorrt.setVisible(False)
             self.groupBox_onnx.setVisible(True)
 
         elif k == 'tensorrt':
-            self.widget_onnx_conversion.set_selected(False)
-            self.widget_tensorrt_conversion.set_selected(True)
+            # self.widget_onnx_conversion.set_selected(False)
+            # self.widget_tensorrt_conversion.set_selected(True)
             self.groupBox_onnx.setVisible(False)
             self.groupBox_tensorrt.setVisible(True)
 
@@ -170,8 +173,26 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             self.widget_tensorrt_conversion.setEnabled(True)
 
 
-    def settings(self) -> dict[str, dict[str, Any]]:
-        return {
-                'onnx': self.widget_onnx_conversion.settings(),
-                'tensorrt': self.widget_tensorrt_conversion.settings(),
+    def settings(self) -> dict[str, str | dict[str, Any]] | None:
+        settings: dict[str, str | dict[str, Any]] | None =  None
+        if self.radioButton_safetensor:
+            settings = {
+                'to': 'safetensors',
+                'out_dir': self.widget_select_out_dir.values()
             }
+
+        elif self.radioButton_onnx:
+            settings = {
+                'to': 'onnx',
+                'values': self.widget_onnx_conversion.values(),
+                'out_dir': self.widget_select_out_dir.values()
+            }
+
+        elif self.radioButton_tensorrt:
+            settings = {
+                'to': 'tensorrt',
+                'values': self.widget_tensorrt_conversion.values(),
+                'out_dir': self.widget_select_out_dir.values()
+            }
+
+        return settings
