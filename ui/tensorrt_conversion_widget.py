@@ -437,7 +437,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         is_valid: bool = bool(len(wrong_values))
 
 
-    def values(self) -> dict[str, str | tuple[int, int]]:
+    def settings(self) -> dict[str, str | tuple[int, int]]:
         gpu: str = ""
         if self._gpus:
             gpu = self._gpus.get(self.combobox_gpu.currentText(), "")

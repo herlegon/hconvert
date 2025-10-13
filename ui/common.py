@@ -21,7 +21,7 @@ predefined_shapes_inv: dict[str, str] = {
 ShapeStrategyName = Literal['static', 'dynamic', 'fixed']
 
 
-ONNX_DEFAULT_CONVERSION_SETTINGS: dict[str, str | bool | int] = {
+ONNX_DEFAULT_CONVERSION_SETTINGS: dict[str, str | bool | int | tuple[int, int]] = {
     'version': 20,
     'dtype': 'fp32',
     'shape_strategy': 'static',
@@ -36,4 +36,5 @@ SUPPORTED_MODEL_EXTENSIONS: tuple[str] = (
     '.onnx',
     '.pt',
     '.pth',
+    '.safetensors',
 )

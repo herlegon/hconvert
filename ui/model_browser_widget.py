@@ -49,7 +49,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
             ".onnx",
             ".pt",
             ".pth",
-            ".safetensor",
+            ".safetensors",
             ".param",
         ]
 

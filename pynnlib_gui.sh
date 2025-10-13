@@ -9,7 +9,8 @@ pyside6-uic ./ui/designer/ui_tensorrt_widget.ui -o ./ui/designer/ui_tensorrt_wid
 
 pyside6-uic ./ui/designer/ui_metadata_widget.ui -o ./ui/designer/ui_metadata_widget.py
 
-pyside6-uic ./ui/designer/ui_save_as_widget.ui -o ./ui/designer/ui_save_as_widget.py
+pyside6-uic ./ui/designer/ui_conversion_widget.ui -o ./ui/designer/ui_conversion_widget.py
+pyside6-uic ./ui/designer/ui_select_out_dir_widget.ui -o ./ui/designer/ui_select_out_dir_widget.py
 pyside6-uic ./ui/designer/ui_onnx_conversion_widget.ui -o ./ui/designer/ui_onnx_conversion_widget.py
 pyside6-uic ./ui/designer/ui_tensorrt_conversion_widget.ui -o ./ui/designer/ui_tensorrt_conversion_widget.py
 

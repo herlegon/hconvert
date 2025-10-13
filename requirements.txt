@@ -59,6 +59,6 @@ torch==2.10.0.dev20251010+cu130
 torchvision==0.25.0.dev20251010+cu130
 # urllib3                  2.4.0
 # viztracer                1.0.4
-
+-e ../pynnlib
 
 # soundfile                0.13.1

@@ -104,26 +104,6 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
 
 
-    # def set_editable(self, editable: bool) -> None:
-    #     # Allow once only
-    #     if self.editable is not None:
-    #         return
-
-    #     self.spinbox_opset.lineEdit().setReadOnly(not editable)
-    #     focus_policy: Qt.FocusPolicy = Qt.FocusPolicy.NoFocus
-    #     if editable:
-    #         focus_policy = Qt.FocusPolicy.WheelFocus
-    #         self.main_layout.removeRow(4)
-    #         self.spinbox_w.lineEdit().setFocusPolicy(focus_policy)
-    #         self.spinbox_h.lineEdit().setFocusPolicy(focus_policy)
-    #     else:
-    #         self.main_layout.removeRow(3)
-    #         self.main_layout.removeRow(1)
-
-    #     self.spinbox_opset.lineEdit().setFocusPolicy(focus_policy)
-    #     self.editable = editable
-    #     self.clear()
-
 
     def is_selected(self) -> bool:
         return self.isEnabled()
@@ -335,7 +315,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             self.spinbox_h.blockSignals(False)
 
 
-    def values(self) -> dict[str, str | tuple[int, int]]:
+    def settings(self) -> dict[str, str | tuple[int, int]]:
         values: dict[str, str | int | tuple[int, int]] = {
             'opset': self.spinbox_opset.value(),
             'dtype': 'fp32' if self.radiobutton_fp32.isChecked() else 'fp16',

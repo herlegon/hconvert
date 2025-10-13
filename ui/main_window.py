@@ -1,10 +1,6 @@
 from __future__ import annotations
-from functools import partial
-import os
 from pprint import pprint
-import sys
-import time
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any
 from PySide6.QtCore import (
     Signal,
     QThread,
@@ -14,15 +10,14 @@ from PySide6.QtGui import (
     QCloseEvent,
     QDragEnterEvent,
     QDropEvent,
-    QDragMoveEvent,
 )
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
-    QComboBox,
     QMessageBox,
 )
 
+from backend.path_utils import absolute_path, get_extension
 from ui.common import SUPPORTED_MODEL_EXTENSIONS
 
 from .inject_metadata_dialog import inject_metadata_dialog
@@ -57,17 +52,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.init_gui()
         # set_stylesheet(self)
         self.widget_tensorrt_model.set_parent(self)
-
-        # Conversion selection changed
-        self.radioButton_safetensor.setChecked(True)
-        self.radioButton_safetensor.clicked.connect(
-            partial(self.conversion_selection_changed, 'safetensor'))
-        self.radioButton_onnx.clicked.connect(
-            partial(self.conversion_selection_changed, 'onnx'))
-        self.radioButton_tensorrt.clicked.connect(
-            partial(self.conversion_selection_changed, 'tensorrt'))
-
         self.widget_metadata.signal_inject_metadata.connect(self.event_inject_metadata)
+        self.widget_conversion.set_main_window(self)
 
         # Signals from the backend
         self.controller.signal_model_parsed.connect(self.event_model_parsed)
@@ -103,9 +89,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.setGeometry(*w)
         except:
             pass
-        self.groupBox_onnx.setVisible(False)
-        self.groupBox_tensorrt.setVisible(False)
-        self.conversion_selection_changed('safetensor')
+        self.widget_conversion.apply_user_preferences(user_preferences)
         self.show()
 
 
@@ -143,9 +127,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def dropEvent(self, event: QDropEvent):
         if self._is_loading:
             return
-        model_fp: str = os.path.abspath(
-            os.path.expanduser(event.mimeData().urls()[0].toLocalFile())
-        )
+        model_fp: str = absolute_path(event.mimeData().urls()[0].toLocalFile())
         self.widget_model_browser.combobox_model_fp.clear()
         self.widget_model_browser.combobox_model_fp.setCurrentText(model_fp)
         self.model_loaded_event(model_fp=model_fp)
@@ -154,13 +136,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def dragEnterEvent(self, event: QDragEnterEvent):
         if self._is_loading:
             return
+
         is_allowed: bool = False
         if event.mimeData().hasUrls():
             urls = event.mimeData().urls()
             if len(urls) == 1:
-                extension = os.path.splitext(
-                    os.path.abspath(os.path.expanduser(urls[0].toLocalFile()))
-                )[1].lower()
+                extension = get_extension(absolute_path(urls[0].toLocalFile()))
                 if extension in SUPPORTED_MODEL_EXTENSIONS:
                     event.acceptProposedAction()
                     is_allowed = True
@@ -177,7 +158,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def adjust_height(self) -> None:
-        self._is_resizing = True
+        print(f"Adjust height")
         self.setMaximumHeight(4096)
         w = self.geometry().width()
         self.centralWidget().adjustSize()
@@ -187,51 +168,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setMaximumHeight(h)
 
 
-    def conversion_selection_changed(self, k: Literal['safetensor', 'onnx', 'tensorrt']) -> None:
-        self.block_conversion_signals(True)
-
-        if k == 'safetensor':
-            self.widget_onnx_conversion.set_selected(False)
-            self.widget_tensorrt_conversion.set_selected(False)
-            self.groupBox_onnx.setVisible(False)
-            self.groupBox_tensorrt.setVisible(False)
-            self.adjust_height()
-
-        elif k == 'onnx':
-            self.widget_tensorrt_conversion.set_selected(False)
-            self.widget_onnx_conversion.set_selected(True)
-            self.groupBox_tensorrt.setVisible(False)
-            self.groupBox_onnx.setVisible(True)
-            self.adjust_height()
-
-        elif k == 'tensorrt':
-            self.widget_onnx_conversion.set_selected(False)
-            self.widget_tensorrt_conversion.set_selected(True)
-            self.groupBox_onnx.setVisible(False)
-            self.groupBox_tensorrt.setVisible(True)
-            self.adjust_height()
-
-        self.block_conversion_signals(False)
-
 
     def get_conversion_settings(self) -> dict:
         return {}
-
-
-
 
 
     def event_convert(self) -> None:
         # Can be either start or cancel
         if not self.is_converting:
             self.is_converting = True
-            self.widget_onnx_conversion.setEnabled(False)
-            self.widget_tensorrt_conversion.setEnabled(False)
+            self.widget_conversion.started(False)
             self.button_convert.setEnabled(False)
-            conversion_values: dict[str, dict[str, Any]] = {
-                'onnx': self.widget_onnx_conversion.values(),
-                'tensorrt': self.widget_tensorrt_conversion.values(),
-            }
+            conversion_values: dict[str, dict[str, Any]] = self.widget_conversion.settings()
             self.signal_convert_action.emit(conversion_values)
             print("start converting")
             pprint(conversion_values)
@@ -241,8 +189,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.button_convert.setEnabled(True)
 
         else:
-            self.widget_onnx_conversion.setEnabled(True)
-            self.widget_tensorrt_conversion.setEnabled(True)
+            self.widget_conversion.started(True)
             self.signal_convert_action.emit("stop")
 
             # remove this once backend send ack
@@ -265,13 +212,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.button_convert.setText("Cancel")
             self.button_convert.setEnabled(True)
 
-    def block_conversion_signals(self, b: bool) -> None:
-        for r in (
-            self.radioButton_safetensor,
-            self.radioButton_onnx,
-            self.radioButton_tensorrt,
-        ):
-            r.blockSignals(b)
 
 
     def refresh_model_info(self, model: NnModel) -> None:
@@ -279,67 +219,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if model is None:
             self.widget_onnx_model.hide()
             self.widget_tensorrt_model.hide()
-            self.widget_save_as.setEnabled(False)
 
         elif model.framework.type == NnFrameworkType.PYTORCH:
             self.widget_onnx_model.hide()
             self.widget_tensorrt_model.hide()
-            self.widget_save_as.setEnabled(True)
 
         elif model.framework.type == NnFrameworkType.ONNX:
             self.widget_onnx_model.show()
             self.widget_tensorrt_model.hide()
-            self.widget_save_as.setEnabled(True)
 
         if model.framework.type == NnFrameworkType.TENSORRT:
             self.widget_onnx_model.hide()
             self.widget_tensorrt_model.show()
-            self.widget_save_as.setEnabled(False)
 
         self.widget_onnx_model.refresh_model_info(model)
         self.widget_tensorrt_model.refresh_model_info(model)
         self.widget_metadata.refresh_model_info(model)
 
-        self.widget_save_as.refresh_model_info(model)
-
 
     def event_model_parsed(self, model_fp: str) -> None:
         self._is_loading = False
         self.widget_model_browser.update_model_fp(model_fp=model_fp)
-
         model: NnModel = self.controller.get_in_model_info()
 
         self.setEnabled(True)
         self.refresh_model_info(model=model)
-
-        # TODO: disable this if not available
-        self.widget_tensorrt_conversion.enable_conversion(model)
-
-        # Conversion selection
-        # todo: get previous checked
-        self.block_conversion_signals(True)
-        self.radioButton_safetensor.setEnabled(False)
-        self.radioButton_safetensor.setChecked(False)
-        self.radioButton_onnx.setEnabled(False)
-        self.radioButton_onnx.setChecked(False)
-        self.radioButton_tensorrt.setEnabled(False)
-        self.radioButton_tensorrt.setChecked(False)
-        self.block_conversion_signals(False)
-        if model is not None:
-            if model.framework.type == NnFrameworkType.PYTORCH:
-                self.radioButton_safetensor.setEnabled(True)
-                self.radioButton_onnx.setEnabled(True)
-                self.radioButton_tensorrt.setEnabled(True)
-                # self.radioButton_safetensor.setChecked(True)
-
-            elif model.framework.type == NnFrameworkType.ONNX:
-                self.radioButton_safetensor.setEnabled(False)
-                self.radioButton_onnx.setEnabled(False)
-                self.radioButton_tensorrt.setEnabled(True)
-                self.radioButton_tensorrt.setChecked(True)
-
-        self.widget_save_as.set_output_filename(model)
-
+        self.widget_conversion.refresh_conversion_selection(model=model)
         self.adjust_height()
 
 

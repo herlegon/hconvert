@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 import tempfile
 from typing import Literal
 
@@ -11,11 +10,11 @@ pathAccess: dict = {
 }
 
 
-def is_access_granted(path: str | Path, access: Literal['r', 'w', 'rw']):
+def is_access_granted(path: str, access: Literal['r', 'w', 'rw']):
     return os.access(str(path), mode=pathAccess[access])
 
 
-def path_split(fp: str | Path) -> tuple[str, str, str]:
+def path_split(fp: str) -> tuple[str, str, str]:
     """Returns the [directory, basename, extension]
     of the given filepath.
     """
@@ -24,7 +23,7 @@ def path_split(fp: str | Path) -> tuple[str, str, str]:
     return directory, basename, extension.lower()
 
 
-def os_path_basename(fp: str | Path) -> str:
+def os_path_basename(fp: str) -> str:
     """Return the basename without extension"""
     return os.path.splitext(os.path.basename(fp))[0]
 
@@ -34,10 +33,14 @@ def get_extension(fp: str) -> str:
     return os.path.splitext(fp)[1].lower()
 
 
-def absolute_path(path: str | Path) -> str:
+def absolute_path(path: str) -> str:
     if path is not None and path != "":
         return os.path.abspath(os.path.expanduser(str(path)))
     return path
+
+
+def parent_directory(path: str) -> str:
+    return os.path.split(absolute_path(path))[0]
 
 
 def get_app_tempdir() -> str:
