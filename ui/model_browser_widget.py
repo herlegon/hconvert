@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+from pathlib import Path
 from pprint import pprint
 from typing import TYPE_CHECKING
 from backend.path_utils import absolute_path, get_extension, parent_directory
@@ -12,7 +13,10 @@ from PySide6.QtWidgets import (
     QWidget,
     QComboBox,
     QFileDialog,
+    QLineEdit,
 )
+
+from pynnlib.utils.p_print import lightcyan
 
 from .common import SUPPORTED_MODEL_EXTENSIONS
 from .designer.ui_model_browser_widget import Ui_ModelBrowserWidget
@@ -27,11 +31,12 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         super().__init__(parent)
         self.setupUi(self)
         self._main_window: MainWindow = None
+        self.popup_visible = False
 
         # self.setAcceptDrops(True)
         self.combobox_model_fp.setAcceptDrops(True)
         self.combobox_model_fp.setEditable(True)
-        self.combobox_model_fp.setInsertPolicy(QComboBox.InsertPolicy.InsertAtCurrent)
+        self.combobox_model_fp.setInsertPolicy(QComboBox.InsertPolicy.InsertAtTop)
         self.combobox_model_fp.clear()
         self.combobox_model_fp.clearEditText()
         self.combobox_model_fp.lineEdit().setReadOnly(False)
@@ -46,6 +51,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         self.file_filter = f"Model ({extensions})"
 
         self.combobox_model_fp.installEventFilter(self)
+        self.combobox_model_fp.lineEdit().installEventFilter(self)
         self.button_browse.released.connect(self.model_picker_event)
         self.combobox_model_fp.currentIndexChanged.connect(self.event_selection_changed)
 
@@ -63,15 +69,16 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         self.combobox_model_fp.clear()
         self.combobox_model_fp.lineEdit().clear()
         for f in history[:self.max_items]:
+            print(f"try addin: [{f}]")
             if f and os.path.isfile(f) and get_extension(f) in SUPPORTED_MODEL_EXTENSIONS:
-                self.combobox_model_fp.addItem(f)
+                self.combobox_model_fp.addItem(str(Path(f)))
         self.combobox_model_fp.blockSignals(False)
 
 
     def get_user_preferences(self) -> dict:
         return {
             'in_models_history': list([
-                self.combobox_model_fp.itemText(i)
+                Path(self.combobox_model_fp.itemText(i)).as_posix()
                 for i in range(self.combobox_model_fp.count())
             ])
         }
@@ -79,28 +86,44 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
 
     def clear(self) -> None:
         self.combobox_model_fp.blockSignals(True)
+        print(f"{self.__class__} clear")
         self.combobox_model_fp.clear()
         self.combobox_model_fp.blockSignals(False)
 
 
     def update_model_fp(self, model_fp: str = "") -> None:
+        print(lightcyan(f"update_model_fp"))
         self.combobox_model_fp.blockSignals(True)
         if model_fp:
-            self.combobox_model_fp.lineEdit().setText(model_fp)
+            print(f"APpend{model_fp}")
+            model_fp = str(Path(model_fp))
+            # self.combobox_model_fp.lineEdit().setText(model_fp)
+            pprint(list([
+                Path(self.combobox_model_fp.itemText(i)).as_posix()
+                for i in range(self.combobox_model_fp.count())
+            ]))
 
             index: int = self.combobox_model_fp.findText(model_fp)
             if index >= 0:
                 self.combobox_model_fp.removeItem(index)
+                print("already in list")
             self.combobox_model_fp.insertItem(0, model_fp)
             self.combobox_model_fp.setCurrentIndex(0)
 
             while self.combobox_model_fp.count() > self.max_items:
+                print(f"  remove item (> {self.max_items})")
                 self.combobox_model_fp.removeItem(self.combobox_model_fp.count() - 1)
 
             self.previous_directory = parent_directory(model_fp)
 
         else:
+            print("Clear lineedit")
             self.combobox_model_fp.lineEdit().clear()
+
+        pprint(list([
+                Path(self.combobox_model_fp.itemText(i)).as_posix()
+                for i in range(self.combobox_model_fp.count())
+            ]))
 
         self.combobox_model_fp.blockSignals(False)
 
@@ -108,12 +131,12 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
     def event_selection_changed(self, index: int) -> None:
         if index <= 0:
             return
-
+        print("Selection changed!")
         self.combobox_model_fp.blockSignals(True)
         model_fp = self.combobox_model_fp.itemText(index)
-        self.combobox_model_fp.removeItem(index)
-        self.combobox_model_fp.insertItem(0, model_fp)
-        self.combobox_model_fp.setCurrentIndex(0)
+        # self.combobox_model_fp.removeItem(index)
+        # self.combobox_model_fp.insertItem(0, model_fp)
+        # self.combobox_model_fp.setCurrentIndex(0)
         self.combobox_model_fp.blockSignals(False)
         self.signal_model_loaded.emit(model_fp)
 
@@ -137,8 +160,19 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         self.signal_model_loaded.emit(model_fp)
 
 
+    def set_filepath(self, model_fp: str) -> None:
+        # Set combobox lineedit without adding to the combobox
+        # it will be done only once the model is a valid one
+        self.combobox_model_fp.lineEdit().setText(model_fp)
+
+
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        if watched == self.combobox_model_fp:
+        # if isinstance(watched, QComboBox | QLineEdit):
+        #     print(watched)
+        #     print(event)
+        #     print()
+
+        if watched in (self.combobox_model_fp, self.combobox_model_fp.lineEdit()):
 
             if event.type() == QEvent.Type.DragEnter:
                 self._main_window.dragEnterEvent(event)
@@ -149,8 +183,17 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
                 return True
 
             elif event.type() == QEvent.Type.MouseButtonPress:
-                self.model_picker_event()
-                return True
+                if self.popup_visible:
+                    self.combobox_model_fp.hidePopup()
+                    self.popup_visible = False
+                else:
+                    self.combobox_model_fp.showPopup()
+                    self.popup_visible = True
+                # return True
 
+            # elif event.type() == QEvent.Type.Hide:
+            #     self.popup_visible = False
+            # elif event.type() == QEvent.Type.Show:
+            #     self.popup_visible = True
         return super().eventFilter(watched, event)
 

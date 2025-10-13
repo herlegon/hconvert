@@ -34,7 +34,6 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         self._main_window: MainWindow = None
         self._initial_selection: ConversionChoices = 'safetensors'
 
-        self.setEnabled(False)
         self.adjustSize()
 
         # Conversion selection changed
@@ -52,9 +51,12 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
 
     def apply_user_preferences(self, prefs: dict) -> None:
+        print(lightcyan(f"conversionwidget: apply_user_preferences"))
+        pprint(prefs)
         self.groupBox_onnx.setVisible(False)
         self.groupBox_tensorrt.setVisible(False)
         self._initial_selection = prefs.get('selection', '')
+        self.adjust_height()
 
 
     def get_user_preferences(self) -> dict:
@@ -84,6 +86,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
 
     def adjust_height(self) -> None:
+        print(f"{self.__class__}: adjust_height")
         self.setMaximumHeight(4096)
         w = self.geometry().width()
         self.adjustSize()
@@ -108,7 +111,6 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             self.widget_select_out_dir.setEnabled(False)
 
         self.widget_select_out_dir.refresh_model_info(model)
-
 
         # TODO: disable this if not available
         self.widget_tensorrt_conversion.enable_conversion(model)
@@ -156,6 +158,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
                 ):
                     self.radioButton_tensorrt.setChecked(True)
                 self._initial_selection = ""
+                self.adjust_height()
 
 
     def conversion_selection_changed(self, k: ConversionChoices) -> None:
@@ -178,7 +181,8 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             self.block_signals(False)
             return
 
-        self.setEnabled(True)
+        self.adjust_height()
+        self._main_window.adjust_height()
         self.block_signals(False)
 
 

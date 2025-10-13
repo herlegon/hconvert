@@ -57,6 +57,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_tensorrt_model.set_main_window(self)
         self.widget_conversion.set_main_window(self)
 
+        self.widget_model_browser.signal_model_loaded.connect(self.event_model_loaded)
         self.widget_metadata.signal_inject_metadata.connect(self.event_inject_metadata)
 
         # Signals from the backend
@@ -81,28 +82,35 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.progress.hide()
 
 
-    def apply_user_preferences(self, user_preferences: UserPreferences):
+    def apply_user_preferences(self, user_prefs: UserPreferences):
+        settings = user_prefs.settings
         try:
-            w: list[int] = user_preferences.settings['window']['geometry']
+            w: list[int] = settings['window']['geometry']
             self.setGeometry(*w)
         except:
             pass
-        user_prefs = user_preferences.get('user', {})
-        if user_prefs:
-            self.widget_conversion.apply_user_preferences()
+        print("USer preference settings")
+        pprint(settings)
+        user_prefs = settings.get('user', {})
+        for w in (
+            self.widget_model_browser,
+            self.widget_conversion,
+        ):
+            w.apply_user_preferences(user_prefs)
         self.show()
 
 
     def get_user_preferences(self) -> dict:
+        print(f"{self.__class__}:get_user_preferences")
         return {
             'window': {
                 'screen': 0,
-                'geometry': self.geometry().getRect()
+                'geometry': list(self.geometry().getRect())
             },
             'user': {
                 **self.widget_model_browser.get_user_preferences(),
                 **self.widget_conversion.get_user_preferences(),
-                **self.widget_conversion.widget_select_out_dir.get_user_preferences(),
+                # **self.widget_conversion.widget_select_out_dir.get_user_preferences(),
             },
         }
 
@@ -131,9 +139,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if self._is_loading:
             return
         model_fp: str = absolute_path(event.mimeData().urls()[0].toLocalFile())
-        self.widget_model_browser.combobox_model_fp.clear()
-        self.widget_model_browser.combobox_model_fp.setCurrentText(model_fp)
-        self.model_loaded_event(model_fp=model_fp)
+        self.widget_model_browser.set_filepath(model_fp=model_fp)
+        self.event_model_loaded(model_fp=model_fp)
 
 
     def dragEnterEvent(self, event: QDragEnterEvent):
@@ -154,7 +161,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             print("Oh noooo!!!")
 
 
-    def model_loaded_event(self, model_fp: str) -> None:
+    def event_model_loaded(self, model_fp: str) -> None:
         self._is_loading = True
         self.setEnabled(False)
         QApplication.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
@@ -169,6 +176,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def adjust_height(self) -> None:
+        print(f"{self.__class__}: adjust_height")
+
         self.setMaximumHeight(4096)
         w = self.geometry().width()
         self.centralWidget().adjustSize()
