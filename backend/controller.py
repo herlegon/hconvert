@@ -35,10 +35,11 @@ class Controller(QObject):
         self.view: MainWindow = None
 
         self.in_model: NnModel = None
-
         self.initial_model: str = absolute_path(model_fp)
         if not os.path.exists(self.initial_model):
             self.initial_model = ""
+
+        self.is_task_cancellable: bool = False
 
 
     def exit(self):
@@ -50,6 +51,7 @@ class Controller(QObject):
         self.view.signal_model_loaded.connect(self.parse_model)
         self.view.signal_inject_metadata.connect(self.event_inject_metadata)
         self.view.signal_convert_action.connect(self.event_start_conversion)
+        self.view.signal_stop_action.connect(self.event_stop_conversion)
 
         if self.initial_model:
             self.parse_model(self.initial_model)
@@ -57,10 +59,6 @@ class Controller(QObject):
 
 
     def parse_model(self, model_fp: str) -> None:
-        self.signal_progress.emit(
-            {'action': 'start', 'progress': 0}
-        )
-
         ext = get_extension(model_fp)
         trt_extensions: tuple[int] = get_supported_model_extensions(NnFrameworkType.TENSORRT)
 
@@ -103,6 +101,39 @@ class Controller(QObject):
         self.signal_task_ended.emit("")
 
 
+    def emit_start_signal(self, cancellable: bool) -> None:
+        self.is_task_cancellable = cancellable
+        self.signal_progress.emit(
+            {
+                'state': 'running',
+                'type': 'undetermined',
+                'progress': 0,
+                'cancelable': cancellable,
+            }
+        )
+
+    def emit_ended_signal(self) -> None:
+        self.signal_progress.emit(
+            {
+                'state': 'ended',
+                'type': 'undetermined',
+                'progress': 100,
+                'cancelable': True,
+            }
+        )
+
+    def event_stop_conversion(self) -> None:
+        if self.is_task_cancellable:
+            self.signal_progress.emit(
+                {
+                    'state': 'stopped',
+                    'type': 'undetermined',
+                    'progress': 100,
+                    'cancelable': True,
+                }
+            )
+
+
     def event_start_conversion(self, settings: dict[str, str | dict[str, Any]]) -> None:
         print(lightcyan("Start conversion"))
         pprint(settings)
@@ -110,14 +141,18 @@ class Controller(QObject):
         self.in_model.metadata = settings['metadata']
 
         if settings['to'] == 'safetensors':
+            self.emit_start_signal(False)
             out_model_fp: str = os.path.join(
                 settings['out_dir'], f"{path_basename(self.in_model.filepath)}.safetensors"
             )
             print(f"out path: {out_model_fp}")
             save_as(model_fp=out_model_fp, model=self.in_model)
+
             self.signal_task_ended.emit("")
+            self.emit_ended_signal()
 
         elif settings['to'] == 'onnx':
+            self.emit_start_signal(False)
             # use the first gpu that supports fp16. Requires sysinfo
             args = settings['values']
             device: str = 'cpu'
@@ -144,10 +179,10 @@ class Controller(QObject):
 
 
         elif settings['to'] == 'tensorrt':
+            self.emit_start_signal(False)
             self.convert_to_tensorrt(settings['values'])
 
         self.in_model.metadata = saved_metadata
-
 
 
     def convert_to_tensorrt(self, args: dict[str, str | dict[str, Any]]):

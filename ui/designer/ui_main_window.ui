@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>537</width>
-    <height>156</height>
+    <width>538</width>
+    <height>138</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,17 +15,20 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_6">
+    <property name="spacing">
+     <number>9</number>
+    </property>
     <property name="leftMargin">
-     <number>12</number>
+     <number>18</number>
     </property>
     <property name="topMargin">
-     <number>12</number>
+     <number>18</number>
     </property>
     <property name="rightMargin">
-     <number>12</number>
+     <number>18</number>
     </property>
     <property name="bottomMargin">
-     <number>12</number>
+     <number>18</number>
     </property>
     <item alignment="Qt::AlignmentFlag::AlignTop">
      <widget class="QLabel" name="label_4">
@@ -43,7 +46,7 @@
     <item>
      <layout class="QHBoxLayout" name="layout_model_selection">
       <property name="leftMargin">
-       <number>12</number>
+       <number>0</number>
       </property>
       <item>
        <widget class="ModelBrowserWidget" name="widget_model_browser" native="true">
@@ -68,10 +71,16 @@
       <property name="bottomMargin">
        <number>0</number>
       </property>
+      <property name="horizontalSpacing">
+       <number>12</number>
+      </property>
       <item row="0" column="1">
-       <layout class="QVBoxLayout" name="layout_conversion" stretch="0,0">
+       <layout class="QVBoxLayout" name="layout_conversion" stretch="0,0,0">
+        <property name="spacing">
+         <number>12</number>
+        </property>
         <property name="bottomMargin">
-         <number>6</number>
+         <number>0</number>
         </property>
         <item alignment="Qt::AlignmentFlag::AlignTop">
          <widget class="MetadataWidget" name="widget_metadata" native="true">
@@ -92,6 +101,9 @@
            </sizepolicy>
           </property>
          </widget>
+        </item>
+        <item>
+         <widget class="ProgressWidget" name="widget_progress" native="true"/>
         </item>
        </layout>
       </item>
@@ -133,39 +145,6 @@
       </item>
      </layout>
     </item>
-    <item>
-     <layout class="QHBoxLayout" name="layout_control">
-      <property name="leftMargin">
-       <number>0</number>
-      </property>
-      <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter">
-       <widget class="QPushButton" name="button_convert">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Convert</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QProgressBar" name="progress">
-        <property name="value">
-         <number>24</number>
-        </property>
-        <property name="textVisible">
-         <bool>false</bool>
-        </property>
-        <property name="format">
-         <string/>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
    </layout>
   </widget>
  </widget>
@@ -204,6 +183,12 @@
    <class>ConversionWidget</class>
    <extends>QWidget</extends>
    <header>ui.conversion_widget</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ProgressWidget</class>
+   <extends>QWidget</extends>
+   <header>ui.progress_widget</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

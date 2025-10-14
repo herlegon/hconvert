@@ -184,5 +184,5 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
 
 
 
-    def values(self) -> str:
-        return self.comboBox_out_dir.text()
+    def out_dir(self) -> str:
+        return self.comboBox_out_dir.lineEdit().text()

@@ -218,7 +218,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
         settings: dict[str, str | dict[str, Any]] = {
             'to': self.selected(),
-            'out_dir': self.widget_select_out_dir.values(),
+            'out_dir': self.widget_select_out_dir.out_dir(),
         }
 
         if selected == 'onnx':

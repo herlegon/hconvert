@@ -13,6 +13,8 @@ pyside6-uic ./ui/designer/ui_conversion_widget.ui -o ./ui/designer/ui_conversion
 pyside6-uic ./ui/designer/ui_select_out_dir_widget.ui -o ./ui/designer/ui_select_out_dir_widget.py
 pyside6-uic ./ui/designer/ui_onnx_conversion_widget.ui -o ./ui/designer/ui_onnx_conversion_widget.py
 pyside6-uic ./ui/designer/ui_tensorrt_conversion_widget.ui -o ./ui/designer/ui_tensorrt_conversion_widget.py
+pyside6-uic ./ui/designer/ui_progress_widget.ui -o ./ui/designer/ui_progress_widget.py
+
 
 export QT_QPA_PLATFORM=xcb
 python pynnlib_gui.py --model /home/adg/z-personnel/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.pth

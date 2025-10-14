@@ -30,14 +30,13 @@ from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
     QMessageBox,
-    QSizePolicy,
 )
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     signal_preview_modified = Signal(dict)
     signal_convert_action = Signal(dict)
-    signal_cancel_action = Signal()
+    signal_stop_action = Signal()
     signal_model_loaded = Signal(str)
     signal_inject_metadata = Signal(dict)
 
@@ -45,44 +44,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, controller: Controller):
         super().__init__()
         self.setupUi(self)
+        self.widget_model_browser.set_main_window(self)
+        self.widget_tensorrt_model.set_main_window(self)
+        self.widget_conversion.set_main_window(self)
+        self.setAcceptDrops(True)
+
         self.controller: Controller = controller
         self.user_settings: UserSettings = UserSettings()
 
         self._is_loading: bool = False
         self.is_closing: bool = False
-        self.is_converting: bool = False
-
-        self.init_gui()
-        # set_stylesheet(self)
-        self.widget_model_browser.set_main_window(self)
-        self.widget_tensorrt_model.set_main_window(self)
-        self.widget_conversion.set_main_window(self)
-
-        self.widget_model_browser.signal_model_loaded.connect(self.event_model_loaded)
-        self.widget_metadata.signal_inject_metadata.connect(self.event_inject_metadata)
-
-        # Signals from the backend
-        self.controller.signal_model_parsed.connect(self.event_model_parsed)
-        self.controller.signal_task_ended.connect(self.event_task_ended)
-
-        # Drop model in the windo, whatever the position
-        self.setAcceptDrops(True)
 
         self.apply_user_settings()
+        # set_stylesheet(self)
 
         self._thread = QThread()
         self.controller.moveToThread(self._thread)
         self._thread.start()
 
+        self.widget_model_browser.signal_model_loaded.connect(self.event_model_loaded)
+        self.widget_metadata.signal_inject_metadata.connect(self.event_inject_metadata)
+        self.widget_progress.signal_start_stop_clicked.connect(self.event_convert)
 
-
-    def init_gui(self):
-        # Put here all initialization settings fro each widget.
-        # so that it will be easier for refactoring
-        self.button_convert.clicked.connect(self.event_convert)
-        self.progress.setRange(0, 100)
-        self.progress.setValue(0)
-        self.progress.hide()
+        # Signals from the backend
+        self.controller.signal_model_parsed.connect(self.event_model_parsed)
+        self.controller.signal_task_ended.connect(self.event_task_ended)
+        self.controller.signal_progress.connect(self.widget_progress.event_progress)
 
 
     def apply_user_settings(self):
@@ -223,9 +210,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         model: NnModel = self.controller.get_in_model_info()
         model_fp: str | None = inject_metadata_dialog(self, model_fp=model.filepath)
         if model_fp is not None:
-            self.progress.show()
-            self.progress.setRange(0, 0)
-            self.progress.setValue(0)
+            self.widget_progress.start('metadata')
 
             self.setEnabled(False)
             print("Injection started")
@@ -237,11 +222,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def event_task_ended(self, exception: str | None) -> None:
         # self.setEnabled(True)
-        self.progress.setRange(0, 100)
-        self.progress.setValue(0)
-        self.progress.hide()
+        self.widget_conversion.setEnabled(True)
+        self.widget_metadata.setEnabled(True)
 
-        self.setEnabled(True)
         self.widget_metadata.injection_done()
 
         if exception is not None and exception:
@@ -251,65 +234,35 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 f"Failed to save model.\n{exception}",
                 QMessageBox.StandardButton.Ok
             )
+            self.widget_progress.stop()
         else:
+            self.widget_progress.ended()
             self.widget_conversion.widget_select_out_dir.conversion_ended()
 
 
-    def event_convert(self) -> None:
+    def event_convert(self, state: str) -> None:
         # Can be either start or cancel
-        if not self.is_converting:
+        if state == 'start':
             conversion_settings: dict[str, dict[str, Any]] = self.widget_conversion.settings()
             if conversion_settings is None:
+                self.widget_progress.stop()
                 return
-            self.button_convert.setEnabled(False)
+            # self.button_convert.setEnabled(False)
             conversion_settings.update({
                 'metadata': self.widget_metadata.values()
             })
             print("start converting")
             pprint(conversion_settings)
-            self.is_converting = True
-            self.widget_conversion.started(False)
-            self.button_convert.setEnabled(False)
 
-            # remove this once backend send ack
-            self.button_convert.setText("Cancel")
-
-
-            self.progress.show()
-            self.progress.setRange(0, 0)
-            self.progress.setValue(0)
-
-            self.setEnabled(False)
-
+            self.widget_conversion.setEnabled(False)
+            self.widget_metadata.setEnabled(False)
             self.signal_convert_action.emit(conversion_settings)
-            self.button_convert.setEnabled(True)
-
 
         else:
-            self.signal_cancel_action.emit()
-            self.widget_conversion.started(True)
-
-            # remove this once backend send ack
-            self.button_convert.setText("Convert")
-            self.button_convert.setEnabled(True)
-            self.is_converting = False
-
-
-    def event_convert_state_changed(self, status: dict) -> None:
-        # status: dict(
-        #   'state': Literal['stopped', 'running'],
-        #   'type': Literal['progress', 'undetermined'],
-        #   'progress': int,
-        # )
-        if status['state'] == 'stopped':
-            self.button_convert.setText("Convert")
-            self.button_convert.setEnabled(True)
-
-        elif status['state'] == 'running':
-            self.button_convert.setText("Cancel")
-            self.button_convert.setEnabled(True)
-
-
+            self.signal_stop_action.emit()
+            self.widget_progress.stop()
+            self.widget_conversion.setEnabled(True)
+            self.widget_metadata.setEnabled(True)
 
 
     def dropEvent(self, event: QDropEvent):
