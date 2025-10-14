@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any
+from typing import Any, Type
 from pynnlib import (
     NnModel,
 )
@@ -58,6 +58,14 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
             self.pushbutton_undo,
         ):
             w.blockSignals(b)
+
+
+    def editable_widgets(self) -> list[Type[QWidget]]:
+        editable_widgets: list[type[QWidget]] = [
+            *self.findChildren(QLineEdit),
+            *self.findChildren(QTextEdit),
+        ]
+        return editable_widgets
 
 
     def clear(self) -> None:

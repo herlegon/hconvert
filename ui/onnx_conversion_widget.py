@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pprint import pprint
+from typing import Type
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -19,6 +20,10 @@ from PySide6.QtCore import (
 from PySide6.QtWidgets import (
     QWidget,
     QAbstractSpinBox,
+    QComboBox,
+    QCheckBox,
+    QRadioButton,
+    QSpinBox,
 )
 from .designer.ui_onnx_conversion_widget import Ui_OnnxConversionWidget
 
@@ -63,6 +68,16 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.spinbox_w.valueChanged.connect(self.size_modified)
         self.spinbox_h.valueChanged.connect(self.size_modified)
         self.combobox_resolution.currentIndexChanged.connect(self.resolution_selected)
+
+
+    def editable_widgets(self) -> list[Type[QWidget]]:
+        editable_widgets: list[type[QWidget]] = [
+            *self.findChildren(QComboBox),
+            *self.findChildren(QCheckBox),
+            *self.findChildren(QSpinBox),
+            *self.findChildren(QRadioButton),
+        ]
+        return editable_widgets
 
 
     def block_signals(self, b: bool) -> None:

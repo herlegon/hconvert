@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from pprint import pprint
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type
 from backend.path_utils import absolute_path, get_extension, parent_directory
 from PySide6.QtCore import (
     QObject,
@@ -83,6 +83,14 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         }
 
 
+    def editable_widgets(self) -> list[Type[QWidget]]:
+        editable_widgets: list[Type[QWidget]] = [
+            self.combobox_model_fp,
+            self.combobox_model_fp.lineEdit(),
+        ]
+        return editable_widgets
+
+
     def clear(self) -> None:
         self.combobox_model_fp.blockSignals(True)
         self.combobox_model_fp.clear()
@@ -93,7 +101,6 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         model_fp: str = str(filepath)
         # Select in the list if already exists
         index: int = self.combobox_model_fp.findText(model_fp)
-        print(f"append to combbox: index={index}")
         if index >= 0:
             self.combobox_model_fp.setCurrentIndex(index)
         else:

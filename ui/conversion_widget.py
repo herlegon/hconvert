@@ -1,8 +1,7 @@
 from __future__ import annotations
 from functools import partial
 from pprint import pprint
-from typing import Any, Literal, TYPE_CHECKING
-from .user_settings import UserSettings
+from typing import Any, Literal, TYPE_CHECKING, Type
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -10,7 +9,6 @@ from pynnlib import (
 from pynnlib.utils.p_print import *
 
 from PySide6.QtCore import (
-    Qt,
     QTimer,
     Signal,
 )
@@ -18,6 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QMainWindow,
     QSizePolicy,
+    QRadioButton,
 )
 from .designer.ui_conversion_widget import Ui_ConversionWidget
 if TYPE_CHECKING:
@@ -47,6 +46,11 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
         self.adjustSize()
 
+        self.radio_buttons: list[QRadioButton] = [
+            self.radioButton_safetensor,
+            self.radioButton_onnx,
+            self.radioButton_tensorrt,
+        ]
         # Conversion selection changed
         self.radioButton_safetensor.setChecked(True)
         self.radioButton_safetensor.clicked.connect(
@@ -74,12 +78,18 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         }
 
 
+    def editable_widgets(self) -> list[Type[QWidget]]:
+        editable_widgets: list[Type[QWidget]] = [
+            *self.radio_buttons,
+            *self.widget_onnx_conversion.editable_widgets(),
+            *self.widget_tensorrt_conversion.editable_widgets(),
+            *self.widget_select_out_dir.editable_widgets(),
+        ]
+        return editable_widgets
+
+
     def block_signals(self, b: bool) -> None:
-        for r in (
-            self.radioButton_safetensor,
-            self.radioButton_onnx,
-            self.radioButton_tensorrt,
-        ):
+        for r in self.radio_buttons:
             r.blockSignals(b)
 
 

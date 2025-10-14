@@ -71,9 +71,7 @@ class Controller(QObject):
             raise ValueError(str(e))
         elapsed = time.time() - start_time
 
-        self.signal_progress.emit(
-            {'action': 'stop', 'progress': 100}
-        )
+        self.emit_ended_signal()
         print(f"parsed in {1000*elapsed:.03f}ms")
         # Send a null signal because the object cannot be sent via a signal
         if self.in_model is not None:
@@ -142,6 +140,7 @@ class Controller(QObject):
 
         if settings['to'] == 'safetensors':
             self.emit_start_signal(False)
+            os.makedirs(settings['out_dir'], exist_ok=True)
             out_model_fp: str = os.path.join(
                 settings['out_dir'], f"{path_basename(self.in_model.filepath)}.safetensors"
             )

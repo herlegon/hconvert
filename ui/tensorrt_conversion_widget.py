@@ -1,6 +1,6 @@
 from __future__ import annotations
 from functools import partial
-from typing import Literal
+from typing import Literal, Type
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -40,7 +40,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         }
         self._strategy_constraint: Literal['dynamic', 'static', 'fixed'] = 'fixed'
 
-        self.editable_widgets: tuple[type[QWidget]] = (
+        self._editable_widgets: tuple[type[QWidget]] = (
             *self.findChildren(QComboBox),
             *self.findChildren(QCheckBox),
             *self.findChildren(QSpinBox),
@@ -84,9 +84,12 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
     def block_signals(self, b: bool) -> None:
-        for w in self.editable_widgets:
+        for w in self._editable_widgets:
             w.blockSignals(b)
 
+
+    def editable_widgets(self) -> list[Type[QWidget]]:
+        return list(self._editable_widgets)
 
 
     def clear(self) -> None:

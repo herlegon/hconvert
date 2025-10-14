@@ -3,6 +3,7 @@ import os
 from pathlib import (
     Path,
 )
+from typing import Type
 from backend.path_utils import absolute_path, is_access_granted, parent_directory, path_split
 from pynnlib import (
     NnModel,
@@ -66,9 +67,18 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
         }
 
 
-    def block_signals(self, enabled: bool) -> None:
-        self.button_input_folder.blockSignals(enabled)
-        self.button_out_dir_browse.blockSignals(enabled)
+    def editable_widgets(self) -> list[Type[QWidget]]:
+        editable_widgets: list[Type[QWidget]] = [
+            self.comboBox_out_dir,
+            self.comboBox_out_dir.lineEdit(),
+        ]
+        return editable_widgets
+
+
+    def block_signals(self, b: bool) -> None:
+        self.button_input_folder.blockSignals(b)
+        self.button_out_dir_browse.blockSignals(b)
+        self.comboBox_out_dir.blockSignals(b)
 
 
     def clear(self) -> None:
@@ -82,6 +92,7 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
         if Path(out_dir) == Path.home():
             return
 
+        self.block_signals(True)
         out_dir = str(Path(out_dir))
         index: int = self.comboBox_out_dir.findText(out_dir)
         if index >= 0:
@@ -91,6 +102,7 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
 
         while self.comboBox_out_dir.count() > self.max_items:
             self.comboBox_out_dir.removeItem(self.comboBox_out_dir.count() - 1)
+        self.block_signals(False)
 
 
     def refresh_model_info(self, model: NnModel) -> None:

@@ -126,7 +126,14 @@
          <widget class="OnnxWidget" name="widget_onnx_model" native="true"/>
         </item>
         <item>
-         <widget class="TensorRTWidget" name="widget_tensorrt_model" native="true"/>
+         <widget class="TensorRTWidget" name="widget_tensorrt_model" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
         </item>
         <item>
          <spacer name="verticalSpacer">

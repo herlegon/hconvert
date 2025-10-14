@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pprint import pprint
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Type
 from backend.path_utils import absolute_path, get_extension
 from pynnlib import (
     NnModel,
@@ -8,8 +8,9 @@ from pynnlib import (
 )
 from pynnlib.utils.p_print import *
 
-from .user_settings import UserSettings
 from .common import SUPPORTED_MODEL_EXTENSIONS
+from .user_settings import UserSettings
+from .widget_monitor import WidgetMonitor
 from .inject_metadata_dialog import inject_metadata_dialog
 from .designer.ui_main_window import Ui_MainWindow
 if TYPE_CHECKING:
@@ -30,6 +31,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
     QMessageBox,
+    QWidget
 )
 
 
@@ -47,6 +49,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_model_browser.set_main_window(self)
         self.widget_tensorrt_model.set_main_window(self)
         self.widget_conversion.set_main_window(self)
+        self.widget_progress.set_main_window(self)
         self.setAcceptDrops(True)
 
         self.controller: Controller = controller
@@ -57,6 +60,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.apply_user_settings()
         # set_stylesheet(self)
+
+        monitored_widgets: list[Type[QWidget]] = [
+            widget
+            for w in (
+                self.widget_model_browser,
+                self.widget_conversion,
+                self.widget_metadata
+            )
+            for widget in w.editable_widgets()
+        ]
+        self.widget_monitor = WidgetMonitor(
+            monitored_widgets, self.widget_progress.hide_progress
+        )
 
         self._thread = QThread()
         self.controller.moveToThread(self._thread)
@@ -218,6 +234,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 'filepath': model_fp,
                 'metadata': metadata
             })
+
+
+    def reset_widget_monitor(self) -> None:
+        self.widget_monitor.reset()
 
 
     def event_task_ended(self, exception: str | None) -> None:
