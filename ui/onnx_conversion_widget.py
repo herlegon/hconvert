@@ -82,6 +82,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
     def block_signals(self, b: bool) -> None:
         self.radiobutton_fp32.blockSignals(b)
+        self.radiobutton_bf16.blockSignals(b)
         self.radiobutton_fp16.blockSignals(b)
         self.spinbox_w.blockSignals(b)
         self.spinbox_h.blockSignals(b)
@@ -98,6 +99,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.spinbox_opset.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.PlusMinus)
         self.radiobutton_fp32.setChecked(False)
         self.radiobutton_fp16.setChecked(False)
+        self.radiobutton_bf16.setChecked(False)
         self.spinbox_w.lineEdit().clear()
         self.spinbox_h.lineEdit().clear()
         self.spinbox_w.clear()
@@ -157,8 +159,15 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             self.radiobutton_fp32.setCheckable(True)
         else:
             self.radiobutton_fp16.setCheckable(False)
-            self.radiobutton_fp32.setChecked(True)
-            self.radiobutton_fp32.setCheckable(False)
+
+        if "bf16" in model.arch.dtypes:
+            self.radiobutton_bf16.setCheckable(True)
+            self.radiobutton_fp32.setCheckable(True)
+        else:
+            self.radiobutton_bf16.setCheckable(False)
+
+        self.radiobutton_fp32.setChecked(True)
+        self.radiobutton_fp32.setCheckable(False)
 
         # Shape strategy
         # self.shape_strategy == 'static' if 'static' in model.shape_strategy.type else 'dynamic'
@@ -246,9 +255,15 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
 
     def values(self) -> dict[str, str | int | tuple[int, int]]:
+        if self.radiobutton_fp32.isChecked():
+            dtype =  'fp32'
+        elif self.radiobutton_fp16.isChecked():
+            dtype = 'fp16'
+        elif self.radiobutton_bf16.isChecked():
+            dtype = 'bf16'
         settings: dict[str, str | int | tuple[int, int]] = {
             'opset': self.spinbox_opset.value(),
-            'dtype': 'fp32' if self.radiobutton_fp32.isChecked() else 'fp16',
+            'dtype': dtype,
             'shape_strategy': 'static' if self.radiobutton_static.isChecked() else 'dynamic',
             'shape': (self.spinbox_w.value(), self.spinbox_h.value()),
         }

@@ -4,6 +4,7 @@ from typing import Literal, Type
 from pynnlib import (
     NnModel,
     NnFrameworkType,
+    NnPytorchArchitecture,
 )
 from PySide6.QtCore import (
     Signal,
@@ -239,21 +240,47 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
                     self.radiobutton_static.setEnabled(False)
 
         elif model.framework.type == NnFrameworkType.PYTORCH:
-            # Set default strategy to dynamic
-            #
-
-            self.shape_strategy = 'dynamic'
-            for r in (
-                self.radiobutton_static,
-                self.radiobutton_fixed,
-                self.radiobutton_dynamic,
+            print(red("Let's enable/disable widgets"))
+            model_arch: NnPytorchArchitecture = model.arch
+            for s, r in (
+                ('dynamic', self.radiobutton_dynamic),
+                ('fixed', self.radiobutton_fixed),
+                ('static', self.radiobutton_static),
             ):
-                r.setEnabled(True)
-                r.setCheckable(True)
-                r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+                if s in model_arch.to_tensorrt.shape_strategy_types:
+                    r.setEnabled(True)
+                    r.setCheckable(True)
+                    r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+                else:
+                    r.setEnabled(False)
+                    r.setCheckable(False)
+                    r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
-        else:
-            raise NotImplementedError(f"{model.framework.type}")
+            for d, r in (
+                ('fp32', self.checkbox_fp32),
+                ('fp16', self.checkbox_fp16),
+                ('bf16', self.checkbox_bf16),
+            ):
+                if d in model_arch.to_tensorrt.dtypes:
+                    print(f"enable {d}")
+                    r.setEnabled(True)
+                    r.setChecked(True)
+                else:
+                    print(f"disable {d}")
+                    r.setEnabled(False)
+                    r.setChecked(False)
+
+            if model_arch.to_tensorrt.weak_typing:
+                self.radiobutton_weak.setChecked(True)
+            else:
+                self.radiobutton_strong.setChecked(True)
+            for r in (self.radiobutton_weak, self.radiobutton_strong):
+                r.setEnabled(False)
+                # r.setCheckable(False)
+                r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+                self.setStyleSheet("""
+                    QRadioButton:disabled { color: black; }
+                """)
 
         # Fill the size values
         if self.shape_strategy in ('fixed', 'static'):
@@ -453,15 +480,12 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
         values: dict[str, str | int | tuple[int, int]] = {
             'gpu': gpu,
+            'opset': self.spinbox_opset.value(),
             'dtypes': dtypes,
             'shape_strategy': shape_strategy,
             'shape_min': (self.spinbox_w_min.value(), self.spinbox_h_min.value()),
             'shape_opt': (self.spinbox_w_opt.value(), self.spinbox_h_opt.value()),
             'shape_max': (self.spinbox_w_max.value(), self.spinbox_h_max.value()),
+            'typing': 'weak' if self.radiobutton_weak.isChecked() else 'strong',
         }
         return values
-
-
-        self.block_signals(True)
-        self.groupbox_tensorrt_conversion.setChecked(b)
-        self.block_signals(False)

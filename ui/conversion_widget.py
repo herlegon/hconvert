@@ -2,10 +2,12 @@ from __future__ import annotations
 from functools import partial
 from pprint import pprint
 from typing import Any, Literal, TYPE_CHECKING, Type
+from backend.path_utils import get_extension
 from pynnlib import (
     NnModel,
     NnFrameworkType,
 )
+from pynnlib.architecture import NnPytorchArchitecture
 from pynnlib.utils.p_print import *
 
 from PySide6.QtCore import (
@@ -110,23 +112,37 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         QTimer.singleShot(0, self._main_window.adjust_height)
 
 
-
     def refresh_conversion_selection(self, model: NnModel) -> None:
         """Called when a new model is parsed
         """
         if model is None:
             self.widget_select_out_dir.setEnabled(False)
+            self.block_signals(True)
+            for r in self.radio_buttons:
+                r.setEnabled(False)
+                r.setChecked(False)
+            self.groupBox_onnx.setVisible(False)
+            self.groupBox_tensorrt.setVisible(False)
+            self.adjust_height()
+            self.block_signals(False)
+            return
 
-        elif model.framework.type == NnFrameworkType.PYTORCH:
-            self.widget_select_out_dir.setEnabled(True)
 
-        elif model.framework.type == NnFrameworkType.ONNX:
-            self.widget_select_out_dir.setEnabled(True)
+        print(lightcyan("refresh_conversion_selection"))
+        print(f"  get arch details to enable/disable widgets for conversion")
+        print(model)
+        print("------------------")
+        # print(model.framework)
+        # print("------------------")
+        print(model.arch)
+        print("------------------")
 
-        if model.framework.type == NnFrameworkType.TENSORRT:
-            self.widget_select_out_dir.setEnabled(False)
+
 
         self.widget_select_out_dir.refresh_model_info(model)
+        self.widget_select_out_dir.setEnabled(
+            bool(model.framework.type in (NnFrameworkType.PYTORCH, NnFrameworkType.ONNX))
+        )
 
         # TODO: disable this if not available
         self.widget_tensorrt_conversion.enable_conversion(model)
@@ -134,26 +150,36 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         # Conversion selection
         # todo: get previous checked
         self.block_signals(True)
-        self.radioButton_safetensor.setEnabled(False)
-        self.radioButton_safetensor.setChecked(False)
-        self.radioButton_onnx.setEnabled(False)
-        self.radioButton_onnx.setChecked(False)
-        self.radioButton_tensorrt.setEnabled(False)
-        self.radioButton_tensorrt.setChecked(False)
+        for r in self.radio_buttons:
+            r.setEnabled(False)
+            r.setChecked(False)
+
         self.block_signals(False)
         if model is not None:
             if model.framework.type == NnFrameworkType.PYTORCH:
-                self.radioButton_safetensor.setEnabled(True)
+                self.radioButton_safetensor.setEnabled(
+                    bool(get_extension(model.filepath) != '.safetensors')
+                )
                 self.radioButton_onnx.setEnabled(True)
                 self.radioButton_tensorrt.setEnabled(True)
-                # self.radioButton_safetensor.setChecked(True)
+                # default: select onnx
+                self.radioButton_onnx.setChecked(True)
+                self.conversion_selection_changed('onnx')
 
             elif model.framework.type == NnFrameworkType.ONNX:
                 self.radioButton_safetensor.setEnabled(False)
                 self.radioButton_onnx.setEnabled(False)
                 self.radioButton_tensorrt.setEnabled(True)
-                self.radioButton_tensorrt.setChecked(True)
 
+                # default: select tensort
+                self.radioButton_tensorrt.setChecked(True)
+                self.conversion_selection_changed('tensorrt')
+
+            elif model.framework.type == NnFrameworkType.TENSORRT:
+                self.radioButton_tensorrt.setChecked(True)
+                self.groupBox_onnx.setVisible(False)
+                self.groupBox_tensorrt.setVisible(False)
+                self.adjust_height()
 
             if self._initial_selection:
                 if (
@@ -174,6 +200,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
                 ):
                     self.radioButton_tensorrt.setChecked(True)
                 self._initial_selection = ""
+                self.adjust_height()
 
 
     def conversion_selection_changed(self, k: ConversionChoices) -> None:
@@ -197,18 +224,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             return
 
         self.adjust_height()
-        # self._main_window.adjust_height()
         self.block_signals(False)
-
-
-    def started(self, started: bool) -> None:
-        if started:
-            self.widget_onnx_conversion.setEnabled(False)
-            self.widget_tensorrt_conversion.setEnabled(False)
-
-        else:
-            self.widget_onnx_conversion.setEnabled(True)
-            self.widget_tensorrt_conversion.setEnabled(True)
 
 
     def selected(self) -> ConversionChoices | None:

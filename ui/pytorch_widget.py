@@ -82,6 +82,6 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
 
         if model.size_constraint is not None:
             w, h = model.size_constraint.min
-            self.lineedit_size_constraints_min.setText(f"{w}x{h}")
+            self.lineedit_size_constraints_min.setText(f"{w} x {h}")
             self.lineedit_size_constraints_modulo.setText(f"{model.size_constraint.modulo}")
 

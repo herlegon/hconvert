@@ -11,12 +11,14 @@ from PySide6.QtCore import (
 from backend.path_utils import absolute_path, path_basename
 from pynnlib.utils import get_extension
 from pynnlib import (
+    Idtype,
     NnModel,
     nnlib,
     get_supported_model_extensions,
     NnFrameworkType,
     save_as,
     ShapeStrategy,
+    ShapeStrategyType,
 )
 from pynnlib.utils.p_print import lightcyan
 from ui.main_window import MainWindow
@@ -110,6 +112,18 @@ class Controller(QObject):
             }
         )
 
+
+    def emit_cancelled_signal(self) -> None:
+        self.signal_progress.emit(
+            {
+                'state': 'cancelled',
+                'type': 'undetermined',
+                'progress': 100,
+                'cancelable': True,
+            }
+        )
+
+
     def emit_ended_signal(self) -> None:
         self.signal_progress.emit(
             {
@@ -119,6 +133,7 @@ class Controller(QObject):
                 'cancelable': True,
             }
         )
+
 
     def event_stop_conversion(self) -> None:
         if self.is_task_cancellable:
@@ -137,20 +152,24 @@ class Controller(QObject):
         pprint(settings)
         saved_metadata = deepcopy(self.in_model.metadata)
         self.in_model.metadata = settings['metadata']
+        exception: str = ""
+        to: str = settings['to']
 
-        if settings['to'] == 'safetensors':
+        if to == 'safetensors':
             self.emit_start_signal(False)
             os.makedirs(settings['out_dir'], exist_ok=True)
             out_model_fp: str = os.path.join(
                 settings['out_dir'], f"{path_basename(self.in_model.filepath)}.safetensors"
             )
             print(f"out path: {out_model_fp}")
-            save_as(model_fp=out_model_fp, model=self.in_model)
+            try:
+                save_as(model_fp=out_model_fp, model=self.in_model)
+            except Exception as e:
+                exception = str(e)
+                print(exception)
 
-            self.signal_task_ended.emit("")
-            self.emit_ended_signal()
 
-        elif settings['to'] == 'onnx':
+        elif to == 'onnx':
             self.emit_start_signal(False)
             # use the first gpu that supports fp16. Requires sysinfo
             args = settings['values']
@@ -158,7 +177,6 @@ class Controller(QObject):
             if args['dtype'] != 'fp32':
                 device = 'cuda:0'
 
-            exception: str = ""
             # try:
             nnlib.convert_to_onnx(
                 model=self.in_model,
@@ -173,19 +191,64 @@ class Controller(QObject):
             )
             # except Exception as e:
             #     exception = str(e)
-
             self.signal_task_ended.emit(exception)
+            if exception:
+                self.emit_cancelled_signal()
+            else:
+                self.emit_ended_signal()
 
-
-        elif settings['to'] == 'tensorrt':
+        elif to == 'tensorrt':
             self.emit_start_signal(False)
-            self.convert_to_tensorrt(settings['values'])
+            self.convert_to_tensorrt(settings)
+
+        else:
+            exception = f"NotImplementedError: conversion to {to}"
+
+        self.signal_task_ended.emit(exception)
+        if exception:
+            self.emit_cancelled_signal()
+        else:
+            self.emit_ended_signal()
 
         self.in_model.metadata = saved_metadata
 
 
-    def convert_to_tensorrt(self, args: dict[str, str | dict[str, Any]]):
-        pass
+    def convert_to_tensorrt(self, settings: dict[str, str | dict[str, Any]]):
+        args: dict[str, str | dict[str, Any]]
+        args = settings['values']
+
+        shape_strategy: ShapeStrategy = ShapeStrategy(
+            type=args['shape_strategy'],
+            min_size=args['shape_min'],
+            opt_size=args['shape_min'],
+            max_size=args['shape_min'],
+        )
+
+        device = args['gpu']
+        device = device if device else "cuda"
+        dtype: Idtype = 'fp32'
+        if 'fp16' in args['dtypes']:
+            dtype = 'fp16'
+        elif 'bf16' in args['dtypes']:
+            dtype = 'bf16'
+
+        nnlib.convert_to_tensorrt(
+            model=self.in_model,
+            shape_strategy=shape_strategy,
+            dtype=dtype,
+            force_weak_typing=args['typing'],
+            # optimization_level=,
+            opset=args['opset'],
+            device=device,
+            out_dir=settings['out_dir'],
+            overwrite=True,
+        )
+
+
+        # # raise NotImplementedError("tensorrt not implemented yet")
+        # import sys
+        # sys.exit()
+        # pass
 
 # import asyncio
 # from PySide6.QtCore import QObject, Signal

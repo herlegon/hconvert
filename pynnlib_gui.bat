@@ -17,8 +17,10 @@ pyside6-uic .\ui\designer\ui_progress_widget.ui -o .\ui\designer\ui_progress_wid
 
 
 @REM python pynnlib_gui.py --model A:\ml_models\1x_Anime1080Fixer_SuperUltraCompact.pth
-python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact.pth
+@REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact.pth
 @REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact_op20_fp16_static_640x480.onnx
 @REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact_cc8.9_op20_fp16_static_640x480_10.13.3.9.trtzip
 @REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact_op20_fp16.onnx
 
+@REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact_cc8.9_op20_fp16_64x64_768x576_1920x1080_10.13.3.9.trtzip
+python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact.safetensors

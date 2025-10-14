@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>449</width>
-    <height>145</height>
+    <width>462</width>
+    <height>114</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -122,6 +122,19 @@
         <widget class="QRadioButton" name="radiobutton_fp16">
          <property name="text">
           <string>fp16</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <attribute name="buttonGroup">
+          <string notr="true">buttongroup_datatype</string>
+         </attribute>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="radiobutton_bf16">
+         <property name="text">
+          <string>bf16</string>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -296,9 +309,6 @@
          </property>
          <property name="frame">
           <bool>true</bool>
-         </property>
-         <property name="labelDrawingMode">
-          <enum>QComboBox::LabelDrawingMode::UseStyle</enum>
          </property>
          <item>
           <property name="text">

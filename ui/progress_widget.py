@@ -51,7 +51,6 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
 
     def set_visible(self, b: bool) -> None:
-        print(lightgreen("set_visible"), b)
         self.gpu_usage.setVisible(b)
         self.label.setVisible(b)
         self.lineEdit_out_model_fp.setVisible(b)
@@ -60,8 +59,8 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         if b:
             self._main_window.reset_widget_monitor()
         if self.progress_bar.isVisible() != b:
-            print(red("adjust HEIGHT"))
             self.adjust_height()
+            self._main_window.widget_conversion.adjust_height()
         self.progress_bar.setVisible(b)
         self.updateGeometry()
         self.adjustSize()
@@ -75,6 +74,9 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
     def hide_progress(self) -> None:
         print("hide!!!!!!!")
         if self.lineEdit_out_model_fp.isVisible():
+            self.button_convert.setText("Convert")
+            self.button_convert.setEnabled(True)
+            self.progress_bar.setEnabled(False)
             self.set_visible(False)
 
 
@@ -82,9 +84,12 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         self.set_visible(True)
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(100)
-        self.button_convert.setText("Convert")
-        self.button_convert.setEnabled(True)
+        # self.button_convert.setText("Convert")
+        # self.button_convert.setEnabled(True)
         self.is_converting = False
+        self.label.setEnabled(True)
+        self.lineEdit_out_model_fp.setEnabled(True)
+        self.button_containing_folder.setEnabled(True)
 
 
     def stop(self) -> None:
@@ -92,7 +97,11 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         self.set_visible(False)
         self.button_convert.setText("Convert")
         self.button_convert.setEnabled(True)
+        self.progress_bar.setEnabled(False)
         self.is_converting = False
+        self.label.setEnabled(False)
+        self.lineEdit_out_model_fp.setEnabled(False)
+        self.button_containing_folder.setEnabled(False)
 
 
     def event_convert_button_clicked(self) -> None:
@@ -107,6 +116,8 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
             state = 'start'
             self.is_converting = True
             self.button_convert.setText("Stop")
+            self.label.setEnabled(False)
+            self.lineEdit_out_model_fp.setEnabled(False)
 
         self.signal_start_stop_clicked.emit(state)
 
@@ -125,13 +136,13 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         #   'progress': int,
         #   'cancelable': bool,
         # )
-        print(lightgreen("progress"))
-        pprint(status)
+
         if status['state'] == 'cancelled' and self.is_converting:
             self.stop()
 
         elif status['state'] == 'ended' and self.is_converting:
             self.ended()
+            self.progress_bar.setEnabled(False)
 
         elif status['state'] == 'running':
             self.button_convert.setText("Stop")
@@ -139,10 +150,14 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
             if status['type'] == 'undetermined' and status['progress'] == 0:
                 self.progress_bar.setRange(0, 0)
                 self.progress_bar.setValue(0)
+                # self.progress_bar.setEnabled(True)
+                self.progress_bar.setEnabled(False)
 
             if status['cancelable']:
                 self.button_convert.setText("Stop")
                 self.button_convert.setEnabled(True)
+                self.progress_bar.setEnabled(False)
             else:
                 self.button_convert.setText("Convert")
                 self.button_convert.setEnabled(False)
+                self.progress_bar.setEnabled(False)

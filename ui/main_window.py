@@ -85,7 +85,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Signals from the backend
         self.controller.signal_model_parsed.connect(self.event_model_parsed)
         self.controller.signal_task_ended.connect(self.event_task_ended)
-        self.controller.signal_progress.connect(self.widget_progress.event_progress)
+        self.controller.signal_progress.connect(self.event_progress)
 
 
     def apply_user_settings(self):
@@ -107,6 +107,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.widget_conversion.widget_select_out_dir,
         ):
             w.apply_user_settings(user_settings)
+
+        self.max_info_widget_width: int = max(
+            self.widget_pytorch_model.geometry().width(),
+            self.widget_onnx_model.geometry().width(),
+            self.widget_tensorrt_model.geometry().width(),
+        )
+        self.widget_pytorch_model.setFixedWidth(self.max_info_widget_width)
+        self.widget_onnx_model.setFixedWidth(self.max_info_widget_width)
+        self.widget_tensorrt_model.setFixedWidth(self.max_info_widget_width)
+
+        print(f"torch: {self.widget_pytorch_model.geometry().width()}")
+        print(f"onnx: {self.widget_onnx_model.geometry().width()}")
+        print(f"tensorrt: {self.widget_tensorrt_model.geometry().width()}")
         self.show()
         self.widget_conversion.adjust_height()
         self.adjust_height()
@@ -170,7 +183,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setFixedHeight(new_height)
 
         QTimer.singleShot(100, lambda: self.set_min_max_width)
-
 
 
     def refresh_model_info(self, model: NnModel) -> None:
@@ -240,6 +252,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_monitor.reset()
 
 
+    def event_progress(self, status: dict) -> None:
+        # status: dict(
+        #   'state': Literal['stopped', 'running'],
+        #   'type': Literal['progress', 'undetermined'],
+        #   'progress': int,
+        #   'cancelable': bool,
+        # )
+        self.widget_progress.event_progress(status=status)
+        if status['state'] != 'running':
+            self.widget_model_browser.setEnabled(True)
+
+
     def event_task_ended(self, exception: str | None) -> None:
         # self.setEnabled(True)
         self.widget_conversion.setEnabled(True)
@@ -276,11 +300,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             self.widget_conversion.setEnabled(False)
             self.widget_metadata.setEnabled(False)
+            self.widget_model_browser.setEnabled(False)
             self.signal_convert_action.emit(conversion_settings)
 
         else:
             self.signal_stop_action.emit()
             self.widget_progress.stop()
+            self.widget_model_browser.setEnabled(True)
             self.widget_conversion.setEnabled(True)
             self.widget_metadata.setEnabled(True)
 

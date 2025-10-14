@@ -111,12 +111,10 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
 
 
     def update_model_fp(self, filepath: str = "") -> None:
-        print(lightcyan(f"update_model_fp"))
         self.combobox_model_fp.blockSignals(True)
         if filepath:
             model_fp: Path = Path(filepath)
             self.append_to_combobox(model_fp)
-            # model_fp.parent()
             self.previous_directory = parent_directory(str(model_fp))
 
         else:
@@ -126,14 +124,10 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
 
 
     def event_selection_changed(self, index: int) -> None:
-        if index <= 0:
+        if index < 0:
             return
-        print("Selection changed!")
         self.combobox_model_fp.blockSignals(True)
         model_fp = self.combobox_model_fp.itemText(index)
-        # self.combobox_model_fp.removeItem(index)
-        # self.combobox_model_fp.insertItem(0, model_fp)
-        # self.combobox_model_fp.setCurrentIndex(0)
         self.combobox_model_fp.blockSignals(False)
         self.signal_model_loaded.emit(model_fp)
 
@@ -151,7 +145,10 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         )[0]
 
         self.previous_directory = parent_directory(model_fp)
-        self.combobox_model_fp.lineEdit().setText(model_fp)
+        self.combobox_model_fp.lineEdit().setText(str(Path(model_fp)))
+        print(f"picker")
+        print(f"{model_fp}")
+        print(f"{self.combobox_model_fp.lineEdit().text()}")
         file_dialog.close()
         del file_dialog
         self.signal_model_loaded.emit(model_fp)
@@ -160,6 +157,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
     def set_filepath(self, model_fp: str) -> None:
         # Set combobox lineedit without adding to the combobox
         # it will be done only once the model is a valid one
+        print(f"set_filepath: {model_fp}")
         self.combobox_model_fp.lineEdit().setText(model_fp)
 
 
@@ -169,7 +167,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         #     print(event)
         #     print()
 
-        if watched in (self.combobox_model_fp, self.combobox_model_fp.lineEdit()):
+        if watched == self.combobox_model_fp:
 
             if event.type() == QEvent.Type.DragEnter:
                 self._main_window.dragEnterEvent(event)
@@ -179,14 +177,14 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
                 self._main_window.dropEvent(event)
                 return True
 
-            elif event.type() == QEvent.Type.MouseButtonPress:
-                if self.popup_visible:
-                    self.combobox_model_fp.hidePopup()
-                    self.popup_visible = False
-                else:
-                    self.combobox_model_fp.showPopup()
-                    self.popup_visible = True
-                # return True
+            # elif event.type() == QEvent.Type.MouseButtonPress:
+            #     if self.popup_visible:
+            #         self.combobox_model_fp.hidePopup()
+            #         self.popup_visible = False
+            #     else:
+            #         self.combobox_model_fp.showPopup()
+            #         self.popup_visible = True
+            #     return True
 
             # elif event.type() == QEvent.Type.Hide:
             #     self.popup_visible = False
