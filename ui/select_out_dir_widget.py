@@ -1,5 +1,8 @@
 from copy import deepcopy
 import os
+from pathlib import (
+    Path,
+)
 from backend.path_utils import absolute_path, is_access_granted, parent_directory, path_split
 from pynnlib import (
     NnModel,
@@ -28,24 +31,66 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
 
         self.in_model_dir: str = ""
         self.out_directory: str = ""
+        self.max_items: int = 10
 
         # Save the previous directory
         self.previous_directory: str = ""
 
-        self.lineEdit_out_dir.setAcceptDrops(False)
-        self.lineEdit_out_dir.clear()
+        self.comboBox_out_dir.setAcceptDrops(False)
+        self.comboBox_out_dir.clear()
 
-        self.button_out_dir_browse.released.connect(self.event_select_output_folder)
-        self.button_input_folder.released.connect(self.event_use_in_model_dir)
+        self.button_out_dir_browse.released.connect(self.event_select_dir_clicked)
+        self.button_input_folder.released.connect(self.event_select_in_dir)
 
 
-    def clear(self) -> None:
-        self.lineEdit_out_dir.clear()
+    def apply_user_settings(self, prefs: dict) -> None:
+        history = prefs.get('out_dir', [])
+        if not history:
+            return
+
+        self.comboBox_out_dir.blockSignals(True)
+        self.comboBox_out_dir.clear()
+        self.comboBox_out_dir.lineEdit().clear()
+        for f in history[:self.max_items]:
+            if f and os.path.isdir(f):
+                self.comboBox_out_dir.addItem(str(Path(f)))
+        self.comboBox_out_dir.blockSignals(False)
+
+
+    def get_user_settings(self) -> dict:
+        return {
+            'out_dir': list([
+                Path(self.comboBox_out_dir.itemText(i)).as_posix()
+                for i in range(self.comboBox_out_dir.count())
+            ])
+        }
 
 
     def block_signals(self, enabled: bool) -> None:
         self.button_input_folder.blockSignals(enabled)
         self.button_out_dir_browse.blockSignals(enabled)
+
+
+    def clear(self) -> None:
+        self.block_signals(True)
+        self.comboBox_out_dir.clear()
+        self.block_signals(False)
+
+
+    def append_to_combobox(self, out_dir: str) -> None:
+        # Do not append home
+        if Path(out_dir) == Path.home():
+            return
+
+        out_dir = str(Path(out_dir))
+        index: int = self.comboBox_out_dir.findText(out_dir)
+        if index >= 0:
+            self.comboBox_out_dir.removeItem(index)
+        self.comboBox_out_dir.insertItem(0, out_dir)
+        self.comboBox_out_dir.setCurrentIndex(0)
+
+        while self.comboBox_out_dir.count() > self.max_items:
+            self.comboBox_out_dir.removeItem(self.comboBox_out_dir.count() - 1)
 
 
     def refresh_model_info(self, model: NnModel) -> None:
@@ -55,42 +100,48 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
         self.setEnabled(True)
 
         self.in_model_fp = model.filepath
-        lineedit_text: str = self.lineEdit_out_dir.text()
+        lineedit_text: str = self.comboBox_out_dir.lineEdit().text()
 
         self.block_signals(True)
         if lineedit_text and not self.button_input_folder.isChecked():
             # Not the directory of the model and has already been set
             #   use it if exists. Otherwise, input dir
-            if not os.path.exists(absolute_path(self.lineEdit_out_dir.text())):
+            if not os.path.exists(absolute_path(lineedit_text)):
                 self.button_input_folder.setChecked(True)
-                self.event_use_in_model_dir()
+                self.event_select_in_dir()
 
         else:
             # The selected input directory is the same as the model dir.
             # or use the model directory otherwise
             self.button_input_folder.setChecked(True)
-            self.event_use_in_model_dir()
+            self.event_select_in_dir()
 
+        self.append_to_combobox(self.comboBox_out_dir.lineEdit().text())
         self.block_signals(False)
 
 
-    def event_use_in_model_dir(self) -> None:
+    def event_select_in_dir(self) -> None:
         if self.button_input_folder.isChecked():
             # Initial: use the initial output naming
             directory, _, _ = path_split(absolute_path(self.in_model_fp))
             if not directory:
                 directory = os.path.abspath(__file__)
-            self.lineEdit_out_dir.setText(directory)
+            self.comboBox_out_dir.lineEdit().setText(directory)
             self.in_model_dir = directory
 
 
-    def event_select_output_folder(self) -> None:
+    def conversion_ended(self) -> None:
+        # Append the output directory if it wasn't an existing folder
+        self.append_to_combobox(self.comboBox_out_dir.lineEdit().text())
+
+
+    def event_select_dir_clicked(self) -> None:
         # Initial output directory
-        lineedit_text: str = self.lineEdit_out_dir.text()
+        lineedit_text: str = self.comboBox_out_dir.lineEdit().text()
         output_dir: str = absolute_path("~")
         if lineedit_text:
             initial_out_dir: str = absolute_path(lineedit_text)
-            if os.path.exists(initial_out_dir):
+            if os.path.isdir(initial_out_dir) and is_access_granted(initial_out_dir, 'w'):
                 output_dir = initial_out_dir
 
         # Default is initial directory
@@ -104,7 +155,6 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
                 output_dir,
                 QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks
             )
-            print(selected)
 
             # Cancelled or not exists
             if not selected or not os.path.exists(selected):
@@ -126,8 +176,13 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
                 msg_box.exec()
 
         self.button_input_folder.setChecked(bool(selected_dir == self.in_model_dir))
-        self.lineEdit_out_dir.setText(selected_dir)
+        self.comboBox_out_dir.lineEdit().setText(selected_dir)
+
+        # Append to the combobox
+        self.append_to_combobox(selected_dir)
+
+
 
 
     def values(self) -> str:
-        return self.lineEdit_out_dir.text()
+        return self.comboBox_out_dir.text()

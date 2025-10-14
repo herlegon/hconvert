@@ -74,10 +74,24 @@
          <number>6</number>
         </property>
         <item alignment="Qt::AlignmentFlag::AlignTop">
-         <widget class="MetadataWidget" name="widget_metadata" native="true"/>
+         <widget class="MetadataWidget" name="widget_metadata" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
         </item>
         <item alignment="Qt::AlignmentFlag::AlignTop">
-         <widget class="ConversionWidget" name="widget_conversion" native="true"/>
+         <widget class="ConversionWidget" name="widget_conversion" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>

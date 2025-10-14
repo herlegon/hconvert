@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>305</width>
+    <width>501</width>
     <height>28</height>
    </rect>
   </property>
@@ -46,7 +46,23 @@
     </widget>
    </item>
    <item>
-    <widget class="QLineEdit" name="lineEdit_out_dir"/>
+    <widget class="QComboBox" name="comboBox_out_dir">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>300</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="editable">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QPushButton" name="button_out_dir_browse">

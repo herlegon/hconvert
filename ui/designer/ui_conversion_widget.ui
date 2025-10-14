@@ -36,7 +36,7 @@
    <item>
     <widget class="QGroupBox" name="groupBox">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+      <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
@@ -46,7 +46,14 @@
      </property>
      <layout class="QVBoxLayout" name="layout_main">
       <item>
-       <widget class="SelectOutDirWidget" name="widget_select_out_dir" native="true"/>
+       <widget class="SelectOutDirWidget" name="widget_select_out_dir" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QRadioButton" name="radioButton_safetensor">

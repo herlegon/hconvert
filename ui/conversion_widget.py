@@ -2,21 +2,22 @@ from __future__ import annotations
 from functools import partial
 from pprint import pprint
 from typing import Any, Literal, TYPE_CHECKING
-from backend.user_preferences import UserPreferences
+from .user_settings import UserSettings
 from pynnlib import (
     NnModel,
     NnFrameworkType,
-    SizeConstraint,
 )
 from pynnlib.utils.p_print import *
 
 from PySide6.QtCore import (
     Qt,
+    QTimer,
     Signal,
 )
 from PySide6.QtWidgets import (
     QWidget,
     QMainWindow,
+    QSizePolicy,
 )
 from .designer.ui_conversion_widget import Ui_ConversionWidget
 if TYPE_CHECKING:
@@ -24,6 +25,7 @@ if TYPE_CHECKING:
 
 
 ConversionChoices = Literal['safetensors', 'onnx', 'tensorrt']
+
 
 class ConversionWidget(QWidget, Ui_ConversionWidget):
     signal_conversion_selection_changed = Signal()
@@ -33,6 +35,15 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         self.setupUi(self)
         self._main_window: MainWindow = None
         self._initial_selection: ConversionChoices = 'safetensors'
+
+        self.layout_main.addStretch()
+        # self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+
+        self.groupBox_onnx.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.groupBox_tensorrt.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.radioButton_safetensor.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.widget_select_out_dir.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.adjustSize()
 
@@ -50,16 +61,14 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         self._main_window = main_window
 
 
-    def apply_user_preferences(self, prefs: dict) -> None:
-        print(lightcyan(f"conversionwidget: apply_user_preferences"))
-        pprint(prefs)
+    def apply_user_settings(self, settings: dict) -> None:
         self.groupBox_onnx.setVisible(False)
         self.groupBox_tensorrt.setVisible(False)
-        self._initial_selection = prefs.get('selection', '')
+        self._initial_selection = settings.get('selection', '')
         self.adjust_height()
 
 
-    def get_user_preferences(self) -> dict:
+    def get_user_settings(self) -> dict:
         return {
             'selected_conversion': self.selected()
         }
@@ -86,13 +95,10 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
 
     def adjust_height(self) -> None:
-        print(f"{self.__class__}: adjust_height")
-        self.setMaximumHeight(4096)
-        w = self.geometry().width()
+        self.updateGeometry()
         self.adjustSize()
-        x, y, _, h = list(self.geometry().getRect())
-        self.setGeometry(x, y, w, h)
-        self.setMaximumHeight(h)
+        QTimer.singleShot(0, self._main_window.adjust_height)
+
 
 
     def refresh_conversion_selection(self, model: NnModel) -> None:
@@ -158,7 +164,6 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
                 ):
                     self.radioButton_tensorrt.setChecked(True)
                 self._initial_selection = ""
-                self.adjust_height()
 
 
     def conversion_selection_changed(self, k: ConversionChoices) -> None:
@@ -182,7 +187,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             return
 
         self.adjust_height()
-        self._main_window.adjust_height()
+        # self._main_window.adjust_height()
         self.block_signals(False)
 
 

@@ -1,10 +1,24 @@
 from __future__ import annotations
 from pprint import pprint
 from typing import TYPE_CHECKING, Any
+from backend.path_utils import absolute_path, get_extension
+from pynnlib import (
+    NnModel,
+    NnFrameworkType,
+)
+from pynnlib.utils.p_print import *
+
+from .user_settings import UserSettings
+from .common import SUPPORTED_MODEL_EXTENSIONS
+from .inject_metadata_dialog import inject_metadata_dialog
+from .designer.ui_main_window import Ui_MainWindow
+if TYPE_CHECKING:
+    from backend.controller import Controller
 from PySide6.QtCore import (
     Signal,
     QThread,
     Qt,
+    QTimer,
 )
 from PySide6.QtGui import (
     QCloseEvent,
@@ -16,23 +30,8 @@ from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
     QMessageBox,
+    QSizePolicy,
 )
-
-from backend.path_utils import absolute_path, get_extension
-from ui.common import SUPPORTED_MODEL_EXTENSIONS
-
-from .inject_metadata_dialog import inject_metadata_dialog
-
-from .designer.ui_main_window import Ui_MainWindow
-if TYPE_CHECKING:
-    from backend.controller import Controller
-    from backend.user_preferences import UserPreferences
-
-from pynnlib import (
-    NnModel,
-    NnFrameworkType,
-)
-from pynnlib.utils.p_print import *
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -47,6 +46,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
         self.controller: Controller = controller
+        self.user_settings: UserSettings = UserSettings()
+
         self._is_loading: bool = False
         self.is_closing: bool = False
         self.is_converting: bool = False
@@ -67,6 +68,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Drop model in the windo, whatever the position
         self.setAcceptDrops(True)
 
+        self.apply_user_settings()
+
         self._thread = QThread()
         self.controller.moveToThread(self._thread)
         self._thread.start()
@@ -82,40 +85,48 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.progress.hide()
 
 
-    def apply_user_preferences(self, user_prefs: UserPreferences):
-        settings = user_prefs.settings
+    def apply_user_settings(self):
+        settings: dict[str, Any] = self.user_settings.settings
         try:
             w: list[int] = settings['window']['geometry']
             self.setGeometry(*w)
         except:
-            pass
-        print("USer preference settings")
-        pprint(settings)
-        user_prefs = settings.get('user', {})
+            primary_screen = QApplication.screens()[0]
+            screen_width = primary_screen.size().width()
+            screen_height = primary_screen.size().height()
+            self.setGeometry(50, 50, screen_width - 200, screen_height - 100)
+            self.adjustSize()
+
+        user_settings = settings.get('user', {})
         for w in (
             self.widget_model_browser,
             self.widget_conversion,
+            self.widget_conversion.widget_select_out_dir,
         ):
-            w.apply_user_preferences(user_prefs)
+            w.apply_user_settings(user_settings)
         self.show()
+        self.widget_conversion.adjust_height()
+        self.adjust_height()
 
 
-    def get_user_preferences(self) -> dict:
-        print(f"{self.__class__}:get_user_preferences")
-        return {
+    def save_user_settings(self) -> None:
+        user_settings: dict[str, Any] = {
             'window': {
                 'screen': 0,
                 'geometry': list(self.geometry().getRect())
             },
             'user': {
-                **self.widget_model_browser.get_user_preferences(),
-                **self.widget_conversion.get_user_preferences(),
-                # **self.widget_conversion.widget_select_out_dir.get_user_preferences(),
+                **self.widget_model_browser.get_user_settings(),
+                **self.widget_conversion.get_user_settings(),
+                **self.widget_conversion.widget_select_out_dir.get_user_settings(),
             },
         }
 
+        self.user_settings.save(user_settings)
+
 
     def closeEvent(self, event: QCloseEvent):
+        self.save_user_settings()
         self.close_event()
         super().closeEvent(event)
 
@@ -135,56 +146,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.close()
 
 
-    def dropEvent(self, event: QDropEvent):
-        if self._is_loading:
-            return
-        model_fp: str = absolute_path(event.mimeData().urls()[0].toLocalFile())
-        self.widget_model_browser.set_filepath(model_fp=model_fp)
-        self.event_model_loaded(model_fp=model_fp)
-
-
-    def dragEnterEvent(self, event: QDragEnterEvent):
-        if self._is_loading:
-            return
-
-        is_allowed: bool = False
-        if event.mimeData().hasUrls():
-            urls = event.mimeData().urls()
-            if len(urls) == 1:
-                extension = get_extension(absolute_path(urls[0].toLocalFile()))
-                if extension in SUPPORTED_MODEL_EXTENSIONS:
-                    event.acceptProposedAction()
-                    is_allowed = True
-
-            event.setDropAction(Qt.DropAction.MoveAction)
-        if not is_allowed:
-            print("Oh noooo!!!")
-
-
-    def event_model_loaded(self, model_fp: str) -> None:
-        self._is_loading = True
-        self.setEnabled(False)
-        QApplication.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
-        for w in (
-            self.widget_pytorch_model,
-            self.widget_onnx_model,
-            self.widget_tensorrt_model,
-            self.widget_metadata,
-        ):
-            w.clear()
-        self.signal_model_loaded.emit(model_fp)
+    def set_min_max_width(self):
+        self.setMinimumWidth(0)
+        self.setMaximumWidth(2000)
 
 
     def adjust_height(self) -> None:
-        print(f"{self.__class__}: adjust_height")
+        current_width = self.width()
 
-        self.setMaximumHeight(4096)
-        w = self.geometry().width()
+        self.setMinimumSize(0, 0)
         self.centralWidget().adjustSize()
-        self.adjustSize()
-        x, y, _, h = list(self.geometry().getRect())
-        self.setGeometry(x, y, w, h)
-        self.setMaximumHeight(h)
+        content_size = self.centralWidget().sizeHint()
+
+        # Account for window frame and margins
+        new_height = content_size.height() + self.menuBar().height()
+        self.setMinimumHeight(new_height)
+
+        # Resize window to minimum height, keeping width unchanged
+        self.resize(current_width, new_height)
+        self.setFixedHeight(new_height)
+
+        QTimer.singleShot(100, lambda: self.set_min_max_width)
+
 
 
     def refresh_model_info(self, model: NnModel) -> None:
@@ -210,16 +193,30 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_metadata.refresh_model_info(model)
 
 
+    def event_model_loaded(self, model_fp: str) -> None:
+        self._is_loading = True
+        self.setEnabled(False)
+        QApplication.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
+        for w in (
+            self.widget_pytorch_model,
+            self.widget_onnx_model,
+            self.widget_tensorrt_model,
+            self.widget_metadata,
+        ):
+            w.clear()
+        self.signal_model_loaded.emit(model_fp)
+
+
     def event_model_parsed(self, model_fp: str) -> None:
         QApplication.restoreOverrideCursor()
         self._is_loading = False
-        self.widget_model_browser.update_model_fp(model_fp=model_fp)
+        self.widget_model_browser.update_model_fp(filepath=model_fp)
         model: NnModel = self.controller.get_in_model_info()
 
         self.setEnabled(True)
         self.refresh_model_info(model=model)
         self.widget_conversion.refresh_conversion_selection(model=model)
-        self.adjust_height()
+        # self.adjust_height()
 
 
     def event_inject_metadata(self, metadata: dict[str, str]) -> None:
@@ -254,6 +251,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 f"Failed to save model.\n{exception}",
                 QMessageBox.StandardButton.Ok
             )
+        else:
+            self.widget_conversion.widget_select_out_dir.conversion_ended()
 
 
     def event_convert(self) -> None:
@@ -309,3 +308,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         elif status['state'] == 'running':
             self.button_convert.setText("Cancel")
             self.button_convert.setEnabled(True)
+
+
+
+
+    def dropEvent(self, event: QDropEvent):
+        if self._is_loading:
+            return
+        model_fp: str = absolute_path(event.mimeData().urls()[0].toLocalFile())
+        self.widget_model_browser.set_filepath(model_fp=model_fp)
+        self.event_model_loaded(model_fp=model_fp)
+
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        if self._is_loading:
+            return
+
+        is_allowed: bool = False
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            if len(urls) == 1:
+                extension = get_extension(absolute_path(urls[0].toLocalFile()))
+                if extension in SUPPORTED_MODEL_EXTENSIONS:
+                    event.acceptProposedAction()
+                    is_allowed = True
+
+            event.setDropAction(Qt.DropAction.MoveAction)
+        if not is_allowed:
+            print("Oh noooo!!!")

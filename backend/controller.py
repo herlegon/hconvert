@@ -8,8 +8,7 @@ from PySide6.QtCore import (
     QObject,
     Signal,
 )
-from backend.path_utils import absolute_path, path_basename, path_split
-from backend.user_preferences import UserPreferences
+from backend.path_utils import absolute_path, path_basename
 from pynnlib.utils import get_extension
 from pynnlib import (
     NnModel,
@@ -21,6 +20,8 @@ from pynnlib import (
 )
 from pynnlib.utils.p_print import lightcyan
 from ui.main_window import MainWindow
+
+
 
 class Controller(QObject):
     signal_progress: Signal = Signal(dict)
@@ -35,33 +36,17 @@ class Controller(QObject):
 
         self.in_model: NnModel = None
 
-        self.user_prefs: UserPreferences = UserPreferences()
-        self.user_prefs.settings['system']['dev'] = dev
-
         self.initial_model: str = absolute_path(model_fp)
         if not os.path.exists(self.initial_model):
             self.initial_model = ""
 
 
     def exit(self):
-        print(f"{__name__}:exit")
-        p = self.view.get_user_preferences()
-        self.user_prefs.save(p)
         self.view.close()
-
-
-    def get_user_preferences(self):
-        return self.user_prefs.settings
-
-
-    # def save_user_preferences(self, preferences: dict):
-    #     preferences = self.view.get_user_preferences()
-    #     self.user_prefs.save(preferences)
 
 
     def set_view(self, view: MainWindow):
         self.view = view
-        view.apply_user_preferences(self.user_prefs)
         self.view.signal_model_loaded.connect(self.parse_model)
         self.view.signal_inject_metadata.connect(self.event_inject_metadata)
         self.view.signal_convert_action.connect(self.event_start_conversion)

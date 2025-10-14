@@ -60,7 +60,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         self._main_window = main_window
 
 
-    def apply_user_preferences(self, prefs: dict) -> None:
+    def apply_user_settings(self, prefs: dict) -> None:
         history = prefs.get('in_models_history', [])
         if not history:
             return
@@ -69,13 +69,12 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         self.combobox_model_fp.clear()
         self.combobox_model_fp.lineEdit().clear()
         for f in history[:self.max_items]:
-            print(f"try addin: [{f}]")
             if f and os.path.isfile(f) and get_extension(f) in SUPPORTED_MODEL_EXTENSIONS:
                 self.combobox_model_fp.addItem(str(Path(f)))
         self.combobox_model_fp.blockSignals(False)
 
 
-    def get_user_preferences(self) -> dict:
+    def get_user_settings(self) -> dict:
         return {
             'in_models_history': list([
                 Path(self.combobox_model_fp.itemText(i)).as_posix()
@@ -86,44 +85,35 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
 
     def clear(self) -> None:
         self.combobox_model_fp.blockSignals(True)
-        print(f"{self.__class__} clear")
         self.combobox_model_fp.clear()
         self.combobox_model_fp.blockSignals(False)
 
 
-    def update_model_fp(self, model_fp: str = "") -> None:
+    def append_to_combobox(self, filepath: Path) -> None:
+        model_fp: str = str(filepath)
+        # Select in the list if already exists
+        index: int = self.combobox_model_fp.findText(model_fp)
+        print(f"append to combbox: index={index}")
+        if index >= 0:
+            self.combobox_model_fp.setCurrentIndex(index)
+        else:
+            self.combobox_model_fp.insertItem(0, model_fp)
+
+        while self.combobox_model_fp.count() > self.max_items:
+            self.combobox_model_fp.removeItem(self.combobox_model_fp.count() - 1)
+
+
+    def update_model_fp(self, filepath: str = "") -> None:
         print(lightcyan(f"update_model_fp"))
         self.combobox_model_fp.blockSignals(True)
-        if model_fp:
-            print(f"APpend{model_fp}")
-            model_fp = str(Path(model_fp))
-            # self.combobox_model_fp.lineEdit().setText(model_fp)
-            pprint(list([
-                Path(self.combobox_model_fp.itemText(i)).as_posix()
-                for i in range(self.combobox_model_fp.count())
-            ]))
-
-            index: int = self.combobox_model_fp.findText(model_fp)
-            if index >= 0:
-                self.combobox_model_fp.removeItem(index)
-                print("already in list")
-            self.combobox_model_fp.insertItem(0, model_fp)
-            self.combobox_model_fp.setCurrentIndex(0)
-
-            while self.combobox_model_fp.count() > self.max_items:
-                print(f"  remove item (> {self.max_items})")
-                self.combobox_model_fp.removeItem(self.combobox_model_fp.count() - 1)
-
-            self.previous_directory = parent_directory(model_fp)
+        if filepath:
+            model_fp: Path = Path(filepath)
+            self.append_to_combobox(model_fp)
+            # model_fp.parent()
+            self.previous_directory = parent_directory(str(model_fp))
 
         else:
-            print("Clear lineedit")
             self.combobox_model_fp.lineEdit().clear()
-
-        pprint(list([
-                Path(self.combobox_model_fp.itemText(i)).as_posix()
-                for i in range(self.combobox_model_fp.count())
-            ]))
 
         self.combobox_model_fp.blockSignals(False)
 
