@@ -139,11 +139,19 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             self.combobox_resolution.setEnabled(False)
 
 
-    def update_capabilities(self, model: NnModel) -> None:
+    def update_capabilities(self, model: NnModel) -> bool:
         """Called when a new model is parsed
         """
         if model.framework.type != NnFrameworkType.PYTORCH:
-            return
+            return False
+
+        to_onnx = model.arch.to_onnx
+        if not (
+            to_onnx is not None
+            and to_onnx.dtypes
+            and to_onnx.shape_strategy_types
+        ):
+            return False
 
         arch: NnPytorchArchitecture = model.arch
 
@@ -183,8 +191,16 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             self.spinbox_h.setMinimum(8)
             self.spinbox_h.setSingleStep(1)
 
-        self.size_modified(-1)
+        # clear spinbox/combobox if dynamic
+        if self.radio_dynamic.isChecked():
+            self.spinbox_w.clear()
+            self.spinbox_h.clear()
+            self.combobox_resolution.setCurrentIndex(-1)
+        else:
+            self.size_modified(-1)
+
         self.block_signals(False)
+        return True
 
 
     def shape_strategy_changed(self, state: bool) -> None:

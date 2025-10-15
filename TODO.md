@@ -1,8 +1,8 @@
 # Mandatory
 - Get output filepath before converting (*): dummy model like in `convert_to_tensorrt`
-- enable/disable widgets depending on arch:
-    onnx
-    tensorrt
+- when an onnx model is loaded, if model.torch_arch is none "no support for this"
+- when a model is not supported, open dialog for message and clear all widgets
+- when an exception, show it as the same way as unsupported
 
 - Try to keep the previous conversion selection,
     if the conversion is not possible, switch to the previous one
@@ -16,7 +16,6 @@
             pth: onnx, safetensors
             onnx: nothing
             tensorrt: cannot load
-
 - button's icons (*)
 - when the conversion is stuck -> move conversion to another thread or create a separate python script?...
 - validate shapes (onnx, tensorrt): minimum size and size ordering
@@ -25,11 +24,13 @@
     * save current model/out_dir/selection when starting a conversion (option)
 - Installation (*)
 - System capabilities (*)
-
+- log file and textplainedit (*)
+- copy from combobox and model lineedit doesn't work
+- disable paste in model browser
 
 # Nice to have
 
-- add optimization level
+- add tensorrt optimization level
 - change os.path to pathlib  (*)
 - dialog to reset history, reload previous model, language (*)
 - application icon

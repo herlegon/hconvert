@@ -136,8 +136,6 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         print(f"  get arch details to enable/disable widgets for conversion")
         print(model)
         print("------------------")
-        # print(model.framework)
-        # print("------------------")
         print(model.arch)
         print("------------------")
 
@@ -149,9 +147,10 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         )
 
         # TODO: disable this if not available
-        self.widget_tensorrt_conversion.update_capabilities(model)
-        self.widget_onnx_conversion.update_capabilities(model)
+        tensorrt_cap: bool = self.widget_tensorrt_conversion.update_capabilities(model)
+        onnx_cap: bool = self.widget_onnx_conversion.update_capabilities(model)
 
+        print(f"tensorrt supported: {tensorrt_cap}")
 
         # Conversion selection
         # todo: get previous checked
@@ -167,7 +166,8 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
                     bool(get_extension(model.filepath) != '.safetensors')
                 )
                 self.radioButton_onnx.setEnabled(True)
-                self.radioButton_tensorrt.setEnabled(True)
+                if tensorrt_cap:
+                    self.radioButton_tensorrt.setEnabled(True)
                 # default: select onnx
                 self.radioButton_onnx.setChecked(True)
                 self.conversion_selection_changed('onnx')
@@ -175,11 +175,12 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             elif model.framework.type == NnFrameworkType.ONNX:
                 self.radioButton_safetensors.setEnabled(False)
                 self.radioButton_onnx.setEnabled(False)
-                self.radioButton_tensorrt.setEnabled(True)
-
-                # default: select tensort
-                self.radioButton_tensorrt.setChecked(True)
-                self.conversion_selection_changed('tensorrt')
+                if tensorrt_cap:
+                    self.radioButton_tensorrt.setEnabled(True)
+                    self.radioButton_tensorrt.setChecked(True)
+                    self.conversion_selection_changed('tensorrt')
+                else:
+                    self.radioButton_tensorrt.setEnabled(False)
 
             elif model.framework.type == NnFrameworkType.TENSORRT:
                 self.radioButton_tensorrt.setChecked(True)
