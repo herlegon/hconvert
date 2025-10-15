@@ -3,7 +3,11 @@ import os
 from pathlib import Path
 from pprint import pprint
 from typing import TYPE_CHECKING, Type
-from backend.path_utils import absolute_path, get_extension, parent_directory
+from hutils import (
+    absolute_path,
+    get_extension,
+    parent_directory,
+)
 from PySide6.QtCore import (
     QObject,
     QEvent,
@@ -16,7 +20,6 @@ from PySide6.QtWidgets import (
     QLineEdit,
 )
 
-from pynnlib.utils.p_print import lightcyan
 
 from .common import SUPPORTED_MODEL_EXTENSIONS
 from .designer.ui_model_browser_widget import Ui_ModelBrowserWidget
@@ -52,7 +55,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
 
         self.combobox_model_fp.installEventFilter(self)
         self.combobox_model_fp.lineEdit().installEventFilter(self)
-        self.button_browse.released.connect(self.model_picker_event)
+        self.button_browse.released.connect(self.event_model_picker)
         self.combobox_model_fp.currentIndexChanged.connect(self.event_selection_changed)
 
 
@@ -132,7 +135,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         self.signal_model_loaded.emit(model_fp)
 
 
-    def model_picker_event(self):
+    def event_model_picker(self):
         file_dialog = QFileDialog(
             parent=self,
             fileMode=QFileDialog.FileMode.ExistingFile,
@@ -144,14 +147,11 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
             filter=self.file_filter
         )[0]
 
-        self.previous_directory = parent_directory(model_fp)
-        self.combobox_model_fp.lineEdit().setText(str(Path(model_fp)))
-        print(f"picker")
-        print(f"{model_fp}")
-        print(f"{self.combobox_model_fp.lineEdit().text()}")
-        file_dialog.close()
-        del file_dialog
-        self.signal_model_loaded.emit(model_fp)
+        if model_fp:
+            self.previous_directory = parent_directory(model_fp)
+            self.combobox_model_fp.lineEdit().setText(str(Path(model_fp)))
+            file_dialog.close()
+            self.signal_model_loaded.emit(model_fp)
 
 
     def set_filepath(self, model_fp: str) -> None:

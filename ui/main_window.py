@@ -1,12 +1,15 @@
 from __future__ import annotations
+from functools import partial
 from pprint import pprint
 from typing import TYPE_CHECKING, Any, Type
-from backend.path_utils import absolute_path, get_extension
 from pynnlib import (
     NnModel,
     NnFrameworkType,
 )
-from pynnlib.utils.p_print import *
+from hutils import (
+    absolute_path,
+    get_extension,
+)
 
 from .common import SUPPORTED_MODEL_EXTENSIONS
 from .user_settings import UserSettings
@@ -16,16 +19,19 @@ from .designer.ui_main_window import Ui_MainWindow
 if TYPE_CHECKING:
     from backend.controller import Controller
 from PySide6.QtCore import (
-    Signal,
-    QThread,
     Qt,
+    QThread,
     QTimer,
+    Signal,
 )
 from PySide6.QtGui import (
+    QAction,
     QCloseEvent,
     QCursor,
     QDragEnterEvent,
     QDropEvent,
+    QKeySequence,
+    QShortcut,
 )
 from PySide6.QtWidgets import (
     QApplication,
@@ -81,6 +87,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_model_browser.signal_model_loaded.connect(self.event_model_loaded)
         self.widget_metadata.signal_inject_metadata.connect(self.event_inject_metadata)
         self.widget_progress.signal_start_stop_clicked.connect(self.event_convert)
+
+        self.action_open: QAction
+        self.set_keyboard_shorcuts()
 
         # Signals from the backend
         self.controller.signal_model_parsed.connect(self.event_model_parsed)
@@ -161,6 +170,56 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             widget.close()
         self.close()
 
+    def event_open(self):
+        print("open")
+
+
+    def set_keyboard_shorcuts(self):
+        # On macOS Ctrl vs Meta differences: Meta (⌘)
+
+        self.action_open = QAction("Open", self)
+        self.action_open.setShortcut(QKeySequence("Ctrl+O"))
+        self.action_open.triggered.connect(self.widget_model_browser.button_browse.click)
+        self.addAction(self.action_open)
+
+        self.action_save_metadata = QAction("Save Metadata", self)
+        self.action_save_metadata.setShortcut(QKeySequence("Ctrl+s"))
+        self.action_save_metadata.triggered.connect(self.widget_metadata.button_save_as.click)
+        self.addAction(self.action_save_metadata)
+
+        self.action_undo_metadata = QAction("Undo Metadata", self)
+        self.action_undo_metadata.setShortcut(QKeySequence("Ctrl+z"))
+        self.action_undo_metadata.triggered.connect(self.widget_metadata.button_undo.click)
+        self.addAction(self.action_undo_metadata)
+
+        self.shortcut_safetensors = QShortcut(QKeySequence("S"), self)
+        self.shortcut_safetensors.activated.connect(
+            # partial(self.widget_conversion.conversion_selection_changed, 'safetensors')
+            self.widget_conversion.radioButton_safetensors.click
+        )
+
+        self.shortcut_onnx = QShortcut(QKeySequence("O"), self)
+        self.shortcut_onnx.activated.connect(
+            # partial(self.widget_conversion.conversion_selection_changed, 'onnx')
+            self.widget_conversion.radioButton_onnx.click
+        )
+
+        self.shortcut_tensorrt = QShortcut(QKeySequence("T"), self)
+        self.shortcut_tensorrt.activated.connect(
+            # partial(self.widget_conversion.conversion_selection_changed, 'tensorrt')
+            self.widget_conversion.radioButton_tensorrt.click
+        )
+
+        self.shortcut_start_conversion = QShortcut(QKeySequence("F5"), self)
+        self.shortcut_start_conversion.activated.connect(
+            partial(self.widget_progress.event_convert_shortkey, 'start')
+        )
+
+        self.shortcut_cancel_conversion = QShortcut(QKeySequence("F6"), self)
+        self.shortcut_cancel_conversion.activated.connect(
+            partial(self.widget_progress.event_convert_shortkey, 'stop')
+        )
+
 
     def set_min_max_width(self):
         self.setMinimumWidth(0)
@@ -238,14 +297,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         model: NnModel = self.controller.get_in_model_info()
         model_fp: str | None = inject_metadata_dialog(self, model_fp=model.filepath)
         if model_fp is not None:
-            self.widget_progress.start('metadata')
-
             self.setEnabled(False)
             print("Injection started")
             self.signal_inject_metadata.emit({
                 'filepath': model_fp,
                 'metadata': metadata
             })
+        else:
+            self.widget_metadata.set_enabled(True)
 
 
     def reset_widget_monitor(self) -> None:

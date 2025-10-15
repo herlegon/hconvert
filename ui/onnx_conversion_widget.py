@@ -6,7 +6,6 @@ from pynnlib import (
     NnFrameworkType,
     SizeConstraint,
 )
-from pynnlib.utils.p_print import red
 from .common import (
     DEFAULT_SIZE,
     PREDEFINED_SIZE,

@@ -1,5 +1,11 @@
 from __future__ import annotations
 from copy import deepcopy
+from hutils import (
+    absolute_path,
+    path_basename,
+    get_extension,
+    lightcyan,
+)
 import os
 from pprint import pprint
 import time
@@ -8,8 +14,6 @@ from PySide6.QtCore import (
     QObject,
     Signal,
 )
-from backend.path_utils import absolute_path, path_basename
-from pynnlib.utils import get_extension
 from pynnlib import (
     Idtype,
     NnModel,
@@ -20,7 +24,6 @@ from pynnlib import (
     ShapeStrategy,
     ShapeStrategyType,
 )
-from pynnlib.utils.p_print import lightcyan
 from ui.main_window import MainWindow
 
 
@@ -70,7 +73,10 @@ class Controller(QObject):
         try:
             self.in_model: NnModel = nnlib.open(model_fp, device=device)
         except Exception as e:
+            exception = str(e)
+            print(exception)
             raise ValueError(str(e))
+
         elapsed = time.time() - start_time
 
         self.emit_ended_signal()

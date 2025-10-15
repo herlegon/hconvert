@@ -29,9 +29,9 @@
             120
         ]
     },
-
     "python.analysis.extraPaths": [
-        "../pynnlib"
+        "../pynnlib",
+        "../hutils",
     ],
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.diagnosticSeverityOverrides": {

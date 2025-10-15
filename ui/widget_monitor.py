@@ -15,6 +15,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+
+
 class WidgetMonitor(QObject):
     """Monitors widgets for user interaction and triggers callback."""
 

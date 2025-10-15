@@ -2,14 +2,14 @@ from __future__ import annotations
 from functools import partial
 from pprint import pprint
 from typing import Any, Literal, TYPE_CHECKING, Type
-from backend.path_utils import get_extension
+from hutils import (
+    get_extension,
+    lightcyan,
+)
 from pynnlib import (
     NnModel,
     NnFrameworkType,
 )
-from pynnlib.architecture import NnPytorchArchitecture
-from pynnlib.utils.p_print import *
-
 from PySide6.QtCore import (
     QTimer,
     Signal,
@@ -42,20 +42,24 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
         self.groupBox_onnx.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.groupBox_tensorrt.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.radioButton_safetensor.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.radioButton_safetensors.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.widget_select_out_dir.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.adjustSize()
 
+        self.radioButton_safetensors.setToolTip("To a SafeTensors file (s)")
+        self.radioButton_onnx.setToolTip("To an ONNX model (o)")
+        self.radioButton_tensorrt.setToolTip("To a TensorRT engine (t)")
+
         self.radio_buttons: list[QRadioButton] = [
-            self.radioButton_safetensor,
+            self.radioButton_safetensors,
             self.radioButton_onnx,
             self.radioButton_tensorrt,
         ]
         # Conversion selection changed
-        self.radioButton_safetensor.setChecked(True)
-        self.radioButton_safetensor.clicked.connect(
+        self.radioButton_safetensors.setChecked(True)
+        self.radioButton_safetensors.clicked.connect(
             partial(self.conversion_selection_changed, 'safetensors'))
         self.radioButton_onnx.clicked.connect(
             partial(self.conversion_selection_changed, 'onnx'))
@@ -157,7 +161,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         self.block_signals(False)
         if model is not None:
             if model.framework.type == NnFrameworkType.PYTORCH:
-                self.radioButton_safetensor.setEnabled(
+                self.radioButton_safetensors.setEnabled(
                     bool(get_extension(model.filepath) != '.safetensors')
                 )
                 self.radioButton_onnx.setEnabled(True)
@@ -167,7 +171,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
                 self.conversion_selection_changed('onnx')
 
             elif model.framework.type == NnFrameworkType.ONNX:
-                self.radioButton_safetensor.setEnabled(False)
+                self.radioButton_safetensors.setEnabled(False)
                 self.radioButton_onnx.setEnabled(False)
                 self.radioButton_tensorrt.setEnabled(True)
 
@@ -184,9 +188,9 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             if self._initial_selection:
                 if (
                     self._initial_selection == 'safetensors'
-                    and self.radioButton_safetensor.isEnabled()
+                    and self.radioButton_safetensors.isEnabled()
                 ):
-                    self.radioButton_safetensor.setChecked(True)
+                    self.radioButton_safetensors.setChecked(True)
 
                 elif (
                     self._initial_selection == 'onnx'
@@ -206,15 +210,15 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
     def conversion_selection_changed(self, k: ConversionChoices) -> None:
         self.block_signals(True)
 
-        if k == 'safetensors':
+        if k == 'safetensors' and self.radioButton_safetensors.isCheckable():
             self.groupBox_onnx.setVisible(False)
             self.groupBox_tensorrt.setVisible(False)
 
-        elif k == 'onnx':
+        elif k == 'onnx' and self.radioButton_onnx.isCheckable():
             self.groupBox_tensorrt.setVisible(False)
             self.groupBox_onnx.setVisible(True)
 
-        elif k == 'tensorrt':
+        elif k == 'tensorrt' and self.radioButton_tensorrt.isCheckable():
             self.groupBox_onnx.setVisible(False)
             self.groupBox_tensorrt.setVisible(True)
 
@@ -228,7 +232,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
 
     def selected(self) -> ConversionChoices | None:
-        if self.radioButton_safetensor.isChecked():
+        if self.radioButton_safetensors.isChecked():
             return 'safetensors'
         elif self.radioButton_onnx.isChecked():
             return 'onnx'

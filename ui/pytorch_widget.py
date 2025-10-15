@@ -2,26 +2,17 @@ from __future__ import annotations
 from pynnlib import (
     NnModel,
     NnFrameworkType,
-    PyTorchModel,
 )
 
 from PySide6.QtCore import (
     QCoreApplication,
     Qt,
 )
-
 from PySide6.QtWidgets import (
-    QTableWidgetItem,
     QWidget,
-    QCheckBox,
-    QHBoxLayout,
-    QSlider,
-    QAbstractSpinBox,
-    QLineEdit,
-    QComboBox,
 )
-
 from .designer.ui_pytorch_widget import Ui_PyTorchWidget
+
 
 class PyTorchWidget(QWidget, Ui_PyTorchWidget):
     def __init__(self, parent):

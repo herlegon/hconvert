@@ -1,28 +1,18 @@
 from __future__ import annotations
-from functools import partial
 from pprint import pprint
-from typing import Any, Literal, TYPE_CHECKING
-from .user_settings import UserSettings
-from pynnlib import (
-    NnModel,
-    NnFrameworkType,
-)
-from pynnlib.utils.p_print import *
+from typing import TYPE_CHECKING, Literal
 
 from PySide6.QtCore import (
-    Qt,
     QTimer,
     Signal,
 )
 from PySide6.QtWidgets import (
     QWidget,
     QMainWindow,
-    QSizePolicy,
 )
 from .designer.ui_progress_widget import Ui_ProgressWidget
 if TYPE_CHECKING:
     from .main_window import MainWindow
-
 
 
 
@@ -104,21 +94,34 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         self.button_containing_folder.setEnabled(False)
 
 
-    def event_convert_button_clicked(self) -> None:
+    def event_convert_shortkey(self, action: Literal['start', 'stop']) -> None:
+        if action == 'start' and not self.is_converting:
+            self.event_convert_button_clicked()
+        elif action =='stop' and self.is_converting:
+            self.event_cancel_button_clicked()
+
+
+    def event_cancel_button_clicked(self) -> None:
         self.button_convert.setEnabled(False)
-        state: str = ''
         if self.is_converting:
             # Stop conversion
             state = 'stop'
             self.is_converting = False
             self.button_convert.setText("Convert")
-        else:
-            state = 'start'
-            self.is_converting = True
-            self.button_convert.setText("Stop")
-            self.label.setEnabled(False)
-            self.lineEdit_out_model_fp.setEnabled(False)
+            self.signal_start_stop_clicked.emit(state)
 
+
+    def event_convert_button_clicked(self) -> None:
+        if self.is_converting:
+            self.event_cancel_button_clicked()
+            return
+
+        self.button_convert.setEnabled(False)
+        state = 'start'
+        self.is_converting = True
+        self.button_convert.setText("Stop")
+        self.label.setEnabled(False)
+        self.lineEdit_out_model_fp.setEnabled(False)
         self.signal_start_stop_clicked.emit(state)
 
 

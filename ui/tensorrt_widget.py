@@ -2,16 +2,14 @@ from __future__ import annotations
 from pprint import pprint
 from typing import TYPE_CHECKING
 from warnings import warn
-from .common import (
-    predefined_shapes_inv,
-)
-
 from pynnlib import (
     NnModel,
     NnFrameworkType,
 )
-from pynnlib.utils.p_print import *
 
+from .common import (
+    predefined_shapes_inv,
+)
 from PySide6.QtCore import (
     Qt,
 )
@@ -26,6 +24,7 @@ from PySide6.QtWidgets import (
 from .designer.ui_tensorrt_widget import Ui_TensorRTWidget
 if TYPE_CHECKING:
     from .main_window import MainWindow
+
 
 
 class TensorRTWidget(QWidget, Ui_TensorRTWidget):
@@ -113,25 +112,25 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
 
         # dtype: corresponds to input dtype
         if model.io_dtypes['input'] == 'fp32':
-            self.checkbox_fp32.setCheckable(True)
-            self.checkbox_fp32.setChecked(True)
+            self.radio_fp32.setCheckable(True)
+            self.radio_fp32.setChecked(True)
         elif model.io_dtypes['input'] == 'fp16':
-            self.checkbox_fp16.setCheckable(True)
-            self.checkbox_fp16.setChecked(True)
-        elif model.io_dtypes['input'] == 'fp16':
-            self.checkbox_bf16.setCheckable(True)
-            self.checkbox_bf16.setChecked(True)
+            self.radio_fp16.setCheckable(True)
+            self.radio_fp16.setChecked(True)
+        elif model.io_dtypes['input'] == 'bf16':
+            self.radio_bf16.setCheckable(True)
+            self.radio_bf16.setChecked(True)
         else:
             print("Error: dtype is not found")
 
         # typing
         typing: str = model.metadata.get("typing", "")
         if typing == 'strong':
-            self.radiobutton_strong.setCheckable(True)
-            self.radiobutton_strong.setChecked(True)
+            self.radio_strong.setCheckable(True)
+            self.radio_strong.setChecked(True)
         elif typing == 'weak':
-            self.radiobutton_weak.setCheckable(True)
-            self.radiobutton_weak.setChecked(True)
+            self.radio_weak.setCheckable(True)
+            self.radio_weak.setChecked(True)
 
         # shape strategy and sizes
         size = " x ".join(map(str, model.shape_strategy.opt_size))
@@ -140,17 +139,17 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
 
         if model.shape_strategy.type in ('static', 'fixed'):
             if 'static' in model.shape_strategy.type:
-                self.radiobutton_static.setCheckable(True)
-                self.radiobutton_static.setChecked(True)
+                self.radio_static.setCheckable(True)
+                self.radio_static.setChecked(True)
             else:
-                self.radiobutton_fixed.setCheckable(True)
-                self.radiobutton_fixed.setChecked(True)
+                self.radio_fixed.setCheckable(True)
+                self.radio_fixed.setChecked(True)
 
             self.set_row_visible((5, 7), visible=False)
 
         elif model.shape_strategy.type == 'dynamic':
-            self.radiobutton_dynamic.setCheckable(True)
-            self.radiobutton_dynamic.setChecked(True)
+            self.radio_dynamic.setCheckable(True)
+            self.radio_dynamic.setChecked(True)
 
             self.set_row_visible((5, 7), visible=True)
 

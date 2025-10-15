@@ -4,23 +4,26 @@ from pathlib import (
     Path,
 )
 from typing import Type
-from backend.path_utils import absolute_path, is_access_granted, parent_directory, path_split
+from hutils import (
+    absolute_path,
+    is_access_granted,
+    path_split,
+)
 from pynnlib import (
     NnModel,
     NnFrameworkType,
 )
+
 from PySide6.QtCore import (
-    QEvent,
-    Qt,
     Signal,
 )
 from PySide6.QtWidgets import (
     QWidget,
-    QComboBox,
     QFileDialog,
     QMessageBox,
 )
 from .designer.ui_select_out_dir_widget import Ui_SelectOutDirWidget
+
 
 
 class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):

@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any, Type
+from typing import Type
 from pynnlib import (
     NnModel,
 )
@@ -23,12 +23,14 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.setupUi(self)
-        self.pushbutton_undo.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.pushbutton_save_as.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.button_undo.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.button_undo.setToolTip("Undo modifications (Ctrl+U)")
+        self.button_save_as.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.button_save_as.setToolTip("Save or overwrite(Ctrl+S)")
 
         self.setEnabled(False)
-        self.pushbutton_undo.setEnabled(False)
-        self.pushbutton_save_as.setEnabled(False)
+        self.button_undo.setEnabled(False)
+        self.button_save_as.setEnabled(False)
         self.adjustSize()
 
         self.initial_metadata: dict[str, str] | None = None
@@ -47,15 +49,15 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
             w.setAcceptDrops(False)
             w.textChanged.connect(self.event_edition_started)
         self.textedit_comment.textChanged.connect(self.event_edition_started)
-        self.pushbutton_undo.released.connect(self.event_undo)
-        self.pushbutton_save_as.released.connect(self.event_save_as)
+        self.button_undo.released.connect(self.event_undo)
+        self.button_save_as.released.connect(self.event_save_as)
 
 
     def block_signals(self, b: bool) -> None:
         for w in (
             *self.text_widgets,
-            self.pushbutton_save_as,
-            self.pushbutton_undo,
+            self.button_save_as,
+            self.button_undo,
         ):
             w.blockSignals(b)
 
@@ -71,6 +73,11 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
     def clear(self) -> None:
         for w in self.text_widgets:
             w.clear()
+
+
+    def set_enabled(self, b: bool) -> None:
+        self.button_undo.setEnabled(b)
+        self.button_save_as.setEnabled(b)
 
 
     def fill_fields(self, metadata: dict[str, str]) -> None:
@@ -97,8 +104,8 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
     def refresh_model_info(self, model: NnModel | None) -> None:
         self.clear()
-        self.pushbutton_save_as.setEnabled(False)
-        self.pushbutton_undo.setEnabled(False)
+        self.button_save_as.setEnabled(False)
+        self.button_undo.setEnabled(False)
 
         if model is None:
             self.setEnabled(False)
@@ -111,8 +118,8 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
     def event_undo(self) -> None:
         self.clear()
-        self.pushbutton_save_as.setEnabled(False)
-        self.pushbutton_undo.setEnabled(False)
+        self.button_save_as.setEnabled(False)
+        self.button_undo.setEnabled(False)
         self.fill_fields(self.initial_metadata)
         if (
             self.current_widget is not None
@@ -122,8 +129,8 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
 
     def event_save_as(self) -> None:
-        self.pushbutton_save_as.setEnabled(False)
-        self.pushbutton_undo.setEnabled(False)
+        self.button_save_as.setEnabled(False)
+        self.button_undo.setEnabled(False)
         if (
             self.current_widget is not None
             and self.current_widget in self.text_widgets
@@ -133,8 +140,8 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
 
     def event_edition_started(self) -> None:
-        self.pushbutton_save_as.setEnabled(True)
-        self.pushbutton_undo.setEnabled(True)
+        self.button_save_as.setEnabled(True)
+        self.button_undo.setEnabled(True)
         self.current_widget = QApplication.focusWidget()
 
 

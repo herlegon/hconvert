@@ -1,14 +1,20 @@
 from __future__ import annotations
 from pprint import pprint
+from hutils import (
+    red
+)
 from pynnlib import (
     NnModel,
     NnFrameworkType,
 )
-from pynnlib.utils.p_print import red
+from .common import (
+    DEFAULT_SIZE,
+    predefined_shapes_inv,
+    ShapeStrategyName,
+)
 
 from PySide6.QtCore import (
     Qt,
-    Signal,
 )
 from PySide6.QtWidgets import (
     QWidget,
@@ -17,11 +23,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from .designer.ui_onnx_widget import Ui_OnnxWidget
-from .common import (
-    DEFAULT_SIZE,
-    predefined_shapes_inv,
-    ShapeStrategyName,
-)
+
+
 
 class OnnxWidget(QWidget, Ui_OnnxWidget):
 
@@ -83,7 +86,7 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
 
         # Do not allow clicking on a Qadiobutton or selectin a text
         for r in self.findChildren(QRadioButton):
-            r.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+            r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
             r.setEnabled(False)
         for l in self.findChildren(QLineEdit):
             l.setEnabled(False)

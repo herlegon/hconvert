@@ -14,15 +14,16 @@ from rich.progress import (
     TimeRemainingColumn,
     TransferSpeedColumn,
 )
-import shutil
 import subprocess
 import time
 from urllib.parse import unquote
 
 from .ext_packages import ExtPackage, download_package
 from utils.logger import logger
-from utils.path_utils import get_app_tempdir, get_extension
-from utils.p_print import *
+from hutils import (
+    get_app_tempdir,
+    lightgrey,
+)
 
 
 @dataclass

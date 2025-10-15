@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>122</width>
+    <width>127</width>
     <height>257</height>
    </rect>
   </property>
@@ -68,9 +68,9 @@
        </widget>
       </item>
       <item>
-       <widget class="QRadioButton" name="radioButton_safetensor">
+       <widget class="QRadioButton" name="radioButton_safetensors">
         <property name="text">
-         <string>SafeTensor</string>
+         <string>&amp;SafeTensors</string>
         </property>
         <attribute name="buttonGroup">
          <string notr="true">group_conversion</string>
@@ -80,7 +80,7 @@
       <item>
        <widget class="QRadioButton" name="radioButton_onnx">
         <property name="text">
-         <string>ONNX</string>
+         <string>&amp;ONNX</string>
         </property>
         <attribute name="buttonGroup">
          <string notr="true">group_conversion</string>
@@ -120,7 +120,7 @@
       <item>
        <widget class="QRadioButton" name="radioButton_tensorrt">
         <property name="text">
-         <string>TensorRT</string>
+         <string>&amp;TensorRT</string>
         </property>
         <attribute name="buttonGroup">
          <string notr="true">group_conversion</string>

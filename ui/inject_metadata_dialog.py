@@ -1,13 +1,10 @@
+from hutils import get_extension
 import os
 from PySide6.QtWidgets import (
     QFileDialog,
     QMessageBox,
     QWidget,
 )
-
-from backend.path_utils import get_extension, path_basename
-
-
 
 
 def inject_metadata_dialog(parent: QWidget, model_fp: str) -> str | None:

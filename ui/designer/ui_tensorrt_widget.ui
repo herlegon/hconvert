@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>398</width>
-    <height>264</height>
+    <width>402</width>
+    <height>323</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="layout_widget">
    <property name="leftMargin">
     <number>0</number>
    </property>
@@ -37,7 +37,7 @@
      <property name="title">
       <string>TensorRT</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
+     <layout class="QVBoxLayout" name="layout_main">
       <item>
        <layout class="QGridLayout" name="main_layout">
         <property name="spacing">
@@ -146,41 +146,32 @@
            <number>9</number>
           </property>
           <item>
-           <widget class="QCheckBox" name="checkbox_fp32">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
+           <widget class="QRadioButton" name="radio_fp32">
             <property name="text">
              <string>fp32</string>
             </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="checkbox_fp16">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="text">
-             <string>fp16</string>
-            </property>
             <attribute name="buttonGroup">
-             <string notr="true">buttonGroup</string>
+             <string notr="true">group_fp</string>
             </attribute>
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkbox_bf16">
-            <property name="enabled">
-             <bool>true</bool>
+           <widget class="QRadioButton" name="radio_fp16">
+            <property name="text">
+             <string>fp16</string>
             </property>
+            <attribute name="buttonGroup">
+             <string notr="true">group_fp</string>
+            </attribute>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radio_bf16">
             <property name="text">
              <string>bf16</string>
             </property>
             <attribute name="buttonGroup">
-             <string notr="true">buttonGroup</string>
+             <string notr="true">group_fp</string>
             </attribute>
            </widget>
           </item>
@@ -209,7 +200,7 @@
         <item row="3" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
-           <widget class="QRadioButton" name="radiobutton_weak">
+           <widget class="QRadioButton" name="radio_weak">
             <property name="text">
              <string>weak</string>
             </property>
@@ -223,12 +214,12 @@
              <bool>true</bool>
             </property>
             <attribute name="buttonGroup">
-             <string notr="true">buttonGroup_2</string>
+             <string notr="true">group_typing</string>
             </attribute>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="radiobutton_strong">
+           <widget class="QRadioButton" name="radio_strong">
             <property name="text">
              <string>strong</string>
             </property>
@@ -242,7 +233,7 @@
              <bool>true</bool>
             </property>
             <attribute name="buttonGroup">
-             <string notr="true">buttonGroup_2</string>
+             <string notr="true">group_typing</string>
             </attribute>
            </widget>
           </item>
@@ -274,7 +265,7 @@
            <number>9</number>
           </property>
           <item>
-           <widget class="QRadioButton" name="radiobutton_dynamic">
+           <widget class="QRadioButton" name="radio_dynamic">
             <property name="text">
              <string>dynamic</string>
             </property>
@@ -287,10 +278,13 @@
             <property name="autoExclusive">
              <bool>true</bool>
             </property>
+            <attribute name="buttonGroup">
+             <string notr="true">group_shape_strategy</string>
+            </attribute>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="radiobutton_fixed">
+           <widget class="QRadioButton" name="radio_fixed">
             <property name="text">
              <string>fixed</string>
             </property>
@@ -303,10 +297,13 @@
             <property name="autoExclusive">
              <bool>true</bool>
             </property>
+            <attribute name="buttonGroup">
+             <string notr="true">group_shape_strategy</string>
+            </attribute>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="radiobutton_static">
+           <widget class="QRadioButton" name="radio_static">
             <property name="text">
              <string>static</string>
             </property>
@@ -319,6 +316,9 @@
             <property name="autoExclusive">
              <bool>true</bool>
             </property>
+            <attribute name="buttonGroup">
+             <string notr="true">group_shape_strategy</string>
+            </attribute>
            </widget>
           </item>
           <item>
@@ -565,7 +565,8 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup"/>
-  <buttongroup name="buttonGroup_2"/>
+  <buttongroup name="group_typing"/>
+  <buttongroup name="group_fp"/>
+  <buttongroup name="group_shape_strategy"/>
  </buttongroups>
 </ui>

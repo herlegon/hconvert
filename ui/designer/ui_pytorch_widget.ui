@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>368</width>
-    <height>132</height>
+    <width>390</width>
+    <height>183</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -25,7 +25,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="layout_widget">
    <property name="spacing">
     <number>0</number>
    </property>
@@ -46,21 +46,12 @@
      <property name="title">
       <string>PyTorch / Model</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <property name="leftMargin">
-       <number>0</number>
-      </property>
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="rightMargin">
-       <number>0</number>
-      </property>
-      <property name="bottomMargin">
-       <number>0</number>
-      </property>
+     <layout class="QVBoxLayout" name="layout_main">
       <item>
        <layout class="QFormLayout" name="formLayout">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
         <item row="0" column="0">
          <widget class="QLabel" name="label_5">
           <property name="minimumSize">
