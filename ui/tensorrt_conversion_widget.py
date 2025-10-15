@@ -1,10 +1,12 @@
 from __future__ import annotations
 from functools import partial
+from pprint import pprint
 from typing import Literal, Type
 from hutils import (
     red,
     lightcyan,
     lightgreen,
+    purple,
 )
 from pynnlib import (
     NnModel,
@@ -18,6 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QCheckBox,
     QComboBox,
+    QRadioButton,
     QSpinBox,
 )
 
@@ -37,16 +40,16 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         super().__init__(parent)
         self.setupUi(self)
         self._gpus: dict[str, int] = {}
-        self.shape_strategy: ShapeStrategyName = 'dynamic'
+        self.current_shape_strategy: ShapeStrategyName = ''
         self.previous_shapes: dict[str, tuple[int, int]] = {
             "min": DEFAULT_SIZE,
             "opt": DEFAULT_SIZE,
             "max": DEFAULT_SIZE,
         }
-        self._strategy_constraint: Literal['dynamic', 'static', 'fixed'] = 'fixed'
 
         self._editable_widgets: tuple[type[QWidget]] = (
             *self.findChildren(QComboBox),
+            *self.findChildren(QRadioButton),
             *self.findChildren(QCheckBox),
             *self.findChildren(QSpinBox),
         )
@@ -136,12 +139,13 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
     def update_size_widgets(self, strategy: ShapeStrategyName) -> None:
-        if strategy == 'static':
-            self.radio_static.setChecked(True)
-        elif strategy == 'fixed':
-            self.radio_fixed.setChecked(True)
-        else:
-            self.radio_dynamic.setCheckable(True)
+        print(purple(f"update_size_widgets: strategy="), f"{strategy}")
+        # if strategy == 'static':
+        #     self.radio_static.setChecked(True)
+        # elif strategy == 'fixed':
+        #     self.radio_fixed.setChecked(True)
+        # elif strategy == 'dynamic':
+        #     self.radio_dynamic.setChecked(True)
 
         if strategy == 'dynamic':
             for i, (sb_w, sb_h, cb_r) in enumerate(self.size_widgets):
@@ -151,7 +155,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         else:
             # Disable min/max shapes
             for i, (sb_w, sb_h, cb_r) in enumerate(self.size_widgets):
-                if i == 1 and strategy != 'static':
+                if i == 1 and strategy not in ('static', 'fixed'):
                     continue
                 sb_w.lineEdit().clear()
                 sb_h.lineEdit().clear()
@@ -183,7 +187,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
 
-    def enable_conversion(self, model: NnModel) -> None:
+    def update_capabilities(self, model: NnModel) -> None:
         """Called when a new model is parsed
         """
         self.clear()
@@ -217,17 +221,16 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
         # Use the default shape strategy
         self.save_current_sizes()
+        previous_shape_strategy = self.current_shape_strategy
+
         if model.framework.type == NnFrameworkType.ONNX:
-            self._strategy_constraint = 'static' if model.shape_strategy.type == 'static' else 'fixed'
+            print(red("TODO: Let's enable/disable widgets"))
 
-            self.shape_strategy = model.shape_strategy.type
-            self.update_size_widgets(self.shape_strategy)
-            if self.shape_strategy == 'static':
+            self.current_shape_strategy = model.shape_strategy.type
+            self.update_size_widgets(self.current_shape_strategy)
+            if self.current_shape_strategy == 'static':
                 for r in (self.radio_fixed, self.radio_dynamic):
-                    r.setCheckable(False)
-                    r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
                     r.setEnabled(False)
-
                     self.radio_static.setCheckable(False)
                     self.radio_static.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
                     self.radio_static.setChecked(True)
@@ -235,74 +238,73 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             else:
                 for r in (self.radio_fixed, self.radio_dynamic):
                     r.setEnabled(True)
-                    r.setCheckable(True)
-                    r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
 
                     self.radio_static.setCheckable(False)
                     self.radio_static.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
                     self.radio_static.setEnabled(False)
 
         elif model.framework.type == NnFrameworkType.PYTORCH:
-            print(red("Let's enable/disable widgets"))
             model_arch: NnPytorchArchitecture = model.arch
-            for s, r in (
-                ('dynamic', self.radio_dynamic),
-                ('fixed', self.radio_fixed),
-                ('static', self.radio_static),
-            ):
-                if s in model_arch.to_tensorrt.shape_strategy_types:
-                    r.setEnabled(True)
-                    r.setCheckable(True)
-                    r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
-                else:
-                    r.setEnabled(False)
-                    r.setCheckable(False)
-                    r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
+            # Datatypes
             for d, r in (
                 ('fp32', self.radio_fp32),
-                ('fp16', self.radio_fp16),
                 ('bf16', self.radio_bf16),
+                ('fp16', self.radio_fp16),
             ):
                 if d in model_arch.to_tensorrt.dtypes:
-                    print(f"enable {d}")
                     r.setEnabled(True)
                     r.setChecked(True)
                 else:
-                    print(f"disable {d}")
                     r.setEnabled(False)
-                    r.setChecked(False)
 
+            # Shape strategy
+            for s, r in (
+                ('dynamic', self.radio_dynamic),
+                ('static', self.radio_static),
+                ('fixed', self.radio_fixed),
+            ):
+                if s in model_arch.to_tensorrt.shape_strategy_types:
+                    r.setEnabled(True)
+                    r.setChecked(True)
+                    self.current_shape_strategy = s
+                else:
+                    r.setEnabled(False)
+
+            # Typing: read only, force to
             if model_arch.to_tensorrt.weak_typing:
                 self.radio_weak.setChecked(True)
             else:
                 self.radio_strong.setChecked(True)
             for r in (self.radio_weak, self.radio_strong):
                 r.setEnabled(False)
-                # r.setCheckable(False)
-                r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-                # self.setStyleSheet("""
-                #     QRadioButton:disabled { color: black; }
-                # """)
+
+
+        if previous_shape_strategy != self.current_shape_strategy:
+            print("changed strategy")
+        else:
+            print("same strategy")
+
 
         # Fill the size values
-        if self.shape_strategy in ('fixed', 'static'):
-            self.spinbox_w_opt.setValue(model.shape_strategy.opt_size[0])
-            self.spinbox_h_opt.setValue(model.shape_strategy.opt_size[1])
+        if self.current_shape_strategy in ('fixed', 'static'):
+            print(f"  fixed, static use default size: {DEFAULT_SIZE}")
+            w, h = DEFAULT_SIZE
+            self.spinbox_w_opt.setValue(w)
+            self.spinbox_h_opt.setValue(h)
             self.update_opt_resolution_text()
 
-        elif self.shape_strategy == 'dynamic':
-            self._strategy_constraint = 'fixed'
-            self.save_current_sizes()
-            self.update_size_widgets(self.shape_strategy)
+        elif self.current_shape_strategy == 'dynamic':
+            print(f"  dynamic: {DEFAULT_SIZE}")
+            self.update_size_widgets(self.current_shape_strategy)
             self.update_resolution_text()
             self.restore_sizes()
 
-        if self.shape_strategy == 'dynamic':
+        if self.current_shape_strategy == 'dynamic':
             self.radio_dynamic.setChecked(True)
-        elif self.shape_strategy == 'fixed':
+        elif self.current_shape_strategy == 'fixed':
             self.radio_fixed.setChecked(True)
-        elif self.shape_strategy == 'static':
+        elif self.current_shape_strategy == 'static':
             self.radio_fixed.setChecked(True)
 
         self.setEnabled(True)
@@ -314,28 +316,29 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         """User action to set from/to dynamic, fixed/static
         """
         self.block_signals(True)
-        current_strategy: str = self.shape_strategy
+        current_strategy: str = self.current_shape_strategy
         to_fixed: bool = self.radio_fixed.isChecked()
         to_static: bool = self.radio_static.isChecked()
-        print(f"current strategy: {current_strategy}, to fixed: {to_fixed}, to static: {to_static}")
+        print(f"  current strategy: {current_strategy}, to fixed: {to_fixed}, to static: {to_static}")
 
-        if current_strategy != 'dynamic' and not to_fixed and not to_static:
-            # fixed/static -> dynamic
-            print("shape_strategy_changed: fixed/static -> dynamic")
-            self.shape_strategy = 'dynamic'
-            self.update_size_widgets(strategy=self.shape_strategy)
-            self.restore_sizes(ignore_opt=True)
-
-        elif current_strategy == 'dynamic' and (to_fixed or to_static):
+        if current_strategy == 'dynamic' and (to_fixed or to_static):
             print("shape_strategy_changed: dynamic -> fixed")
             # dynamic -> fixed
             # Save to restor min/max values when changing from fixed to dynamic
             self.save_current_sizes()
-            self.shape_strategy = 'static' if to_static else 'fixed'
-            self.update_size_widgets(strategy=self.shape_strategy)
+            self.current_shape_strategy = 'static' if to_static else 'fixed'
+            self.update_size_widgets(strategy=self.current_shape_strategy)
             # self.restore_sizes(ignore_opt=True)
 
-        print(lightgreen(f"  new strategy: {self.shape_strategy}"))
+        elif current_strategy != 'dynamic' and not to_fixed and not to_static:
+            # fixed/static -> dynamic
+            print("shape_strategy_changed: fixed/static -> dynamic")
+            self.current_shape_strategy = 'dynamic'
+            self.update_size_widgets(strategy=self.current_shape_strategy)
+            self.restore_sizes(ignore_opt=True)
+
+
+        print(lightgreen(f"  new strategy: {self.current_shape_strategy}"))
         self.block_signals(False)
 
 
@@ -439,7 +442,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             Emit a signal if not the case.
         """
         wrong_values: list[QSpinBox] = []
-        if self.shape_strategy == 'dynamic':
+        if self.current_shape_strategy == 'dynamic':
             w_min, w_opt, w_max = (
                 self.spinbox_w_min.value(),
                 self.spinbox_w_opt.value(),
@@ -462,6 +465,10 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
         is_valid: bool = bool(len(wrong_values))
+        if is_valid:
+            print(lightgreen("valid"))
+        else:
+            print(red("ERROR"))
 
 
     def values(self) -> dict[str, str | tuple[int, int] | list[str]]:

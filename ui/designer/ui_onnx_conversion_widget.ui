@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>462</width>
-    <height>114</height>
+    <height>136</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -100,7 +100,7 @@
         <number>9</number>
        </property>
        <item>
-        <widget class="QRadioButton" name="radiobutton_fp32">
+        <widget class="QRadioButton" name="radio_fp32">
          <property name="enabled">
           <bool>true</bool>
          </property>
@@ -114,12 +114,12 @@
           <bool>false</bool>
          </property>
          <attribute name="buttonGroup">
-          <string notr="true">buttongroup_datatype</string>
+          <string notr="true">group_dtypes</string>
          </attribute>
         </widget>
        </item>
        <item>
-        <widget class="QRadioButton" name="radiobutton_fp16">
+        <widget class="QRadioButton" name="radio_fp16">
          <property name="text">
           <string>fp16</string>
          </property>
@@ -127,12 +127,12 @@
           <bool>true</bool>
          </property>
          <attribute name="buttonGroup">
-          <string notr="true">buttongroup_datatype</string>
+          <string notr="true">group_dtypes</string>
          </attribute>
         </widget>
        </item>
        <item>
-        <widget class="QRadioButton" name="radiobutton_bf16">
+        <widget class="QRadioButton" name="radio_bf16">
          <property name="text">
           <string>bf16</string>
          </property>
@@ -140,7 +140,7 @@
           <bool>true</bool>
          </property>
          <attribute name="buttonGroup">
-          <string notr="true">buttongroup_datatype</string>
+          <string notr="true">group_dtypes</string>
          </attribute>
         </widget>
        </item>
@@ -175,7 +175,7 @@
         <number>9</number>
        </property>
        <item>
-        <widget class="QRadioButton" name="radiobutton_dynamic">
+        <widget class="QRadioButton" name="radio_dynamic">
          <property name="text">
           <string>dynamic</string>
          </property>
@@ -188,10 +188,13 @@
          <property name="autoExclusive">
           <bool>true</bool>
          </property>
+         <attribute name="buttonGroup">
+          <string notr="true">group_shape_strategy</string>
+         </attribute>
         </widget>
        </item>
        <item>
-        <widget class="QRadioButton" name="radiobutton_static">
+        <widget class="QRadioButton" name="radio_static">
          <property name="text">
           <string>static</string>
          </property>
@@ -204,6 +207,9 @@
          <property name="autoExclusive">
           <bool>true</bool>
          </property>
+         <attribute name="buttonGroup">
+          <string notr="true">group_shape_strategy</string>
+         </attribute>
         </widget>
        </item>
        <item>
@@ -344,6 +350,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttongroup_datatype"/>
+  <buttongroup name="group_dtypes"/>
+  <buttongroup name="group_shape_strategy"/>
  </buttongroups>
 </ui>

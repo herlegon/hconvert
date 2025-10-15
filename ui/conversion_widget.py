@@ -149,7 +149,9 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         )
 
         # TODO: disable this if not available
-        self.widget_tensorrt_conversion.enable_conversion(model)
+        self.widget_tensorrt_conversion.update_capabilities(model)
+        self.widget_onnx_conversion.update_capabilities(model)
+
 
         # Conversion selection
         # todo: get previous checked
