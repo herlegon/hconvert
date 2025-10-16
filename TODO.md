@@ -1,5 +1,8 @@
+(*) reusable
+
+
 # Mandatory
-- Get output filepath before converting (*): dummy model like in `convert_to_tensorrt`
+- Add opt level because it may change the basename: do not add it for level = 3 (default)
 - when an onnx model is loaded, if model.torch_arch is none "no support for this"
 - when a model is not supported, open dialog for message and clear all widgets
 - when an exception, show it as the same way as unsupported
@@ -31,10 +34,11 @@
 # Nice to have
 
 - add tensorrt optimization level
+- select GPU (*)
+- refactor nnlib (*)
 - change os.path to pathlib  (*)
 - dialog to reset history, reload previous model, language (*)
 - application icon
-- refactor nnlib
-- select GPU
 
-(*) reusable
+# To verify
+- Get output filepath before converting (*): remaining to do: ONNX->TENSORT

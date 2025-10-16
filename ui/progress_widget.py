@@ -1,4 +1,8 @@
 from __future__ import annotations
+from hutils import (
+    parent_directory,
+    yellow,
+)
 from pprint import pprint
 from typing import TYPE_CHECKING, Literal
 
@@ -26,21 +30,24 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         self.progress_bar.setVisible(True)
         self.set_visible(False)
         self.is_converting: bool = False
+        self.out_model_fp: str = ""
 
         self.button_convert.released.connect(self.event_convert_button_clicked)
-
+        self.button_containing_folder.released.connect(self.event_open_containing_folder)
 
     def set_main_window(self, main_window: MainWindow) -> None:
         self._main_window = main_window
 
 
     def adjust_height(self) -> None:
+        print(yellow(f"{__class__} adjust_weight"))
         self.updateGeometry()
         self.adjustSize()
         QTimer.singleShot(0, self._main_window.adjust_height)
 
 
     def set_visible(self, b: bool) -> None:
+        print("set progress visible")
         self.gpu_usage.setVisible(b)
         self.label.setVisible(b)
         self.lineEdit_out_model_fp.setVisible(b)
@@ -50,7 +57,6 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
             self._main_window.reset_widget_monitor()
         if self.progress_bar.isVisible() != b:
             self.adjust_height()
-            self._main_window.widget_conversion.adjust_height()
         self.progress_bar.setVisible(b)
         self.updateGeometry()
         self.adjustSize()
@@ -90,6 +96,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         self.progress_bar.setEnabled(False)
         self.is_converting = False
         self.label.setEnabled(False)
+        self.lineEdit_out_model_fp.clear()
         self.lineEdit_out_model_fp.setEnabled(False)
         self.button_containing_folder.setEnabled(False)
 
@@ -125,6 +132,12 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         self.signal_start_stop_clicked.emit(state)
 
 
+    def event_open_containing_folder(self):
+        if self.out_model_fp:
+            directory: str = parent_directory(self.out_model_fp)
+            print(f"open out folder: {directory}")
+
+
     def set_conversion_enabled(self, b: bool) -> None:
         self.button_convert.setEnabled(b)
 
@@ -138,6 +151,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         #   'type': Literal['progress', 'undetermined'],
         #   'progress': int,
         #   'cancelable': bool,
+        #   'out_model_fp': str
         # )
 
         if status['state'] == 'cancelled' and self.is_converting:
@@ -149,7 +163,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
         elif status['state'] == 'running':
             self.button_convert.setText("Stop")
-            self.set_visible(True)
+
             if status['type'] == 'undetermined' and status['progress'] == 0:
                 self.progress_bar.setRange(0, 0)
                 self.progress_bar.setValue(0)
@@ -164,3 +178,8 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
                 self.button_convert.setText("Convert")
                 self.button_convert.setEnabled(False)
                 self.progress_bar.setEnabled(False)
+
+            self.out_model_fp = status['out_model_fp']
+            self.lineEdit_out_model_fp.setText(self.out_model_fp)
+
+            self.set_visible(True)

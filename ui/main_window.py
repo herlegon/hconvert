@@ -317,6 +317,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #   'type': Literal['progress', 'undetermined'],
         #   'progress': int,
         #   'cancelable': bool,
+        #   'out_model_fp': str,
         # )
         self.widget_progress.event_progress(status=status)
         if status['state'] != 'running':
