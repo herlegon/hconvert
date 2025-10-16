@@ -30,6 +30,8 @@
 - log file and textplainedit (*)
 - copy from combobox and model lineedit doesn't work
 - disable paste in model browser
+- RAM/VRAM usage depending on conversion/selected device
+
 
 # Nice to have
 

@@ -47,7 +47,6 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
 
     def set_visible(self, b: bool) -> None:
-        print("set progress visible")
         self.gpu_usage.setVisible(b)
         self.label.setVisible(b)
         self.lineEdit_out_model_fp.setVisible(b)

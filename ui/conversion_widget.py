@@ -134,10 +134,10 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
         print(lightcyan("refresh_conversion_selection"))
         print(f"  get arch details to enable/disable widgets for conversion")
-        print(model)
-        print("------------------")
-        print(model.arch)
-        print("------------------")
+        # print(model)
+        # print("------------------")
+        # print(model.arch)
+        # print("------------------")
 
 
 

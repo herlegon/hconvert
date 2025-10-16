@@ -15,6 +15,7 @@ from pynnlib import (
 )
 
 from PySide6.QtCore import (
+    Qt,
     Signal,
 )
 from PySide6.QtWidgets import (
@@ -41,6 +42,8 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
         self.previous_directory: str = ""
 
         self.comboBox_out_dir.setAcceptDrops(False)
+        self.comboBox_out_dir.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
+        self.comboBox_out_dir.lineEdit().setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
         self.comboBox_out_dir.clear()
 
         self.button_out_dir_browse.released.connect(self.event_select_dir_clicked)
