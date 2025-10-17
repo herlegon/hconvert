@@ -36,7 +36,7 @@ def main():
     arguments = parser.parse_args()
 
     application = QApplication(sys.argv)
-    application.setStyle("Fusion")
+    application.setStyle("Windows11")
     controller = Controller(model_fp=arguments.model, dev=arguments.dev)
 
     from ui.main_window import MainWindow

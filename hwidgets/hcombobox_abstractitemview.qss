@@ -1,0 +1,51 @@
+QFrame {
+    background-color: $window_bgd;
+    background: $window_bgd;
+    border: none;
+}
+
+
+QAbstractItemView {
+    /* background-color: #00ff37;
+    background: #ff00dd; */
+    border: none;
+    border-radius: $radius;
+    width: $popup_width;
+    outline: none;
+    margin-left: 0px;
+}
+
+
+QListView {
+    background-color: #76c8ff;
+    border: none;
+    border-radius: $radius;
+    /* margin-top: 40px; */
+    padding-top: $radius;
+    padding-bottom: $radius;
+    padding-left: $padding;
+    padding-right: $padding;
+    show-decoration-selected: 1;
+}
+
+
+QListView::item {
+    /* min-height: $combobox_height; */
+    padding: 10px;
+}
+
+/*
+
+QListView::item:hover {
+    background-color: #444654;
+} */
+
+
+QListView::item:selected {
+    background: #2a2d32;
+    border-radius: $radius;
+    margin-right: $radius;
+}
+
+
+
