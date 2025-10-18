@@ -17,7 +17,7 @@ QAbstractItemView {
 
 
 QListView {
-    background-color: #76c8ff;
+    /* background-color: #76c8ff; */
     border: none;
     border-radius: $radius;
     /* margin-top: 40px; */

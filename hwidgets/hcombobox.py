@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 import sys
+import time
 from typing import Any, Literal, Optional, Sequence
 from PySide6.QtCore import (
     QCoreApplication,
@@ -75,10 +76,11 @@ from PySide6.QtWidgets import (
     QStyleOptionComboBox,
     QAbstractItemView,
     QLineEdit,
+    QGridLayout,
 )
 from string import Template
 
-from hutils import parent_directory
+from hutils import blue, lightcyan, lightgreen, lightgrey, orange, parent_directory, purple, yellow
 
 TITLE_BAR_ICON_PATH = os.path.join(parent_directory(__file__), "icons")
 
@@ -239,13 +241,13 @@ class HComboBox(QComboBox):
         self.lineEdit().setCursor(Qt.CursorShape.PointingHandCursor)
 
 
-        self._popup_open = False
-        self._just_opened = False
-        self._popup_should_be_open = True
+        self.can_hide: bool = False
+        self.counter: int = 0
+
         # Install event filter on the line edit
-        # if self.lineEdit():
-        #     self.lineEdit().installEventFilter(self)
-        #     self.lineEdit().setReadOnly(True)
+        if self.lineEdit():
+            self.lineEdit().installEventFilter(self)
+            self.lineEdit().setReadOnly(True)
         # self.setEditable(True)
         # self.setEditable(True)
         self.installEventFilter(self)
@@ -297,6 +299,8 @@ class HComboBox(QComboBox):
 
     def showPopup(self):
         super().showPopup()
+
+        print(purple(f"{int(time.time())}  OPEN"))
         self.gap_size = self.height() + COMBOBOX_PADDING
         popup = self.view().window()
         if popup:
@@ -307,126 +311,87 @@ class HComboBox(QComboBox):
             popup.move(self.mapToGlobal(QPoint(0, self.height() + COMBOBOX_PADDING)))
             popup.setStyleSheet(f"background-color: {self.window_bgd}; border: none;")
         self.view().setStyleSheet(self.popup_qss)
-        self._popup_open = True
-
-
-    def mouseReleaseEvent(self, event):
-        # Prevent default combobox behavior
-        # Don't call super() to avoid default popup toggle
-        print("what?")
-        pass
-
-
-    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        if obj is self.lineEdit() and event.type() == QEvent.Type.MouseButtonPress:
-            print("\n\nlcicked")
-            if event.button() == Qt.LeftButton:
-                # if self.view().isVisible():
-                #     self.hidePopup()
-                # else:
-                self.showPopup()
-                self._just_opened = True
-            return True  # consume event
-        elif obj is self and event.type() == QEvent.Type.MouseButtonRelease:
-            print("released")
-            return True
-
-        elif obj is self and event.type() == QEvent.Type.FocusIn:
-            print(f"focus, visible: { self.view().isVisible()}")
-            return True
-
-        elif obj is self and event.type() == QEvent.Type.Leave:
-            print(f"Leave, visible: { self.view().isVisible()}")
-            return True
-
-        elif event.type() not in (
-                QEvent.Type.HoverMove,
-                QEvent.Type.MouseMove,
-                QEvent.Type.Paint,
-
-        ):
-            print(f"visible: { self.view().isVisible()}")
-            print(obj, event)
-        return super().eventFilter(obj, event)
+        self.view().installEventFilter(self)
+        self.can_hide = False
 
 
     def hidePopup(self):
-        if not self._just_opened:
-            super().hidePopup()
-            print("hide")
-            self._popup_open = False
+        if not self.can_hide:
+            print(f"  ignore hide, allow for next time")
+            self.can_hide = True
+            return
+
+        print(purple(f"{int(time.time())}  HIDE"))
+        # self.view().removeEventFilter(self.view())
+        self.counter = 0
+        super().hidePopup()
 
 
-    # def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-    #     if watched == self.lineEdit():
-    #         event_type = event.type()
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        event_type: QEvent.Type = event.type()
+        if watched == self.view():
+            if event_type not in (
+                QEvent.Type.Paint,
+                QEvent.Type.UpdateLater,
+            ):
+                print(lightgreen(f"{int(time.time())} VIEW:"), event)
 
-    #         if event_type == QEvent.Type.MouseButtonPress:
-    #             if self._popup_open:
-    #                 self.hidePopup()
-    #             else:
-    #                 self.showPopup()
-    #             return True
+            else:
+                print(lightgreen(f"{int(time.time())} VIEW:"), event)
 
-    #         elif event_type == QEvent.Type.MouseButtonRelease:
-    #             # Consume release if just opened
-    #             if self._just_opened:
-    #                 self._just_opened = False
-    #                 return True
-    #             return True
-
-    #     return super().eventFilter(watched, event)
-
-
-    # def mousePressEvent(self, event):
-    #     # Prevent default combobox behavior
-    #     # Don't call super() to avoid default popup toggle
-    #     print("what?")
-    #     pass
-
-    # def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-    #     event_type = event.type()
-    #     if isinstance(watched, QLineEdit):
-    #         if event_type == QEvent.Type.MouseButtonPress:
-    #             self.showPopup()
-    #             return True
-
-    #         elif event_type == QEvent.Type.Enter:
-    #             print(f"{watched} {event}")
-    #             if not self.isVisible():
-    #                 self.showPopup()
-    #             return True
-
-    # #     return super().eventFilter(watched, event)
-    # def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-    #     event_type = event.type()
-    #     if isinstance(watched, QLineEdit):
-
-    #         if event_type == QEvent.Type.MouseButtonPress:
-    #             # Toggle popup state
-    #             if self._popup_should_be_open:
-    #                 self._popup_should_be_open = False
-    #                 self.hidePopup()
-    #             else:
-    #                 self._popup_should_be_open = True
-    #                 self.showPopup()
-    #             return True  # Consume event
-
-    #         elif event_type == QEvent.Type.MouseButtonRelease:
-    #             # CRITICAL: Consume release event to prevent popup from closing
-    #             return True
-
-    #         elif event_type == QEvent.Type.MouseButtonDblClick:
-    #             # Also consume double-clicks
-    #             return True
-
-    #     else:
-    #         if event_type == QEvent.Type.MouseButtonRelease:
-    #             # CRITICAL: Consume release event to prevent popup from closing
-    #             return True
+        if watched == self.lineEdit():
+            if event_type == QEvent.Type.MouseButtonRelease:
+                print(lightgreen(f"{int(time.time())} LE MouseButtonRelease")
+                    ,f"can_hide: {self.can_hide}"
+                )
+                print(f"   can_hide: {self.can_hide}")
+                return True
 
 
-    #     return super().eventFilter(watched, event)
+            elif event_type == QEvent.Type.MouseButtonPress:
+                print(lightgreen(f"{int(time.time())} LE MouseButtonPress"))
+                if not self.view().isVisible():
+                    self.can_hide = False
+                    self.showPopup()
+                    print(f" lets open, can't hide now")
+                    return True
+                return True
+
+            # elif event_type == QEvent.Type.InputMethodQuery:
+            #     print(lightcyan(f"InputMethodQuery"))
+
+            # elif event_type == QEvent.Type.HoverEnter:
+            #     print(yellow(f"{int(time.time())} lineedit: HoverEnter, can_hide: {self.can_hide} -> True"))
+
+            elif event_type == QEvent.Type.HoverLeave:
+                print(yellow(f"{int(time.time())} lineedit: HoverLeave, can_hide: {self.can_hide}"))
+                self.can_hide = True
+
+            # else:
+            #     print(yellow(f"{int(time.time())} LE:"), event)
+
+        elif watched == self:
+            if event_type == QEvent.Type.InputMethodQuery:
+                print(lightcyan(f"{int(time.time())} CB: InputMethodQuery"), event)
+                if self.view().isVisible():
+                    if self.counter > 1:
+                        print(" hide")
+                        self.can_hide = True
+                        self.counter = 0
+                        self.hidePopup()
+                    else:
+                        self.counter += 1
+
+            else:
+                print(lightcyan(f"{int(time.time())} CB:"), event)
+
+
+        # else:
+        #     print(blue(f"unknown:"), event)
+
+
+        return super().eventFilter(watched, event)
+
 
 
     def setHeight(self, height: int, radius:int) -> None:
@@ -467,28 +432,30 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app = QApplication(sys.argv)
 
-
-    window = QWidget()
-    # window.setWindowFlags(window.windowFlags() | Qt.WindowType.FramelessWindowHint)
-    vlayout = QVBoxLayout(window)
-    vlayout.addWidget(QLabel("Selectable Read-Only Combo Box Test"))
-    vlayout.setContentsMargins(50,50,50,300)
-    # vlayout.addWidget(
-
-    bgd = "#202123"
-    window.setStyleSheet(f"background-color: {bgd}; color: white;")  # Red background
-
-    combo = HComboBox(window, bgd=bgd)
-    # combo.lineEdit().setReadOnly(True)
-
-    combo.addItems([
+    items = [
         "This is a long text you can select if you want",
         "Another item to test a very very very long text to display",
         "Copy me with Ctrl+C you should see some dots in the line",
         "Right-click won't work"
-    ])
+    ]
 
-    vlayout.addWidget(combo)
+    bgd = "#202123"
+
+    window = QWidget()
+    window.setStyleSheet(f"background-color: {bgd}; color: white;")
+
+    main_layout = QGridLayout(window)
+    main_layout.setContentsMargins(50,50,50,300)
+    main_layout.setSpacing(64)
+
+    qcombobox = QComboBox(window)
+    qcombobox.addItems(items)
+
+    hcombobox = HComboBox(window, bgd=bgd)
+    hcombobox.addItems(items)
+
+    main_layout.addWidget(qcombobox, 0, 0, 1, 1)
+    main_layout.addWidget(hcombobox, 0, 1, 1, 1)
 
     window.show()
     sys.exit(app.exec())

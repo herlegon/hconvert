@@ -4,15 +4,14 @@ QComboBox {
     font-size: 10pt;
 
     padding-left: $padding;
-    border: 1px solid yellow;
+    /* border: 1px solid yellow; */
     border-radius: $radius;
     background-color: $bgd;
-
 }
 
-QComboBox:hover {
+/* QComboBox:hover {
     border: 1px solid green;
-}
+} */
 
 QComboBox::down-arrow {
     width: 0px;
