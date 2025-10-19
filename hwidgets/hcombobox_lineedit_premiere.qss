@@ -1,0 +1,10 @@
+
+QComboBox QLineEdit {
+    padding-right: $arrow_space;
+    border: none;
+}
+QComboBox QLineEdit:read-only {
+    padding-right: $arrow_space;
+    border: none;
+}
+

@@ -1,10 +1,8 @@
-
+/* === Text field (editable mode) === */
 QComboBox QLineEdit {
-    padding-right: $arrow_space;
+    background: transparent;
     border: none;
+    color: #E0E0E0;
+    padding: 0px;
+    margin: 0px;
 }
-QComboBox QLineEdit:read-only {
-    padding-right: $arrow_space;
-    border: none;
-}
-

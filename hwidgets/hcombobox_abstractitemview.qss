@@ -1,50 +1,69 @@
 QFrame {
+    /* background-color: $window_bgd; */
     background-color: $window_bgd;
     background: $window_bgd;
+
+    /* background: $window_bgd; */
+    /* background: transparent; */
+    /* background-color: #00ff37;
+    background: #00ff37; */
+    /* border: none; */
+    /* border-radius: $radius; */
+    /* background: transparent; */
     border: none;
+
+    padding-top: 10px;
+
+    margin-top: 10px;
+
+
 }
 
 
 QAbstractItemView {
-    /* background-color: #00ff37;
-    background: #ff00dd; */
-    border: none;
+    background-color: $window_bgd;
+    background: $window_bgd;
+    /* border: none; */
     border-radius: $radius;
+    /* border-radius: 9px; */
     width: $popup_width;
-    outline: none;
+    /* outline: none; */
     margin-left: 0px;
-}
 
+    margin-top: 0px;
+    padding-top: 0px;
 
-QListView {
-    /* background-color: #76c8ff; */
-    border: none;
-    border-radius: $radius;
-    /* margin-top: 40px; */
-    padding-top: $radius;
-    padding-bottom: $radius;
-    padding-left: $padding;
-    padding-right: $padding;
-    show-decoration-selected: 1;
+    /* margin-top: 5px; */
+    outline: none;
+
+    color: #d4d4d8;
+    font-family: "Segoe UI", "Sans Serif";
+    font-size: 10pt;
+
 }
 
 
 QListView::item {
-    /* min-height: $combobox_height; */
-    padding: 10px;
+    background: #7caeff;
+    padding-left: $radius;
+    padding-right: $radius;
+    margin-left: $radius;
+    margin-right: $radius;
+
+    margin-top: 0px;
+    padding-top: 0px;
+
+    /* margin-top: $radius; */
+    /* margin-bottom: $radius; */
+    /* padding-top: 6px; */
+    /* padding-bottom: 6px; */
+    /* background: #4a4e54; */
+    border-radius: $radius;
 }
 
-/*
-
-QListView::item:hover {
-    background-color: #444654;
-} */
-
-
 QListView::item:selected {
-    background: #2a2d32;
+    background: #0062ff;
     border-radius: $radius;
-    margin-right: $radius;
 }
 
 
