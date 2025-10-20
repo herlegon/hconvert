@@ -1,4 +1,5 @@
 
+from dataclasses import dataclass
 import os
 from pathlib import Path
 from pprint import pprint
@@ -83,61 +84,18 @@ from PySide6.QtWidgets import (
 )
 from string import Template
 
+
 from hutils import blue, lightcyan, lightgreen, lightgrey, orange, parent_directory, purple, yellow
+sys.path.append(os.path.join(parent_directory(__file__), "hwidgets"))
+
+from hstyle import *
 
 import logging
 hlogger = logging.getLogger("hwidgets")
 logging.disable(logging.CRITICAL)
 
-TITLE_BAR_ICON_PATH = os.path.join(parent_directory(__file__), "icons")
-
-def load_png_icon(filename: str, color: str) -> QPixmap:
-    filepath = os.path.join(TITLE_BAR_ICON_PATH, filename)
-    if not os.path.exists(filepath):
-        raise ValueError(f"image {filepath} does not exist")
-    qimage: QImage = QImage(filepath)
-    color = QColor(color)
-
-    painter: QPainter = QPainter()
-    painter.begin(qimage)
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
-    painter.setBrush(color)
-    painter.setPen(color)
-    painter.drawRect(qimage.rect())
-    painter.end()
-    return QPixmap(qimage)
 
 
-
-
-
-class ComboBoxItem:
-    def __init__(self, text: str, user_data: Any | None = None) -> None:
-        self._text = text
-        self._user_data = user_data
-    @property
-    def text(self) -> str:
-        return self._text
-
-    @text.setter
-    def text(self, text: str) -> None:
-        self._text = text
-
-    @property
-    def user_data(self) -> Any:
-        return self._user_data
-
-    @user_data.setter
-    def user_data(self, user_data: Any) -> None:
-        self._user_data = user_data
-
-
-
-
-COMBOBOX_HEIGHT = 32
-COMBOBOX_RADIUS = 8
-COMBOBOX_PADDING = 10
 
 
 # def apply_stylesheet(app, dark=False):
@@ -167,30 +125,24 @@ class BoldHoverDelegate(QStyledItemDelegate):
 
 
 class RoundedListView(QListView):
-    def __init__(self, stylesheet: str, radius=20, bg_color="#00ff00", parent=None):
+    def __init__(self, stylesheet: str, radius: int, bgd_color: str, parent=None):
         super().__init__(parent)
         self.radius = radius
-        self.bg_color = QColor(bg_color)
-        # Make viewport transparent so we can paint the rounded background there
+        self.bgd_color = QColor(bgd_color)
         self.setStyleSheet(stylesheet)
         self.setSpacing(0)
         self.setUniformItemSizes(True)
-        # ensure hover/selection mouse tracking
         self.setMouseTracking(True)
         self.viewport().setMouseTracking(True)
 
     def paintEvent(self, event):
-        # paint rounded background into the viewport, then let QListView draw items
-        vp = self.viewport()
-        painter = QPainter(vp)
-        painter.setRenderHint(QPainter.Antialiasing)
-        rect = vp.rect()
-        # small inset so selection rounded corners don't clip
+        viewport = self.viewport()
+        painter = QPainter(viewport)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         path = QPainterPath()
-
-        path.addRoundedRect(QRectF(rect), self.radius, self.radius)
-        painter.fillPath(path, self.bg_color)
-        painter.setPen(Qt.NoPen)
+        path.addRoundedRect(QRectF(viewport.rect()), self.radius, self.radius)
+        painter.fillPath(path, self.bgd_color)
+        painter.setPen(Qt.PenStyle.NoPen)
         super().paintEvent(event)
 
 
@@ -205,7 +157,7 @@ class HComboBox(QComboBox):
         /,
         parent: QWidget | None = None,
         *,
-        bgd: str,
+        hstyle: HStyle,
         editable: bool | None = ...,
         count: int | None = ...,
         currentText: str | None = ...,
@@ -270,8 +222,7 @@ class HComboBox(QComboBox):
 
         self.setEditable(True)
         self.lineEdit().setReadOnly(True)
-        self.set_stylesheet(window_bgd=bgd)
-        self.window_bgd = bgd
+        self.set_stylesheet(hstyle=hstyle)
 
         self.lineEdit().setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.lineEdit().setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
@@ -291,12 +242,12 @@ class HComboBox(QComboBox):
         self.installEventFilter(self)
 
 
-    def set_stylesheet(self, window_bgd: str):
+    def set_stylesheet(self, hstyle: HStyle):
 
-        self.widget_bgd = "#202020"
 
-        self.variant = "_premiere"
-        # self.variant = ""
+
+        # self.variant = "_premiere"
+        self.variant = "_hrl"
 
         with open(Path(__file__).parent / Path(f"hcombobox{self.variant}.qss"), "r") as f:
             qss_template = Template(f.read())
@@ -305,13 +256,16 @@ class HComboBox(QComboBox):
             radius=f"{COMBOBOX_RADIUS}px",
             padding=f"{COMBOBOX_PADDING}px",
             padding_right=f"{COMBOBOX_PADDING + COMBOBOX_RADIUS}px",
+            padding_left=f"{COMBOBOX_RADIUS}px",
             arrow_space = f"{24 + COMBOBOX_PADDING}px",
             combobox_height=f"{COMBOBOX_HEIGHT - COMBOBOX_RADIUS}px",
             margin=f"{COMBOBOX_RADIUS}px",
             list_margin=f"{COMBOBOX_RADIUS * 4}px",
             popup_width = f"{self.width()}px",
-            window_bgd=window_bgd,
-            widget_bgd=self.widget_bgd,
+            window_bgd=hstyle.window_bgd,
+            widget_bgd=hstyle.widget_bgd,
+            text_color=hstyle.text_color,
+            selection_bgd=hstyle.selection_bgd,
         )
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet(qss)
@@ -322,8 +276,14 @@ class HComboBox(QComboBox):
             qss_template = Template(f.read())
         qss = qss_template.substitute(
             arrow_space = f"{24 + COMBOBOX_PADDING}px",
-            widget_bgd = self.widget_bgd,
+            widget_bgd = hstyle.widget_bgd,
             padding=f"{COMBOBOX_PADDING}px",
+            # padding_left=f"{int(COMBOBOX_RADIUS * 1.5)}px",
+            padding_left=f"{COMBOBOX_RADIUS // 2}px",
+
+            # padding_left=f"0px",
+            padding_right=f"{COMBOBOX_PADDING + COMBOBOX_RADIUS}px",
+            selection_bgd=hstyle.selection_bgd,
 
         )
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -333,13 +293,17 @@ class HComboBox(QComboBox):
         with open(Path(__file__).parent / Path(f"hcombobox_abstractitemview{self.variant}.qss"), "r") as f:
             qss_template = Template(f.read())
         self.popup_qss = qss_template.substitute(
-            radius=f"{COMBOBOX_RADIUS//2}px",
+            radius=f"{COMBOBOX_RADIUS}px",
             padding=f"{COMBOBOX_PADDING}px",
             margin=f"{COMBOBOX_RADIUS}px",
+            margin_top=f"{COMBOBOX_RADIUS // 2}px",
             popup_width = f"{self.width()}px",
-            widget_bgd=self.widget_bgd,
-            window_bgd=window_bgd,
             combobox_height=f"{int(1.5 * (COMBOBOX_HEIGHT - COMBOBOX_RADIUS))}px",
+            padding_left=f"{COMBOBOX_RADIUS}px",
+            window_bgd=hstyle.window_bgd,
+            widget_bgd=hstyle.widget_bgd,
+            text_color=hstyle.text_color,
+            selection_bgd=hstyle.selection_bgd,
 
         )
         # self.view().setStyleSheet(self.popup_qss)
@@ -352,7 +316,7 @@ class HComboBox(QComboBox):
         view = RoundedListView(
             stylesheet=self.popup_qss,
             radius=COMBOBOX_RADIUS,
-            bg_color=self.widget_bgd
+            bgd_color=hstyle.widget_bgd
         )
         self.setView(view)
 
@@ -397,25 +361,18 @@ class HComboBox(QComboBox):
         # limited — but we don't require transparency, because the view draws the background.
         flags = popup.windowFlags()
         popup.setWindowFlags(flags | Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
-        # popup.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        # popup.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        # self.view().setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-
-        popup.resize(self.width(), popup.height() + 2*  COMBOBOX_RADIUS)
-        # popup.resize(self.width(), popup.height())
-        if self.variant:
-            popup.move(self.mapToGlobal(QPoint(0, self.height() - 1)))
+        popup.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        popup.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.view().setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        popup.resize(self.width(), popup.height())
+        # if self.variant:
+        #     popup.move(self.mapToGlobal(QPoint(0, self.height())))
         # popup.move(self.mapToGlobal(QPoint(0, self.height() + COMBOBOX_PADDING)))
 
         # Ensure popup has no default background painted
         # popup.setStyleSheet("QFrame { background: transparent; border: none; }")
         # popup.setStyleSheet(self.popup_qss)
 
-
-        # Make the view fill the popup client rect exactly
-        # self.view().setGeometry(0, 0, popup.width(), popup.height())
-        # self.view().viewport().update()
-        # self.view().update()
 
         # self.can_hide = False
         self.blockSignals(True)
@@ -580,12 +537,17 @@ if __name__ == "__main__":
         "Right-click won't work"
     ]
 
-    bgd = "#323336"
+    hrl_style = HStyle()
+    pprint(hrl_style)
+
 
     window = QWidget()
-    window.setStyleSheet(f"background-color: {bgd}; color: white;")
+    window.setStyleSheet(f"""
+        background-color: {hrl_style.window_bgd};
+        color: {hrl_style.text_color};
+    """)
     p = window.palette()
-    p.setColor(window.backgroundRole(), bgd)
+    p.setColor(window.backgroundRole(), hrl_style.window_bgd)
     window.setPalette(p)
 
     main_layout = QGridLayout(window)
@@ -595,7 +557,7 @@ if __name__ == "__main__":
     qcombobox = QComboBox(window)
     qcombobox.addItems(items)
 
-    hcombobox = HComboBox(window, bgd=bgd)
+    hcombobox = HComboBox(window, hstyle=hrl_style)
     hcombobox.addItems(items)
 
     main_layout.addWidget(qcombobox, 0, 0, 1, 1)

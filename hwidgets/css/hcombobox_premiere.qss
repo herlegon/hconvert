@@ -1,14 +1,15 @@
 /* === Main combobox === */
 QComboBox {
     background-color: #2A2A2A;
-    color: #E0E0E0;
-    border: 1px solid #3C3C3C;
-    border-radius: 3px;
 
-    /* padding: 4px 24px 4px 8px; */
+    border: 1px solid #3C3C3C;
+    border-radius: $radius;
     padding: 0px;
 
-    font-size: 13px;
+    color: $text_color;
+    font-family: "Segoe UI", "Sans Serif";
+    font-size: 10pt;
+
     selection-background-color: #3A3A3A;
 }
 
@@ -16,8 +17,6 @@ QComboBox:hover {
     background-color: #3A3A3A;
     border: 1px solid #5A5A5A;
 }
-
-
 
 /* === Arrow icon area === */
 QComboBox::drop-down {

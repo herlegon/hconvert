@@ -18,7 +18,7 @@ QComboBox {
     font-family: "Segoe UI", "Sans Serif";
     font-size: 10pt;
 
-    padding-left: $padding;
+    padding-left: $padding_left;
     /* border: 1px solid yellow; */
     /* border-radius: $radius; */
     background-color: $widget_bgd;
@@ -32,9 +32,16 @@ QComboBox {
  */
 }
 
-/* QComboBox:hover {
-    border: 1px solid green;
-} */
+
+QComboBox:on {
+    border-bottom-right-radius: 0px;
+    border-bottom-left-radius: 0px;
+}
+
+
+QComboBox:hover {
+    background-color: $selection_bgd;
+}
 
 QComboBox::down-arrow {
     width: 0px;
@@ -45,18 +52,3 @@ QComboBox::drop-down {
     border: none;
 }
 
-
-/* QComboBox QAbstractItemView,
-QComboBox QListView {
-    background-color: red;
-    background: red;
-} */
-/* QComboBox QLineEdit {
-    color: rgb(255, 208, 0);
-} */
-
-
-/* QListView {
-    border: 5px solid red;
-    border-radius: 40px;
-} */

@@ -8,15 +8,13 @@ QFrame {
     /* background-color: #00ff37;
     background: #00ff37; */
     /* border: none; */
-    /* border-radius: $radius; */
+    border-radius: $radius;
     /* background: transparent; */
     border: none;
-
-    padding-top: 10px;
-
-    margin-top: 10px;
-
-
+    /* padding-top: 10px;
+    margin-top: 10px; */
+    padding: 0px;
+    margin: 0px;
 }
 
 
@@ -45,19 +43,14 @@ QAbstractItemView {
 
 QListView::item {
     background: #7caeff;
-    padding-left: $radius;
+    padding-left: $padding_left;
     padding-right: $radius;
-    margin-left: $radius;
+    margin-left: $padding_left;
     margin-right: $radius;
 
     margin-top: 0px;
     padding-top: 0px;
 
-    /* margin-top: $radius; */
-    /* margin-bottom: $radius; */
-    /* padding-top: 6px; */
-    /* padding-bottom: 6px; */
-    /* background: #4a4e54; */
     border-radius: $radius;
 }
 

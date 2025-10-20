@@ -1,0 +1,63 @@
+/* top, right, bottom, left */
+
+QFrame {
+    background-color: $window_bgd;
+    background: $window_bgd;
+
+    background-color: yellow;
+    background: yellow;
+
+
+    border: none;
+
+    padding: $margin_top 0px $radius 0px;
+    margin: $margin_top 0px $radius 0px;
+
+}
+
+
+
+QAbstractItemView {
+    /* background-color: #2A2A2A; */
+    background-color: $widget_bgd;
+    /* background: yellow; */
+
+    color: $text_color;
+    font-family: "Segoe UI", "Sans Serif";
+    font-size: 10pt;
+
+    /* border: 1px solid #3C3C3C; */
+    border: none;
+    /* border-top: none; */
+    /* border-radius: $radius; */
+
+    border-bottom-right-radius: $radius;
+    border-bottom-left-radius: $radius;
+    border-top-right-radius: 0px;
+    border-top-left-radius: 0px;
+
+    outline: none;
+
+    /* selection-background-color: #3F3F3F; */
+    /* selection-color: #FFFFFF; */
+
+    /* padding-top: $margin_top 0px 0px 0px;
+    margin-top: $margin_top 0px 0px 0px; */
+
+    padding-top: $radius 0px $radius $padding_left;
+    margin-top: $margin_top 0px $radius $padding_left;
+}
+
+
+QListView::item {
+    padding: 5px 8px 5px $padding_left;
+    /* border-radius: $radius; */
+}
+
+QListView::item:hover {
+    background-color: $selection_bgd;
+}
+
+QListView::item:selected {
+    background-color: $selection_bgd;
+}
