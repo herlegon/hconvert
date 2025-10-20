@@ -37,17 +37,38 @@ def load_png_icon(filename: str, color: str) -> QPixmap:
     return QPixmap(qimage)
 
 
+
+
+
+class BoldHoverDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        # Make font bold on hover or selection
+        if option.state & QStyle.StateFlag.State_MouseOver or \
+           option.state & QStyle.StateFlag.State_Selected:
+            font = QFont(option.font)
+            font.setBold(True)
+            option.font = font
+        super().paint(painter, option, index)
+
+
+
+
+
+
+
+
+
 @dataclass(slots=True)
 class HStyle:
     window_bgd: str = "#181819"
 
     # Combobox
-    widget_bgd: str = "#303031"
+    widget_bgd: str = "#404043"
     text_color: str = "#d4d4d8"
     # selection_bgd: str = "#454546"
     selection_bgd: str = "#5545bd"
 
-    checked: str = "#552ca1"
+    checked: str = "#6a5bcc"
 
 
     # checkbox
@@ -74,58 +95,32 @@ class HStyle:
 # Pressed	#352283	Darker tone for click feedback
 # Disabled	#2d2b3e	Muted, low-contrast desaturation
 
+# 1080p
+dp_to_px = 1.6
+# 1440p
+# dp_to_px = 1.2
 
 
 COMBOBOX_HEIGHT = 32
 COMBOBOX_RADIUS = 5
 COMBOBOX_PADDING = 10
 
-
-# def apply_stylesheet(app, dark=False):
-#     qss_file = "fluent_dark.qss" if dark else "fluent.qss"
-#     qss = qss_template.format(
-#         radius=f"{COMBOBOX_RADIUS}",
-#         padding=COMBOBOX_PADDING,
-#         padding_right=COMBOBOX_PADDING + COMBOBOX_RADIUS
-#     )
-
-#     with open(qss_file, "r") as f:
-#         f.read()
-#         app.setStyleSheet()
+RADIO_RADIUS = 7
+RADIO_BORDER_WIDTH = 2
 
 
-class BoldHoverDelegate(QStyledItemDelegate):
-    def paint(self, painter, option, index):
-        # Make font bold on hover or selection
-        if option.state & QStyle.StateFlag.State_MouseOver or \
-           option.state & QStyle.StateFlag.State_Selected:
-            font = QFont(option.font)
-            font.setBold(True)
-            option.font = font
-        super().paint(painter, option, index)
-
-
-
-# 1080p
-dp_to_px = 1.6
-# 1440p
-# dp_to_px = 1.2
-
-# M3 material (use CHeckboxe dimensions)
-#   Container width     18dp
-#   Container height    18dp
-#   Container shape     2dp
-#   Icon size           18dp
-#   Icon alignment      Center-aligned
-#   Target size         48dp
-#   State-layer size    40dp
-STATE_LAYER_SIZE: int = int(1.5 * COMBOBOX_HEIGHT/(2 * dp_to_px))
+# STATE_LAYER_SIZE: int = round(48/(2 * dp_to_px)) * 2
+CHECKBOX_STATE_LAYER_SIZE: int = 40
 # Icons are from Material website
-ICON_SIZE: int = 24
+CHECKBOX_ICON_SIZE: int = 24
 # blank margin in Material icons -> real button size in icon is 18x18
-BUTTON_SIZE: int = 16
+CHECKBOX_BUTTON_SIZE: int = 18
 
 
 
 
+LINEEDIT_HEIGHT = 32
+LINEEDIT_RADIUS = 4
+LINEEDIT_PADDING = 12
+LINEEDIT_MIN_WIDTH = int(64 / dp_to_px)
 

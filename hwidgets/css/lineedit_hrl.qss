@@ -1,0 +1,18 @@
+/* top, right, bottom, left */
+
+QComboBox QLineEdit {
+    /* background: transparent; */
+    border: none;
+    padding: 0px $padding_right 0px $padding_left;
+    margin: 0px $padding_right 0px $padding_left;
+    /* margin: 0px 0px 0px $padding; */
+}
+QComboBox QLineEdit:read-only {
+    /* background: transparent; */
+    border: none;
+    padding: 0px $padding_right 0px $padding_left;
+    margin: 0px $padding_right 0px $padding_left;
+
+    /* margin: 0px 0px 0px $padding; */
+}
+
