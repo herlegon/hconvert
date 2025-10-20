@@ -85,10 +85,6 @@ from string import Template
 
 from hutils import blue, lightcyan, lightgreen, lightgrey, orange, parent_directory, purple, yellow
 
-import logging
-hlogger = logging.getLogger("hwidgets")
-logging.disable(logging.CRITICAL)
-
 TITLE_BAR_ICON_PATH = os.path.join(parent_directory(__file__), "icons")
 
 def load_png_icon(filename: str, color: str) -> QPixmap:
@@ -279,7 +275,6 @@ class HComboBox(QComboBox):
 
 
         self.can_hide: bool = False
-        self.is_popup_visible = False
         self.counter: int = 0
 
         # Install event filter on the line edit
@@ -296,7 +291,6 @@ class HComboBox(QComboBox):
         self.widget_bgd = "#202020"
 
         self.variant = "_premiere"
-        # self.variant = ""
 
         with open(Path(__file__).parent / Path(f"hcombobox{self.variant}.qss"), "r") as f:
             qss_template = Template(f.read())
@@ -322,11 +316,8 @@ class HComboBox(QComboBox):
             qss_template = Template(f.read())
         qss = qss_template.substitute(
             arrow_space = f"{24 + COMBOBOX_PADDING}px",
-            widget_bgd = self.widget_bgd,
-            padding=f"{COMBOBOX_PADDING}px",
-
+            widget_bgd = self.widget_bgd
         )
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.lineEdit().setStyleSheet(qss)
 
 
@@ -359,13 +350,11 @@ class HComboBox(QComboBox):
 
 
     def showPopup(self):
-        self.can_hide = False
-        # super().showPopup()
+        super().showPopup()
 
-        hlogger.debug(purple(f"{int(time.time())}  OPEN"))
+        print(purple(f"{int(time.time())}  OPEN"))
         popup = self.view().window()
         if not popup:
-            # print(f" no popup")
             return
 
         if False:
@@ -392,6 +381,25 @@ class HComboBox(QComboBox):
             popup.resize(self.width(), popup.height())
             popup.move(self.mapToGlobal(QPoint(0, self.height() + COMBOBOX_PADDING)))
 
+
+            # popup.setStyleSheet(f"""
+            #     QFrame {{
+            #         background-color: red;
+            #         /* border: none; */
+            #         border-radius: 20px;
+            #     }}
+            # """)
+            # self.view().setFrameShape(QFrame.NoFrame)
+            # self.view().setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+
+            # self.view().setStyleSheet(self.popup_qss)
+
+            # Force update
+            # self.view().update()
+            # self.view().installEventFilter(self)
+
+
+
         # Make the popup a frameless popup and allow transparent background on the window.
         # On Windows this generally works; on some Linux setups true transparency may be
         # limited — but we don't require transparency, because the view draws the background.
@@ -417,27 +425,21 @@ class HComboBox(QComboBox):
         # self.view().viewport().update()
         # self.view().update()
 
-        # self.can_hide = False
-        self.blockSignals(True)
-        super().showPopup()
-        self.is_popup_visible = True
+        self.can_hide = False
 
 
 
 
     def hidePopup(self):
         if not self.can_hide:
-            hlogger.debug(f"  ignore hide, allow for next time")
+            print(f"  ignore hide, allow for next time")
             self.can_hide = True
             return
-        else:
-            hlogger.debug(f"  can hide")
 
-        hlogger.debug(purple(f"{int(time.time())}  HIDE"))
+        print(purple(f"{int(time.time())}  HIDE"))
         # self.view().removeEventFilter(self.view())
         self.counter = 0
         super().hidePopup()
-        self.is_popup_visible = False
 
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
@@ -457,8 +459,10 @@ class HComboBox(QComboBox):
                 event_type == QEvent.Type.MouseButtonRelease
                 and event.button() == Qt.MouseButton.LeftButton
             ):
-                hlogger.debug(lightgreen(f"{int(time.time())} LE MouseButtonRelease"))
-                hlogger.debug(f"\n    can_hide: {self.can_hide}")
+                # print(lightgreen(f"{int(time.time())} LE MouseButtonRelease")
+                #     ,f"can_hide: {self.can_hide}"
+                # )
+                # print(f"   can_hide: {self.can_hide}")
                 return True
 
 
@@ -466,7 +470,7 @@ class HComboBox(QComboBox):
                 event_type == QEvent.Type.MouseButtonPress
                 and event.button() == Qt.MouseButton.LeftButton
             ):
-                hlogger.debug(lightgreen(f"{int(time.time())} LE MouseButtonPress"))
+                # print(lightgreen(f"{int(time.time())} LE MouseButtonPress"))
                 self.lineEdit().deselect()
                 if not self.view().isVisible():
                     self.can_hide = False
@@ -476,39 +480,23 @@ class HComboBox(QComboBox):
                 return True
 
             elif event_type == QEvent.Type.HoverLeave:
-                hlogger.debug(yellow(f"{int(time.time())} lineedit: HoverLeave, can_hide: {self.can_hide}"))
-                if self.view().isVisible():
-                    hlogger.debug(f"  is visible")
-                    self.can_hide = True
+                # print(yellow(f"{int(time.time())} lineedit: HoverLeave, can_hide: {self.can_hide}"))
+                self.can_hide = True
 
             # else:
             #     print(yellow(f"{int(time.time())} LE:"), event)
 
         elif watched == self:
             if event_type == QEvent.Type.InputMethodQuery:
-                hlogger.debug(f"{lightcyan(f"{int(time.time())} CB: InputMethodQuery")}")
-                hlogger.debug(f"{event}")
-                if self.view().isVisible() and self.is_popup_visible:
-                    hlogger.debug(" is visible")
+                # print(lightcyan(f"{int(time.time())} CB: InputMethodQuery"), event)
+                if self.view().isVisible():
                     if self.counter > 1:
-                        hlogger.debug(" counter > 1, hide popup")
+                        # print(" hide")
                         self.can_hide = True
                         self.counter = 0
                         self.hidePopup()
                     else:
                         self.counter += 1
-
-            elif (
-                event_type == QEvent.Type.MouseButtonPress
-                and event.button() == Qt.MouseButton.LeftButton
-            ):
-                hlogger.debug(lightgreen(f"{int(time.time())} CB MouseButtonPress"))
-                self.lineEdit().deselect()
-                if not self.view().isVisible():
-                    self.can_hide = True
-                    self.showPopup()
-                    # print(f" lets open, can't hide now")
-                    return True
 
             # else:
             #     print(lightcyan(f"{int(time.time())} CB:"), event)
@@ -554,23 +542,10 @@ class HComboBox(QComboBox):
 
 
 
-
 if __name__ == "__main__":
     import signal
-    from argparse import ArgumentParser
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    parser = ArgumentParser()
-    parser.add_argument("--debug", "-debug", action="store_true", required=False)
-    arguments = parser.parse_args()
-    if arguments.debug:
-        import logging
-        logger: logging.Logger = logging.getLogger("hwidgets")
-        hlogger.addHandler(logging.StreamHandler(sys.stdout))
-        logging.disable(logging.NOTSET)
-        hlogger.setLevel("DEBUG")
-
-
     app = QApplication(sys.argv)
 
     items = [
