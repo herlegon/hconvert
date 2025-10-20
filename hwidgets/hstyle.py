@@ -63,9 +63,10 @@ class HStyle:
     window_bgd: str = "#181819"
 
     # Combobox
-    widget_bgd: str = "#404043"
+    widget_bgd: str = "#353538"
     text_color: str = "#d4d4d8"
     # selection_bgd: str = "#454546"
+    hover_bgd: str = "#505053"
     selection_bgd: str = "#5545bd"
 
     checked: str = "#6a5bcc"
@@ -102,7 +103,7 @@ dp_to_px = 1.6
 
 
 COMBOBOX_HEIGHT = 32
-COMBOBOX_RADIUS = 5
+COMBOBOX_RADIUS = 7
 COMBOBOX_PADDING = 10
 
 RADIO_RADIUS = 7

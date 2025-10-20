@@ -36,11 +36,12 @@ QComboBox {
 QComboBox:on {
     border-bottom-right-radius: 0px;
     border-bottom-left-radius: 0px;
+    background-color: $widget_bgd;
 }
 
 
 QComboBox:hover {
-    background-color: $selection_bgd;
+    background-color: $hover_bgd;
 }
 
 QComboBox::down-arrow {
