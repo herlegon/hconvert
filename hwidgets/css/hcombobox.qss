@@ -14,29 +14,23 @@ QFrame {
 
 
 QComboBox {
+    background-color: $widget_bgd;
+
     color: #d4d4d8;
     font-family: "Segoe UI", "Sans Serif";
     font-size: 10pt;
 
-    padding-left: $padding_left;
-    /* border: 1px solid yellow; */
-    /* border-radius: $radius; */
-    background-color: $widget_bgd;
-
     border-radius: $radius;
-    /*
-    border-top-right-radius: $radius;
-    border-top-left-radius: $radius;
-    border-bottom-right-radius: 0px;
-    border-bottom-left-radius: 0px;
- */
+    padding-left: $padding_left;
 }
 
 
 QComboBox:on {
     border-bottom-right-radius: 0px;
     border-bottom-left-radius: 0px;
-    background-color: $widget_bgd;
+
+    /* Linux */
+    background-color: $hover_bgd;
 }
 
 

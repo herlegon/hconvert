@@ -5,6 +5,13 @@ QListView {
     border: none;
     outline: none;
     margin: 0px;
+
+    /* Linux */
+    /* background: $widget_bgd;
+    padding-top: $radius;
+    padding-bottom: $radius;
+    border-bottom-right-radius: $radius;
+    border-bottom-left-radius: $radius; */
 }
 
 QListView::item {

@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 import os
+from pathlib import Path
+import sys
 # from PySide6.QtCore import (
 # )
 from PySide6.QtGui import (
@@ -13,7 +15,7 @@ from PySide6.QtWidgets import (
     QStyle,
     QStyledItemDelegate,
 )
-from hutils import parent_directory
+from hutils import parent_directory, path_basename
 
 
 
@@ -52,7 +54,24 @@ class BoldHoverDelegate(QStyledItemDelegate):
 
 
 
+def load_qss(qss_fp: str, variant: str = "") -> str:
+    variant = f"_{variant}" if variant else ""
+    css_dir: Path = Path(__file__).parent / "css"
 
+    common_fp = css_dir.joinpath(
+        Path(f"{path_basename(qss_fp)}{variant}.qss")
+    )
+    with open(common_fp, 'r') as f:
+        qss = f.read()
+
+    platform_fp = css_dir.joinpath(
+        Path(f"{path_basename(qss_fp)}{variant}_{sys.platform}.qss")
+    )
+    if platform_fp.exists():
+        with open(platform_fp, 'r') as f:
+            qss += "\n" + f.read()
+
+    return qss
 
 
 
