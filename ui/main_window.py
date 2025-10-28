@@ -2,6 +2,7 @@ from __future__ import annotations
 from functools import partial
 from pprint import pprint
 from typing import TYPE_CHECKING, Any, Type
+from hwidgets import HStyle
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -51,7 +52,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def __init__(self, controller: Controller):
         super().__init__()
-        self.setupUi(self)
+        hrl_style = HStyle()
+        self.setupUi(self, hrl_style)
+
+        self.setStyleSheet(f"""
+            background-color: {hrl_style.window_bgd};
+            color: {hrl_style.text_color};
+        """)
+
         self.widget_model_browser.set_main_window(self)
         self.widget_tensorrt_model.set_main_window(self)
         self.widget_conversion.set_main_window(self)

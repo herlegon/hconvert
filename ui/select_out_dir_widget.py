@@ -9,6 +9,7 @@ from hutils import (
     is_access_granted,
     path_split,
 )
+from hwidgets import HStyle
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -32,7 +33,8 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.setupUi(self)
+        hrl_style = HStyle()
+        self.setupUi(self, hrl_style)
 
         self.in_model_dir: str = ""
         self.out_directory: str = ""

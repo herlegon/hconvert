@@ -14,6 +14,8 @@ from PySide6.QtWidgets import (
     QWidget,
     QMainWindow,
 )
+
+from hwidgets import HStyle
 from .designer.ui_progress_widget import Ui_ProgressWidget
 if TYPE_CHECKING:
     from .main_window import MainWindow
@@ -25,7 +27,8 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
     def __init__(self, parent: QMainWindow):
         super().__init__(parent)
-        self.setupUi(self)
+        hrl_style = HStyle()
+        self.setupUi(self, hrl_style)
         self._main_window: MainWindow = None
         self.progress_bar.setVisible(True)
         self.set_visible(False)

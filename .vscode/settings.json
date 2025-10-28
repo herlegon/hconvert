@@ -32,6 +32,7 @@
     "python.analysis.extraPaths": [
         "../pynnlib",
         "../hutils",
+        "../hwidgets",
     ],
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.diagnosticSeverityOverrides": {

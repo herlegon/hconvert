@@ -2,6 +2,7 @@ from __future__ import annotations
 from pprint import pprint
 from typing import TYPE_CHECKING
 from warnings import warn
+from hwidgets import HStyle
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -30,7 +31,8 @@ if TYPE_CHECKING:
 class TensorRTWidget(QWidget, Ui_TensorRTWidget):
     def __init__(self, parent: QMainWindow):
         super().__init__(parent)
-        self.setupUi(self)
+        hrl_style = HStyle()
+        self.setupUi(self, hrl_style)
         self._main_window: MainWindow = None
 
         self.size_widgets: tuple[tuple[QLineEdit, QLineEdit, QLineEdit]] = (

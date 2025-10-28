@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pprint import pprint
 from typing import Type
+from hwidgets import HStyle
 from pynnlib import (
     NnModel,
     NnPytorchArchitecture,
@@ -33,7 +34,8 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.setupUi(self)
+        hrl_style = HStyle()
+        self.setupUi(self, hrl_style)
         self._saved_shape: tuple[int, int] = DEFAULT_SIZE
         self.shape_strategy: ShapeStrategyName = 'dynamic'
         self._tensorrt_static_shape: tuple[int, int] = (0, 0)

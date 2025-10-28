@@ -6,6 +6,7 @@ from hutils import (
     get_extension,
     lightcyan,
 )
+from hwidgets import HStyle
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -33,7 +34,8 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
     def __init__(self, parent: QMainWindow):
         super().__init__(parent)
-        self.setupUi(self)
+        hrl_style = HStyle()
+        self.setupUi(self, hrl_style)
         self._main_window: MainWindow = None
         self._initial_selection: ConversionChoices = 'safetensors'
 

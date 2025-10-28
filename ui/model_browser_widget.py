@@ -28,6 +28,8 @@ from PySide6.QtWidgets import (
     QLayout,
 )
 
+from hwidgets import HStyle
+
 
 from .common import SUPPORTED_MODEL_EXTENSIONS
 from .designer.ui_model_browser_widget import Ui_ModelBrowserWidget
@@ -124,19 +126,21 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.setupUi(self)
+        hrl_style = HStyle()
+        self.setupUi(self, hrl_style)
         self._main_window: MainWindow = None
         self.popup_visible = False
         self.max_items: int = 10
 
         # Replace the QComboBox by a customized one that allow selction/Ctrl+C only
-        self.replace_combobox()
+        # self.replace_combobox()
         self.combobox_model_fp.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.combobox_model_fp.setAcceptDrops(True)
         self.combobox_model_fp.setMaxCount(10)
         self.combobox_model_fp.setInsertPolicy(QComboBox.InsertPolicy.InsertAtTop)
         self.combobox_model_fp.clear()
         self.combobox_model_fp.clearEditText()
+        self.combobox_model_fp.setEditable(False)
 
         self.clear()
         self.setEnabled(True)

@@ -9,6 +9,7 @@ from hutils import (
     purple,
     yellow,
 )
+from hwidgets import HStyle
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -39,7 +40,8 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.setupUi(self)
+        hrl_style = HStyle()
+        self.setupUi(self, hrl_style)
         self._gpus: dict[str, int] = {}
         self.current_shape_strategy: ShapeStrategyName = ''
         self.previous_shapes: dict[str, tuple[int, int]] = {

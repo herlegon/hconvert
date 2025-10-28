@@ -3,6 +3,7 @@ from pprint import pprint
 from hutils import (
     red
 )
+from hwidgets import HStyle
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -30,7 +31,8 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
-        self.setupUi(self)
+        hrl_style = HStyle()
+        self.setupUi(self, hrl_style)
 
         self.shape_strategy: ShapeStrategyName = 'dynamic'
 

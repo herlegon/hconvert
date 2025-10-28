@@ -1,4 +1,5 @@
 from __future__ import annotations
+from hwidgets import HStyle
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -17,7 +18,8 @@ from .designer.ui_pytorch_widget import Ui_PyTorchWidget
 class PyTorchWidget(QWidget, Ui_PyTorchWidget):
     def __init__(self, parent):
         super().__init__(parent)
-        self.setupUi(self)
+        hrl_style = HStyle()
+        self.setupUi(self, hrl_style)
         self.clear()
         self.setEnabled(False)
         self.lineedit_arch_name.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -26,6 +28,9 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
         self.lineedit_type.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.lineedit_size_constraints_min.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.lineedit_size_constraints_modulo.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+
+        self.lineedit_size_constraints_min.setClearButtonEnabled(False)
+        self.lineedit_size_constraints_min.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.adjustSize()
 

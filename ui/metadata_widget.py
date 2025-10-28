@@ -1,5 +1,6 @@
 from copy import deepcopy
 from typing import Type
+from hwidgets import HStyle
 from pynnlib import (
     NnModel,
 )
@@ -22,7 +23,9 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.setupUi(self)
+
+        hrl_style = HStyle()
+        self.setupUi(self, hrl_style)
         self.button_undo.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.button_undo.setToolTip("Undo modifications (Ctrl+U)")
         self.button_save_as.setFocusPolicy(Qt.FocusPolicy.NoFocus)
