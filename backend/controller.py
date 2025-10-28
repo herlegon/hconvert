@@ -248,10 +248,10 @@ class Controller(QObject):
             opset=args['opset'],
             device=device,
             out_dir=settings['out_dir'],
-            overwrite=True,
         )
 
-        self.emit_start_signal(False)
+        out_model_fp = generate_out_model_fp(to=NnFrameworkType.TENSORRT, **common_kwargs)
+        self.emit_start_signal(False, out_model_fp)
 
         try:
             nnlib.convert_to_tensorrt(**common_kwargs)
