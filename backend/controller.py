@@ -9,7 +9,7 @@ from hutils import (
 import os
 from pprint import pprint
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from PySide6.QtCore import (
     QObject,
     Signal,
@@ -25,7 +25,8 @@ from pynnlib import (
     ShapeStrategy,
     ShapeStrategyType,
 )
-from ui.main_window import MainWindow
+if TYPE_CHECKING:
+    from ui.main_window import MainWindow
 
 
 

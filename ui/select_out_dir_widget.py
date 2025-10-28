@@ -48,6 +48,9 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
         self.comboBox_out_dir.lineEdit().setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
         self.comboBox_out_dir.clear()
 
+        self.button_out_dir_browse.setMinimumSize(self.button_out_dir_browse.sizeHint())
+        self.button_input_folder.setMinimumSize(self.button_input_folder.sizeHint())
+
         self.button_out_dir_browse.released.connect(self.event_select_dir_clicked)
         self.button_input_folder.released.connect(self.event_select_in_dir)
 

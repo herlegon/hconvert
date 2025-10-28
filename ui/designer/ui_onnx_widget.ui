@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>396</width>
-    <height>181</height>
+    <width>401</width>
+    <height>155</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -43,31 +43,15 @@
      <property name="checkable">
       <bool>false</bool>
      </property>
-     <layout class="QVBoxLayout" name="layout_main">
+     <layout class="QVBoxLayout" name="groupbox_layout">
       <property name="spacing">
        <number>6</number>
       </property>
       <item>
-       <layout class="QFormLayout" name="main_layout">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_opset">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>120</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Opset</string>
-          </property>
-         </widget>
-        </item>
+       <layout class="QGridLayout" name="main_layout">
+        <property name="spacing">
+         <number>9</number>
+        </property>
         <item row="0" column="1">
          <widget class="QLineEdit" name="lineedit_opset">
           <property name="sizePolicy">
@@ -96,6 +80,13 @@
           </property>
           <property name="readOnly">
            <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_shape_strategy">
+          <property name="text">
+           <string>Shape strategy</string>
           </property>
          </widget>
         </item>
@@ -186,10 +177,22 @@
           </item>
          </layout>
         </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_shape_strategy">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_opset">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="text">
-           <string>Shape strategy</string>
+           <string>Opset</string>
           </property>
          </widget>
         </item>
@@ -275,6 +278,9 @@
         </item>
         <item row="3" column="1">
          <layout class="QHBoxLayout" name="layout_resolution_r">
+          <property name="spacing">
+           <number>9</number>
+          </property>
           <item>
            <widget class="QLineEdit" name="lineedit_shape">
             <property name="sizePolicy">
@@ -350,7 +356,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="group_shape_strategy"/>
   <buttongroup name="group_datatype"/>
+  <buttongroup name="group_shape_strategy"/>
  </buttongroups>
 </ui>

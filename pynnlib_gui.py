@@ -35,6 +35,9 @@ def main():
 
     arguments = parser.parse_args()
 
+    from hwidgets.hstyle import HStyle
+
+
     application = QApplication(sys.argv)
     QApplication.setStyle("Fusion")
     controller = Controller(model_fp=arguments.model, dev=arguments.dev)

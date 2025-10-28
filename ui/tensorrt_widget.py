@@ -50,9 +50,10 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
 
         for w in self.editable_widgets:
             w.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            w.setEnabled(True)
 
         self.clear()
-        self.setEnabled(False)
+        # self.setEnabled(False)
         self.adjustSize()
         self.default_row_min_height: int = self.main_layout.rowMinimumHeight(
             self.main_layout.rowCount() - 1
@@ -71,11 +72,14 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
             w.setChecked(False)
             w.setCheckable(False)
         for w in self.findChildren(QLineEdit):
+            w.setEnabled(True)
+            w.setReadOnly(True)
             w.clear()
         self.label_resolution_min.clear()
         self.label_resolution_opt.clear()
         self.label_resolution_max.clear()
-
+        self.label_resolution_opt.clear()
+        self.label_resolution_max.clear()
 
     def set_row_visible(self, rows: tuple[int], visible: bool) -> None:
         for row in rows:
@@ -172,9 +176,9 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
             *self.findChildren(QRadioButton),
             *self.findChildren(QCheckBox)
         ):
-            w.setEnabled(False)
-        self.setStyleSheet("""
-            QRadioButton:disabled { color: black; }
-            QCheckBox:disabled { color: black; }
-            QLineEdit:disabled { color: black; }
-        """)
+            w.setEnabled(True)
+        # self.setStyleSheet("""
+        #     QRadioButton:disabled { color: black; }
+        #     QCheckBox:disabled { color: black; }
+        #     QLineEdit:disabled { color: black; }
+        # """)

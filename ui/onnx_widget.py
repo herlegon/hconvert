@@ -16,12 +16,14 @@ from .common import (
 
 from PySide6.QtCore import (
     Qt,
+    QTimer,
 )
 from PySide6.QtWidgets import (
     QWidget,
     QLineEdit,
     QRadioButton,
     QWidget,
+    QLayout,
 )
 from .designer.ui_onnx_widget import Ui_OnnxWidget
 
@@ -46,7 +48,37 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
             r.setChecked(False)
         for l in self.findChildren(QLineEdit):
             l.clear()
+            l.setReadOnly(True)
         self.label_resolution.clear()
+
+    def _set_widgets_visible(self, layout: QLayout, enable: bool):
+        """Recursively hide all widgets in a layout"""
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            if widget := item.widget():
+                widget.setVisible(enable)
+            elif child_layout := item.layout():
+                self._set_widgets_visible(child_layout, enable=enable)
+
+
+    def set_shape_visible(self, enable: bool, row: int = -1) -> None:
+        if row == -1:
+            row = self.main_layout.rowCount() - 1
+        self.main_layout.setRowStretch(row, 0)
+        for col in range(self.main_layout.columnCount()):
+            item = self.main_layout.itemAtPosition(row, col)
+            if item:
+                # If the item is a widget, hide it
+                if widget := item.widget():
+                    widget.setVisible(enable)
+
+                elif child_layout := item.layout():
+                    self._set_widgets_visible(child_layout, enable=enable)
+                    child_layout.invalidate()
+
+        self.main_layout.invalidate()
+        self.groupbox_onnx_conversion.adjustSize()
+        self.adjustSize()
 
 
     def refresh_model_info(self, model: NnModel | None) -> None:
@@ -77,6 +109,8 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         # Shape strategy
         if model.shape_strategy.type == 'static':
             print(red("STATIC"))
+            self.set_shape_visible(True)
+
             self.radiobutton_static.setChecked(True)
             size = " x ".join(map(str, model.shape_strategy.opt_size))
             self.lineedit_shape.setText(size)
@@ -85,16 +119,11 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         else:
             print(red("dyna"))
             self.radiobutton_dynamic.setChecked(True)
+            self.set_shape_visible(False)
+
 
         # Do not allow clicking on a Qadiobutton or selectin a text
         for r in self.findChildren(QRadioButton):
             r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-            r.setEnabled(False)
-        for l in self.findChildren(QLineEdit):
-            l.setEnabled(False)
 
-        self.setStyleSheet("""
-            QRadioButton:disabled { color: black; }
-            QLineEdit:disabled { color: black; }
-        """)
 
