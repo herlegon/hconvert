@@ -29,6 +29,10 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         super().__init__(parent)
         hrl_style = HStyle()
         self.setupUi(self, hrl_style)
+        self.progress_bar = self.h_progress
+        self.gpu_usage = self.h_radial_progress_bar_gpu
+
+
         self._main_window: MainWindow = None
         self.progress_bar.setVisible(True)
         self.set_visible(False)
@@ -183,5 +187,6 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
             self.out_model_fp = status['out_model_fp']
             self.lineEdit_out_model_fp.setText(self.out_model_fp)
+            self.lineEdit_out_model_fp.setToolTip(self.out_model_fp)
 
             self.set_visible(True)

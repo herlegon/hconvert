@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>330</width>
+    <width>345</width>
     <height>296</height>
    </rect>
   </property>
@@ -65,7 +65,7 @@
    <item>
     <layout class="QGridLayout" name="gridLayout">
      <property name="leftMargin">
-      <number>16</number>
+      <number>24</number>
      </property>
      <item row="3" column="1">
       <widget class="QLineEdit" name="lineedit_author">
@@ -101,7 +101,7 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
+     <item row="5" column="0" alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
       <widget class="QLabel" name="label_comment">
        <property name="text">
         <string>Comment</string>

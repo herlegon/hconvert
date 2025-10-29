@@ -202,20 +202,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.shortcut_safetensors = QShortcut(QKeySequence("S"), self)
         self.shortcut_safetensors.activated.connect(
-            # partial(self.widget_conversion.conversion_selection_changed, 'safetensors')
-            self.widget_conversion.radioButton_safetensors.click
+            partial(self.widget_conversion.select, 'safetensors')
         )
 
         self.shortcut_onnx = QShortcut(QKeySequence("O"), self)
         self.shortcut_onnx.activated.connect(
-            # partial(self.widget_conversion.conversion_selection_changed, 'onnx')
-            self.widget_conversion.radioButton_onnx.click
+            partial(self.widget_conversion.select, 'onnx')
         )
 
         self.shortcut_tensorrt = QShortcut(QKeySequence("T"), self)
         self.shortcut_tensorrt.activated.connect(
-            # partial(self.widget_conversion.conversion_selection_changed, 'tensorrt')
-            self.widget_conversion.radioButton_tensorrt.click
+            partial(self.widget_conversion.select, 'tensorrt')
         )
 
         self.shortcut_start_conversion = QShortcut(QKeySequence("F5"), self)

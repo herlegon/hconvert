@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>501</width>
+    <width>571</width>
     <height>28</height>
    </rect>
   </property>
@@ -15,7 +15,7 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <property name="leftMargin">
-    <number>0</number>
+    <number>16</number>
    </property>
    <property name="topMargin">
     <number>0</number>
@@ -41,7 +41,7 @@
       </size>
      </property>
      <property name="text">
-      <string>Directory</string>
+      <string>Output directory</string>
      </property>
     </widget>
    </item>
@@ -98,7 +98,7 @@
       </size>
      </property>
      <property name="text">
-      <string>Input folder</string>
+      <string>same as input</string>
      </property>
      <property name="checkable">
       <bool>true</bool>

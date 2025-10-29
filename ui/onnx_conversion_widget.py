@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pprint import pprint
 from typing import Type
+from hutils import red
 from hwidgets import HStyle
 from pynnlib import (
     NnModel,
@@ -148,6 +149,9 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             return False
 
         to_onnx = model.arch.to_onnx
+        if to_onnx is not None and isinstance(to_onnx, tuple):
+            print(red("to_onnx has a tuple"))
+            print(model.arch)
         if not (
             to_onnx is not None
             and to_onnx.dtypes

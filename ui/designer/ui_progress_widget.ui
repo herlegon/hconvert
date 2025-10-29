@@ -32,7 +32,7 @@
    <item>
     <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0">
      <item row="0" column="1" rowspan="2" colspan="2">
-      <widget class="QProgressBar" name="gpu_usage">
+      <widget class="QProgressBar" name="h_radial_progress_bar_gpu">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -90,7 +90,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QProgressBar" name="progress_bar">
+        <widget class="QProgressBar" name="h_progress">
          <property name="sizePolicy">
           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
            <horstretch>1</horstretch>
@@ -173,7 +173,7 @@
          <property name="maximumSize">
           <size>
            <width>32</width>
-           <height>32</height>
+           <height>16777215</height>
           </size>
          </property>
          <property name="focusPolicy">
