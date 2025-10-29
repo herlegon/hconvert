@@ -38,18 +38,36 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
 
         self.shape_strategy: ShapeStrategyName = 'dynamic'
 
+        _dtypes: dict[str, tuple[str, str]] = {
+            'fp32': ("fp32", "float32"),
+            'fp16': ("fp16", "float16"),
+            'bf16': ("bf16", "bfloat16"),
+        }
+        self.h_button_group_dtypes.set_buttons(_dtypes)
+
+        _shapes: dict[str, tuple[str, str]] = {
+            'dynamic': ("dynamic", "Input size is not a constraint"),
+            'static': ("static", "Input image size must be the one specified below"),
+        }
+        self.h_button_group_shapes.set_buttons(_shapes)
+
         self.clear()
         self.adjustSize()
-        self.setEnabled(False)
 
 
     def clear(self) -> None:
-        for r in self.findChildren(QRadioButton):
-            r.setChecked(False)
+        for b in (
+            *self.h_button_group_dtypes.buttons(),
+            *self.h_button_group_shapes.buttons()
+        ):
+            b.setChecked(False)
+            b.setCheckable(False)
+
         for l in self.findChildren(QLineEdit):
             l.clear()
             l.setReadOnly(True)
         self.label_resolution.clear()
+
 
     def _set_widgets_visible(self, layout: QLayout, enable: bool):
         """Recursively hide all widgets in a layout"""
@@ -90,40 +108,50 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         self.setEnabled(True)
         self.lineedit_opset.setText(f"{model.opset}")
 
-        for r in self.findChildren(QRadioButton):
-            r.setEnabled(True)
+        for b in (
+            *self.h_button_group_dtypes.buttons(),
+            *self.h_button_group_shapes.buttons()
+        ):
+            b.setEnabled(True)
+            b.setCheckable(True)
 
         # datatypes
         if 'fp32' in model.dtypes and 'fp16' in model.dtypes:
             print(red("ERRROR, onnx has both fp16 and fp32"))
 
-        if model.io_dtypes['input'] == 'fp32':
-            self.radiobutton_fp32.setChecked(True)
-        elif model.io_dtypes['input'] == 'fp16':
-            self.radiobutton_fp16.setChecked(True)
-        elif model.io_dtypes['input'] == 'bf16':
-            self.radiobutton_bf16.setChecked(True)
-        else:
-            print("unknow datatype")
+        dtype = model.io_dtypes['input']
+        print(red(dtype))
+        for b in self.h_button_group_dtypes.buttons():
+            if b.key == dtype:
+                b.setEnabled(True)
+                b.setChecked(True)
+            else:
+                b.setEnabled(False)
 
         # Shape strategy
         if model.shape_strategy.type == 'static':
             print(red("STATIC"))
             self.set_shape_visible(True)
 
-            self.radiobutton_static.setChecked(True)
+            self.h_button_group_shapes.get_button('static').setEnabled(True)
+            self.h_button_group_shapes.get_button('static').setChecked(True)
+            self.h_button_group_shapes.get_button('dynamic').setEnabled(False)
             size = " x ".join(map(str, model.shape_strategy.opt_size))
             self.lineedit_shape.setText(size)
             self.label_resolution.setText(predefined_shapes_inv.get(size.replace(" x ", "x"), ""))
 
         else:
             print(red("dyna"))
-            self.radiobutton_dynamic.setChecked(True)
+            self.h_button_group_shapes.get_button('dynamic').setEnabled(True)
+            self.h_button_group_shapes.get_button('static').setEnabled(False)
             self.set_shape_visible(False)
 
-
         # Do not allow clicking on a Qadiobutton or selectin a text
-        for r in self.findChildren(QRadioButton):
-            r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        for b in (
+            *self.h_button_group_dtypes.buttons(),
+            *self.h_button_group_shapes.buttons()
+        ):
+            b.setCheckable(False)
+            b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
 

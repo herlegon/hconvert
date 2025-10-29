@@ -85,12 +85,13 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
     def fill_fields(self, metadata: dict[str, str]) -> None:
         self.block_signals(True)
-        self.lineedit_name.setText(metadata.get("name", ""))
-        self.lineedit_date.setText(metadata.get("date", ""))
-        self.lineedit_version.setText(metadata.get("version", ""))
-        self.lineedit_author.setText(metadata.get("author", ""))
-        self.lineedit_license.setText(metadata.get("license", ""))
-        self.textedit_comment.setPlainText(metadata.get("comment", ""))
+        if metadata is not None:
+            self.lineedit_name.setText(metadata.get("name", ""))
+            self.lineedit_date.setText(metadata.get("date", ""))
+            self.lineedit_version.setText(metadata.get("version", ""))
+            self.lineedit_author.setText(metadata.get("author", ""))
+            self.lineedit_license.setText(metadata.get("license", ""))
+            self.textedit_comment.setPlainText(metadata.get("comment", ""))
         self.block_signals(False)
 
 

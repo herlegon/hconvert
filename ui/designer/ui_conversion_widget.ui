@@ -54,7 +54,7 @@
       </widget>
      </item>
      <item>
-      <widget class="HButtonGroup" name="conversion_selection"/>
+      <widget class="HButtonGroup" name="selection"/>
      </item>
      <item>
       <spacer name="horizontalSpacer_2">
@@ -146,7 +146,4 @@
  </customwidgets>
  <resources/>
  <connections/>
- <buttongroups>
-  <buttongroup name="group_conversion"/>
- </buttongroups>
 </ui>

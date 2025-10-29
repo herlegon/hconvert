@@ -29,14 +29,14 @@
    <item>
     <widget class="QLabel" name="label_out_type">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
      <property name="minimumSize">
       <size>
-       <width>65</width>
+       <width>80</width>
        <height>0</height>
       </size>
      </property>

@@ -48,11 +48,9 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             'onnx': ("ONNX", "To an ONNX model (o)"),
             'tensorrt': ("TensorRT", "To a TensorRT engine (t)"),
         }
-        self.selection_list = list(self.selections.keys())
-        self.conversion_selection.set_buttons(list(n for n, _ in self.selections.values()))
-        for i, (_, tooltip) in enumerate(self.selections.values()):
-            self.conversion_selection.button_at(i).setToolTip(tooltip)
-        self.conversion_selection.set_current_button(0)
+        # self.selection_list = list(self.selections.keys())
+        self.selection.set_buttons(self.selections)
+        self.selection.set_current_button(0)
 
         self.frame_onnx.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.frame_tensorrt.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -60,8 +58,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.adjustSize()
-        self.conversion_selection.set_current_button(0)
-        self.conversion_selection.signal_selection_changed.connect(self.selection_changed)
+        self.selection.signal_selection_changed.connect(self.selection_changed)
 
 
     def set_main_window(self, main_window: MainWindow) -> None:
@@ -83,7 +80,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
     def editable_widgets(self) -> list[Type[QWidget]]:
         editable_widgets: list[Type[QWidget]] = [
-            *self.conversion_selection.buttons(),
+            *self.selection.buttons(),
             *self.widget_onnx_conversion.editable_widgets(),
             *self.widget_tensorrt_conversion.editable_widgets(),
             *self.widget_select_out_dir.editable_widgets(),
@@ -92,7 +89,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
 
     def block_signals(self, b: bool) -> None:
-        self.conversion_selection.blockSignals(b)
+        self.selection.blockSignals(b)
 
 
     def clear(self) -> None:
@@ -118,9 +115,9 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         if model is None:
             self.widget_select_out_dir.setEnabled(False)
             self.block_signals(True)
-            for r in self.radio_buttons:
-                r.setEnabled(False)
-                r.setChecked(False)
+            for b in self.selection.buttons():
+                b.setEnabled(False)
+                b.setChecked(False)
             self.frame_onnx.setVisible(False)
             self.frame_tensorrt.setVisible(False)
             self.adjust_height()
@@ -151,7 +148,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         # Conversion selection
         # todo: get previous checked
         self.block_signals(True)
-        for b in self.conversion_selection.buttons():
+        for b in self.selection.buttons():
             b.setEnabled(False)
         # self.conversion_selection.setEnabled(False)
 
@@ -162,18 +159,18 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
                     bool(get_extension(model.filepath) != '.safetensors')
                 )
 
-                onnx_button = self.selection_button('onnx')
+                onnx_button = self.selection.get_button('onnx')
                 onnx_button.setEnabled(True)
                 if tensorrt_cap:
-                    onnx_button.setEnabled(True)
+                    self.selection.get_button('tensorrt').setEnabled(True)
                 # default: select onnx
                 onnx_button.setChecked(True)
                 self.conversion_selection_changed('onnx')
 
             elif model.framework.type == NnFrameworkType.ONNX:
-                self.selection_button('safetensors').setEnabled(False)
-                self.selection_button('onnx').setEnabled(False)
-                tensorrt_button = self.selection_button('tensorrt')
+                self.selection.get_button('safetensors').setEnabled(False)
+                self.selection.get_button('onnx').setEnabled(False)
+                tensorrt_button = self.selection.get_button('tensorrt')
                 if tensorrt_cap:
                     tensorrt_button.setEnabled(True)
                     tensorrt_button.setChecked(True)
@@ -182,58 +179,50 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
                     tensorrt_button.setEnabled(False)
 
             elif model.framework.type == NnFrameworkType.TENSORRT:
-                self.selection_button('tensorrt').setChecked(True)
+                self.selection.get_button('tensorrt').setChecked(True)
                 self.frame_onnx.setVisible(False)
                 self.frame_tensorrt.setVisible(False)
                 self.adjust_height()
 
             if self._initial_selection:
-                if (
-                    self._initial_selection == 'safetensors'
-                    and self.selection_button('safetensors').isEnabled()
-                ):
-                    self.selection_button('safetensors').setChecked(True)
-
-                elif (
-                    self._initial_selection == 'onnx'
-                    and self.selection_button('onnx').isEnabled()
-                ):
-                    self.selection_button('onnx').setChecked(True)
-
-                elif (
-                    self._initial_selection == 'tensorrt'
-                    and self.selection_button('tensorrt').isEnabled()
-                ):
-                    self.selection_button('tensorrt').setChecked(True)
+                for k in ('safetensors', 'onnx', 'tensorrt'):
+                    if (
+                        self._initial_selection == k
+                        and self.selection.get_button(k).isEnabled()
+                    ):
+                        self.selection.get_button(k).setChecked(True)
+                        break
                 self._initial_selection = ""
                 self.adjust_height()
 
 
     def selection_button(self, k: ConversionChoices) -> QToolButton:
-        index = self.selection_list.index(k)
-        return self.conversion_selection.button_at(index)
+        return self.selection.get_button(k)
 
 
     def select(self, k: ConversionChoices) -> None:
-        self.selection_button(k).click()
+        self.selection.get_button(k).click()
 
 
     def selection_changed(self, index: int) -> None:
-        self.conversion_selection_changed(self.selection_list[index])
+        key: ConversionChoices = self.selection.get_button(index).key
+        print(key)
+        self.conversion_selection_changed(key)
 
 
     def conversion_selection_changed(self, k: ConversionChoices) -> None:
         self.block_signals(True)
 
-        if k == 'safetensors' and self.selection_button('safetensors').isCheckable():
+        is_checkable = self.selection.get_button(k).isCheckable()
+        if k == 'safetensors' and is_checkable:
             self.frame_onnx.setVisible(False)
             self.frame_tensorrt.setVisible(False)
 
-        elif k == 'onnx' and self.selection_button('onnx').isCheckable():
+        elif k == 'onnx' and is_checkable:
             self.frame_tensorrt.setVisible(False)
             self.frame_onnx.setVisible(True)
 
-        elif k == 'tensorrt' and self.selection_button('tensorrt').isCheckable():
+        elif k == 'tensorrt' and is_checkable:
             self.frame_onnx.setVisible(False)
             self.frame_tensorrt.setVisible(True)
 
@@ -247,10 +236,10 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
 
     def selected(self) -> ConversionChoices | None:
-        index = self.conversion_selection.current_button()
+        index = self.selection.current_button_index()
         if index == -1:
             return None
-        return self.selection_list[index]
+        return self.selection.current_button().key
 
 
     def settings(self) -> dict[str, str | dict[str, Any]] | None:

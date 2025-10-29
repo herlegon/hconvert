@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>405</width>
-    <height>188</height>
+    <width>401</width>
+    <height>163</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -100,67 +100,7 @@
         <item row="1" column="1">
          <layout class="QHBoxLayout" name="layout_datatype">
           <item>
-           <widget class="QRadioButton" name="radiobutton_fp32">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="focusPolicy">
-             <enum>Qt::FocusPolicy::NoFocus</enum>
-            </property>
-            <property name="acceptDrops">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>fp32</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-            <property name="checked">
-             <bool>false</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">group_datatype</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="radiobutton_fp16">
-            <property name="focusPolicy">
-             <enum>Qt::FocusPolicy::NoFocus</enum>
-            </property>
-            <property name="acceptDrops">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>fp16</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">group_datatype</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="radiobutton_bf16">
-            <property name="focusPolicy">
-             <enum>Qt::FocusPolicy::NoFocus</enum>
-            </property>
-            <property name="acceptDrops">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>bf16</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">group_datatype</string>
-            </attribute>
-           </widget>
+           <widget class="HButtonGroup" name="h_button_group_dtypes"/>
           </item>
           <item>
            <spacer name="horizontalSpacer_6">
@@ -199,54 +139,7 @@
         <item row="2" column="1">
          <layout class="QHBoxLayout" name="layout_shape_strategy">
           <item>
-           <widget class="QRadioButton" name="radiobutton_dynamic">
-            <property name="focusPolicy">
-             <enum>Qt::FocusPolicy::NoFocus</enum>
-            </property>
-            <property name="acceptDrops">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>dynamic</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-            <property name="checked">
-             <bool>false</bool>
-            </property>
-            <property name="autoExclusive">
-             <bool>true</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">group_shape_strategy</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="radiobutton_static">
-            <property name="focusPolicy">
-             <enum>Qt::FocusPolicy::NoFocus</enum>
-            </property>
-            <property name="acceptDrops">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>static</string>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-            <property name="checked">
-             <bool>false</bool>
-            </property>
-            <property name="autoExclusive">
-             <bool>true</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">group_shape_strategy</string>
-            </attribute>
-           </widget>
+           <widget class="HButtonGroup" name="h_button_group_shapes"/>
           </item>
           <item>
            <spacer name="horizontalSpacer_7">
@@ -353,10 +246,17 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>HButtonGroup</class>
+   <extends>QWidget</extends>
+   <header>hwidgets</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="group_shape_strategy"/>
   <buttongroup name="group_datatype"/>
+  <buttongroup name="group_shape_strategy"/>
  </buttongroups>
 </ui>
