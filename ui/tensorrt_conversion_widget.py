@@ -514,6 +514,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             'shape_min': (self.spinbox_w_min.value(), self.spinbox_h_min.value()),
             'shape_opt': (self.spinbox_w_opt.value(), self.spinbox_h_opt.value()),
             'shape_max': (self.spinbox_w_max.value(), self.spinbox_h_max.value()),
-            'typing': 'weak' if self.radio_weak.isChecked() else 'strong',
+            'typing': self.h_button_group_typing.current_button().key,
         }
         return values
