@@ -50,11 +50,27 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             "max": (1920, 1080),
         }
 
+        _dtypes: dict[str, tuple[str, str]] = {
+            'fp32': ("fp32", "float32"),
+            'fp16': ("fp16", "float16"),
+            'bf16': ("bf16", "bfloat16"),
+        }
+        self.h_button_group_dtypes.set_buttons(_dtypes)
+
+        _shapes: dict[str, tuple[str, str]] = {
+            'dynamic': ("dynamic", "Input size is not a constraint"),
+            'fixed': ("fixed", "Input image size must be the one specified below"),
+            'static': ("static", "Input image size must be the one specified below"),
+        }
+        self.h_button_group_shapes.set_buttons(_shapes)
+
+
         self._editable_widgets: tuple[type[QWidget]] = (
             *self.findChildren(QComboBox),
-            *self.findChildren(QRadioButton),
             *self.findChildren(QCheckBox),
             *self.findChildren(QSpinBox),
+            self.h_button_group_shapes,
+            self.h_button_group_dtypes,
         )
 
         self.size_widgets: tuple[tuple[QSpinBox, QSpinBox, QComboBox]] = (
@@ -73,9 +89,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         self.adjustSize()
 
         # Signals
-        self.radio_fixed.toggled.connect(partial(self.shape_strategy_changed, 'fixed'))
-        self.radio_static.toggled.connect(partial(self.shape_strategy_changed, 'static'))
-        self.radio_dynamic.toggled.connect(partial(self.shape_strategy_changed, 'dynamic'))
+        self.h_button_group_shapes.signal_selection_changed.connect(self.shape_strategy_changed)
         for sw in self.size_widgets:
             # w, h, resolution
             sb_w, sb_h, cb_r = sw
@@ -107,10 +121,8 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
     def clear(self) -> None:
         self.block_signals(True)
 
-        self.radio_fp32.setChecked(True)
-
-        self.radio_dynamic.setChecked(False)
-        self.radio_fixed.setChecked(False)
+        self.h_button_group_dtypes.set_current_button('fp32')
+        self.h_button_group_shapes.set_current_button('static')
 
         for sb_w, sb_h, cb_r in self.size_widgets:
             sb_w.lineEdit().clear()
@@ -148,6 +160,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
                 cb_r.setEnabled(True)
         else:
             # Disable min/max shapes
+            print(f"   {strategy}")
             for i, (sb_w, sb_h, cb_r) in enumerate(self.size_widgets):
                 if i == 1:
                     sb_w.setEnabled(True)
@@ -173,6 +186,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
     def restore_sizes(self, ignore_opt: bool = False) -> None:
+        print("restore size")
         self.spinbox_w_min.setValue(self.previous_shapes['min'][0])
         self.spinbox_h_min.setValue(self.previous_shapes['min'][1])
         self.spinbox_w_max.setValue(self.previous_shapes['max'][0])
@@ -240,37 +254,42 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             self.spinbox_opset.setEnabled(False)
 
             in_dtype = model.io_dtypes['input']
-            for d, r in (
-                ('fp32', self.radio_fp32),
-                ('fp16', self.radio_fp16),
-                ('bf16', self.radio_bf16),
-            ):
+            for d in ('fp32', 'bf16', 'fp16'):
+                b = self.h_button_group_dtypes.get_button(d)
                 if d == in_dtype:
-                    r.setCheckable(True)
-                    r.setChecked(True)
+                    b.setEnabled(True)
+                    b.setCheckable(True)
+                    b.setChecked(True)
                 else:
-                    r.setCheckable(False)
-                r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-                r.setEnabled(False)
+                    b.setCheckable(False)
+                    b.setEnabled(False)
+                b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+                # b.setEnabled(False)
 
             # Shape strategy
             self.current_shape_strategy = model.shape_strategy.type
             if model.shape_strategy.type == 'static':
-                self.radio_static.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-                self.radio_static.setEnabled(True)
-                self.radio_static.setChecked(True)
-
-                self.radio_dynamic.setEnabled(False)
-                self.radio_fixed.setEnabled(False)
+                b = self.h_button_group_shapes.get_button('static')
+                b.setEnabled(True)
+                b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+                b.setChecked(True)
+                for s in ('dynamic', 'fixed'):
+                    self.h_button_group_shapes.get_button(s).setEnabled(False)
 
             else:
-                self.radio_static.setEnabled(False)
-                for r in (self.radio_dynamic, self.radio_fixed):
-                    r.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
-                    r.setEnabled(True)
-                self.radio_dynamic.setChecked(True)
+                self.h_button_group_shapes.get_button('static').setEnabled(False)
+                for s in ('dynamic', 'fixed'):
+                    b = self.h_button_group_shapes.get_button(s)
+                    b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+                    b.setEnabled(True)
+                    b.setCheckable(True)
+                self.h_button_group_shapes.set_current_button('fixed')
+            self.current_shape_strategy = ''
+            print(f"0 button group: {self.h_button_group_shapes.current_button().key}")
+            self.shape_strategy_changed(self.h_button_group_shapes.current_button().key)
+            print(f"1 button group: {self.h_button_group_shapes.current_button().key}")
 
-            pprint(self.previous_shapes)
+            print(f"previous shapes: {self.previous_shapes}")
             self.set_size_widget_enabled(self.current_shape_strategy)
             if model.shape_strategy.type == 'static':
                 print("disable")
@@ -285,42 +304,42 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
                 self.restore_sizes(ignore_opt=False)
                 self.update_resolution_text()
 
-
         elif model.framework.type == NnFrameworkType.PYTORCH:
             model_arch: NnPytorchArchitecture = model.arch
 
             # Datatypes
-            for d, r in (
-                ('fp32', self.radio_fp32),
-                ('bf16', self.radio_bf16),
-                ('fp16', self.radio_fp16),
-            ):
+            for d in ('fp32', 'bf16', 'fp16'):
+                b = self.h_button_group_dtypes.get_button(d)
                 if d in model_arch.to_tensorrt.dtypes:
-                    r.setEnabled(True)
-                    r.setChecked(True)
+                    b.setCheckable(True)
+                    b.setChecked(True)
+                    b.setEnabled(True)
+
                 else:
-                    r.setEnabled(False)
+                    b.setCheckable(False)
+                    b.setEnabled(False)
 
             # Shape strategy
-            for s, r in (
+            raise
+            for s, s in (
                 ('dynamic', self.radio_dynamic),
                 ('static', self.radio_static),
                 ('fixed', self.radio_fixed),
             ):
                 if s in model_arch.to_tensorrt.shape_strategy_types:
-                    r.setEnabled(True)
-                    r.setChecked(True)
+                    s.setEnabled(True)
+                    s.setChecked(True)
                     self.current_shape_strategy = s
                 else:
-                    r.setEnabled(False)
+                    s.setEnabled(False)
 
             # Typing: read only, force to
             if model_arch.to_tensorrt.weak_typing:
                 self.radio_weak.setChecked(True)
             else:
                 self.radio_strong.setChecked(True)
-            for r in (self.radio_weak, self.radio_strong):
-                r.setEnabled(False)
+            for s in (self.radio_weak, self.radio_strong):
+                s.setEnabled(False)
 
             self.set_size_widget_enabled(self.current_shape_strategy)
             if previous_shape_strategy != self.current_shape_strategy:
@@ -344,28 +363,29 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         return True
 
 
-    def shape_strategy_changed(self, button: Literal['fixed', 'static', 'dynamic'], state) -> None:
+    def shape_strategy_changed(self, button: Literal['fixed', 'static', 'dynamic']) -> None:
         """User action to set from/to dynamic, fixed/static
         """
-        if not state:
-            return
-        print(f"\nBUtton state changed: {button}, state={state}")
+        print(f"\nBUtton state changed: {button}")
         self.block_signals(True)
         previous_strategy: str = self.current_shape_strategy
-        to_dynamic: bool = self.radio_dynamic.isChecked()
-        to_fixed: bool = self.radio_fixed.isChecked()
-        to_static: bool = self.radio_static.isChecked()
+        s = self.h_button_group_shapes.current_button().key
+        to_dynamic: bool = bool(s == 'dynamic')
+        to_fixed: bool = bool(s == 'fixed')
+        to_static: bool = bool(s == 'static')
 
         print(purple(f"shape_strategy_changed:"))
         print(f"{previous_strategy} -> {'fixed' if to_fixed else ''}{'static' if to_static else ''}{'dynamic' if to_dynamic else ''}")
 
-        if previous_strategy == 'dynamic' and (to_fixed or to_static):
+        if previous_strategy in ('', 'dynamic') and (to_fixed or to_static):
             # dynamic -> fixed
             # Save to restore min/max values when changing from fixed to dynamic
             self.save_current_sizes()
             self.current_shape_strategy = 'static' if to_static else 'fixed'
             self.set_size_widget_enabled(strategy=self.current_shape_strategy)
             # self.restore_sizes(ignore_opt=False)
+            if self.current_shape_strategy == 'fixed':
+                self.copy_from_opt_to_min_max()
 
         elif previous_strategy != 'dynamic' and to_dynamic:
             # fixed/static -> dynamic
@@ -379,6 +399,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
     def size_modified(self, sw: tuple[QSpinBox, QSpinBox, QComboBox], value: int = -1) -> None:
         """User modified width/height
         """
+        print(f"size_modified")
         sb_w, sp_h, cb_r = sw
         cb_r.blockSignals(True)
         size = (sb_w.value(), sp_h.value())
@@ -388,20 +409,42 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         sp_h.lineEdit().deselect()
         cb_r.blockSignals(False)
 
+        self.copy_from_opt_to_min_max()
+
+
+    def copy_from_opt_to_min_max(self) -> None:
+        # When the modified field is the optimized valueand the strategy is fixed,
+        # then modify the min and max
+        print(f"copy: {self.current_shape_strategy}")
+        if self.current_shape_strategy == 'fixed':
+            self.block_signals(True)
+            sb_w, sb_h, cb_r = (self.spinbox_w_opt, self.spinbox_h_opt, self.combobox_resolution_opt)
+            size_widgets: tuple[tuple[QSpinBox, QSpinBox, QComboBox]] = (
+                (self.spinbox_w_min, self.spinbox_h_min, self.combobox_resolution_min),
+                (self.spinbox_w_max, self.spinbox_h_max, self.combobox_resolution_max),
+            )
+            for _sb_w, _sb_h, _cb_r in size_widgets:
+                _sb_w.setValue(sb_w.value())
+                _sb_h.setValue(sb_h.value())
+                _cb_r.setCurrentIndex(cb_r.currentIndex())
+            self.block_signals(False)
+
 
     def resolution_selected(self, sw: tuple[QSpinBox, QSpinBox, QComboBox], value) -> None:
         """User modified resolution
         Update the size widgets
         """
-        sb_w, sp_h, cb_r = sw
+        sb_w, sb_h, cb_r = sw
         current_text: str = cb_r.currentText()
         w, h = PREDEFINED_SIZE[current_text]
 
-        for sb, v in ((sb_w, w), (sp_h, h)):
+        for sb, v in ((sb_w, w), (sb_h, h)):
             sb.blockSignals(True)
             sb.setValue(v)
             sb.lineEdit().deselect()
             sb.blockSignals(False)
+
+        self.copy_from_opt_to_min_max()
 
 
     def set_opt_modifications_enabled(self, enable: bool) -> None:
@@ -450,22 +493,16 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             gpu = self._gpus.get(self.combobox_gpu.currentText(), "")
 
         dtypes: list[str] = ["fp32"]
-        if self.radio_fp16.isChecked():
+        if self.h_button_group_dtypes.get_button('fp16').isChecked():
             dtypes.append("fp16")
-        if self.radio_bf16.isChecked():
+        if self.h_button_group_dtypes.get_button('bf16').isChecked():
             dtypes.append("bf16")
-
-        shape_strategy: str = 'dynamic'
-        if self.radio_fixed.isChecked():
-            shape_strategy = 'fixed'
-        elif self.radio_static.isChecked():
-            shape_strategy = 'static'
 
         values: dict[str, str | int | tuple[int, int]] = {
             'gpu': gpu,
             'opset': self.spinbox_opset.value(),
             'dtypes': dtypes,
-            'shape_strategy': shape_strategy,
+            'shape_strategy': self.h_button_group_shapes.current_button().key,
             'shape_min': (self.spinbox_w_min.value(), self.spinbox_h_min.value()),
             'shape_opt': (self.spinbox_w_opt.value(), self.spinbox_h_opt.value()),
             'shape_max': (self.spinbox_w_max.value(), self.spinbox_h_max.value()),

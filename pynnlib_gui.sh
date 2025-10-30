@@ -33,6 +33,6 @@ python ../hwidgets/scripts/q_to_h.py ./ui/designer/ui_progress_widget.py
 
 
 export QT_QPA_PLATFORM=xcb
-python pynnlib_gui.py --model /home/adg/z-personnel/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.pth
-# python pynnlib_gui.py --model /home/adg/z-personnel/ml_models/1x_Anime1080Fixer_SuperUltraCompact_op20_fp32None.onnx
+# python pynnlib_gui.py --model /home/adg/z-personnel/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.pth
+python pynnlib_gui.py --model /home/adg/z-personnel/ml_models/1x_Anime1080Fixer_SuperUltraCompact_op20_fp32None.onnx
 

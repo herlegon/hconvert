@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>446</width>
-    <height>280</height>
+    <height>275</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -62,7 +62,7 @@
      <item row="1" column="0">
       <widget class="QLabel" name="label_version">
        <property name="text">
-        <string>ONNX  opset</string>
+        <string>ONNX opset</string>
        </property>
       </widget>
      </item>
@@ -126,35 +126,8 @@
        <property name="spacing">
         <number>9</number>
        </property>
-       <item>
-        <widget class="QRadioButton" name="radio_fp32">
-         <property name="text">
-          <string>fp32</string>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">group_dtype</string>
-         </attribute>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="radio_fp16">
-         <property name="text">
-          <string>fp16</string>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">group_dtype</string>
-         </attribute>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="radio_bf16">
-         <property name="text">
-          <string>bf16</string>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">group_dtype</string>
-         </attribute>
-        </widget>
+       <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter">
+        <widget class="HButtonGroup" name="h_button_group_dtypes"/>
        </item>
        <item>
         <spacer name="horizontalSpacer_6">
@@ -184,61 +157,7 @@
         <number>9</number>
        </property>
        <item>
-        <widget class="QRadioButton" name="radio_dynamic">
-         <property name="text">
-          <string>dynamic</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
-         <property name="checked">
-          <bool>false</bool>
-         </property>
-         <property name="autoExclusive">
-          <bool>true</bool>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">group_shape_strategy</string>
-         </attribute>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="radio_fixed">
-         <property name="text">
-          <string>fixed</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
-         <property name="checked">
-          <bool>false</bool>
-         </property>
-         <property name="autoExclusive">
-          <bool>true</bool>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">group_shape_strategy</string>
-         </attribute>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="radio_static">
-         <property name="text">
-          <string>static</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
-         <property name="checked">
-          <bool>false</bool>
-         </property>
-         <property name="autoExclusive">
-          <bool>true</bool>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">group_shape_strategy</string>
-         </attribute>
-        </widget>
+        <widget class="HButtonGroup" name="h_button_group_shapes"/>
        </item>
        <item>
         <spacer name="horizontalSpacer_shape_strategy">
@@ -657,6 +576,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>HButtonGroup</class>
+   <extends>QWidget</extends>
+   <header>hwidgets</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
  <buttongroups>

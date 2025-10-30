@@ -59,7 +59,6 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.combobox_resolution.addItems(list(PREDEFINED_SIZE.keys()))
         self.combobox_resolution.setCurrentIndex(-1)
 
-        self.clear()
         self.spinbox_opset.setValue(ONNX_DEFAULT_CONVERSION_SETTINGS['version'])
 
         _dtypes: dict[str, tuple[str, str]] = {
@@ -78,6 +77,8 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.spinbox_h.setValue(ONNX_DEFAULT_CONVERSION_SETTINGS['shape'][1])
         self.update_resolution_text()
         self.shape_strategy_changed(True)
+
+        self.clear()
 
         self.adjustSize()
 

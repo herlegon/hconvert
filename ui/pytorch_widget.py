@@ -81,11 +81,6 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
 
         self.setEnabled(True)
 
-        if model.framework.type == NnFrameworkType.PYTORCH:
-            title = QCoreApplication.translate("PyTorchWidget", u"PyTorch", None)
-        else:
-            title = QCoreApplication.translate("PyTorchWidget", u"Model", None)
-
         framework_name: str = str(model.framework.type.value)
         if get_extension(model.filepath) == '.safetensors':
             framework_name = 'safetensors'
