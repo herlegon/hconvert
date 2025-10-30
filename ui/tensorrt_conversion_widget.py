@@ -57,6 +57,12 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         }
         self.h_button_group_dtypes.set_buttons(_dtypes)
 
+        _typing: dict[str, tuple[str, str]] = {
+            'weak': ("weak", "Legacy. Fallback if conversion is not supported with weak typing."),
+            'strong': ("strong", "Preferred"),
+        }
+        self.h_button_group_typing.set_buttons(_typing)
+
         _shapes: dict[str, tuple[str, str]] = {
             'dynamic': ("dynamic", "Input size is not a constraint"),
             'fixed': ("fixed", "Input image size must be the one specified below"),
@@ -197,6 +203,83 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         self.update_resolution_text()
 
 
+    def _update_dtype_capabilities(self, model: NnModel) -> None:
+        if model.framework.type == NnFrameworkType.ONNX:
+            in_dtypes = set(model.io_dtypes['input'])
+
+        elif model.framework.type == NnFrameworkType.PYTORCH:
+            model_arch: NnPytorchArchitecture = model.arch
+            in_dtypes = model_arch.to_tensorrt.dtypes
+
+        for d in ('fp32', 'bf16', 'fp16'):
+            b = self.h_button_group_dtypes.get_button(d)
+            if d in in_dtypes:
+                b.setEnabled(True)
+                b.setCheckable(True)
+                b.setChecked(True)
+            else:
+                b.setCheckable(False)
+                b.setEnabled(False)
+            b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+
+
+    def _update_typing_capabilities(self, model: NnModel) -> None:
+        for b in self.h_button_group_typing.buttons():
+            b.setCheckable(False)
+
+        if model.arch.to_tensorrt is None:
+            for b in self.h_button_group_typing.buttons():
+                b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+                b.setCheckable(True)
+            self.h_button_group_typing.set_current_button('strong')
+
+        else:
+            if model.arch.to_tensorrt.weak_typing:
+                self.h_button_group_typing.set_current_button('weak')
+            else:
+                self.h_button_group_typing.set_current_button('strong')
+
+            for b in self.h_button_group_typing.buttons():
+                b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+                b.setCheckable(False)
+
+
+    def _update_shape_strategy_capabilities(self, model: NnModel) -> None:
+        self.current_shape_strategy = model.shape_strategy.type
+        if model.shape_strategy.type == 'static':
+            b = self.h_button_group_shapes.get_button('static')
+            b.setEnabled(True)
+            b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            b.setChecked(True)
+            for s in ('dynamic', 'fixed'):
+                self.h_button_group_shapes.get_button(s).setEnabled(False)
+
+        else:
+            self.h_button_group_shapes.get_button('static').setEnabled(False)
+            for s in ('dynamic', 'fixed'):
+                b = self.h_button_group_shapes.get_button(s)
+                b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+                b.setEnabled(True)
+                b.setCheckable(True)
+            self.h_button_group_shapes.set_current_button('fixed')
+        self.current_shape_strategy = ''
+        self.shape_strategy_changed(self.h_button_group_shapes.current_button().key)
+
+        self.set_size_widget_enabled(self.current_shape_strategy)
+        if model.shape_strategy.type == 'static':
+            w, h = model.shape_strategy.opt_size
+            self.spinbox_w_opt.setValue(w)
+            self.spinbox_h_opt.setValue(h)
+            self.update_opt_resolution_text()
+            self.set_opt_modifications_enabled(False)
+
+        else:
+            self.set_opt_modifications_enabled(True)
+            print(f"_update_shape_strategy_capabilities: {model.shape_strategy.type}")
+            self.restore_sizes(ignore_opt=False)
+            self.update_resolution_text()
+
+
     def update_capabilities(self, model: NnModel) -> bool:
         """Called when a new model is parsed
         """
@@ -249,97 +332,21 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
         if model.framework.type == NnFrameworkType.ONNX:
             print(red("TODO: Let's enable/disable widgets"))
-
             self.spinbox_opset.setValue(model.opset)
             self.spinbox_opset.setEnabled(False)
 
-            in_dtype = model.io_dtypes['input']
-            for d in ('fp32', 'bf16', 'fp16'):
-                b = self.h_button_group_dtypes.get_button(d)
-                if d == in_dtype:
-                    b.setEnabled(True)
-                    b.setCheckable(True)
-                    b.setChecked(True)
-                else:
-                    b.setCheckable(False)
-                    b.setEnabled(False)
-                b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-                # b.setEnabled(False)
+            self._update_dtype_capabilities(model=model)
+            self._update_shape_strategy_capabilities(model=model)
+            self._update_typing_capabilities(model=model)
 
-            # Shape strategy
-            self.current_shape_strategy = model.shape_strategy.type
-            if model.shape_strategy.type == 'static':
-                b = self.h_button_group_shapes.get_button('static')
-                b.setEnabled(True)
-                b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-                b.setChecked(True)
-                for s in ('dynamic', 'fixed'):
-                    self.h_button_group_shapes.get_button(s).setEnabled(False)
-
-            else:
-                self.h_button_group_shapes.get_button('static').setEnabled(False)
-                for s in ('dynamic', 'fixed'):
-                    b = self.h_button_group_shapes.get_button(s)
-                    b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
-                    b.setEnabled(True)
-                    b.setCheckable(True)
-                self.h_button_group_shapes.set_current_button('fixed')
-            self.current_shape_strategy = ''
-            print(f"0 button group: {self.h_button_group_shapes.current_button().key}")
-            self.shape_strategy_changed(self.h_button_group_shapes.current_button().key)
-            print(f"1 button group: {self.h_button_group_shapes.current_button().key}")
-
-            print(f"previous shapes: {self.previous_shapes}")
-            self.set_size_widget_enabled(self.current_shape_strategy)
-            if model.shape_strategy.type == 'static':
-                print("disable")
-                w, h = model.shape_strategy.opt_size
-                self.spinbox_w_opt.setValue(w)
-                self.spinbox_h_opt.setValue(h)
-                self.update_opt_resolution_text()
-                self.set_opt_modifications_enabled(False)
-
-            else:
-                self.set_opt_modifications_enabled(True)
-                self.restore_sizes(ignore_opt=False)
-                self.update_resolution_text()
 
         elif model.framework.type == NnFrameworkType.PYTORCH:
             model_arch: NnPytorchArchitecture = model.arch
 
-            # Datatypes
-            for d in ('fp32', 'bf16', 'fp16'):
-                b = self.h_button_group_dtypes.get_button(d)
-                if d in model_arch.to_tensorrt.dtypes:
-                    b.setCheckable(True)
-                    b.setChecked(True)
-                    b.setEnabled(True)
+            self._update_dtype_capabilities(model=model)
+            self._update_shape_strategy_capabilities(model=model)
+            self._update_typing_capabilities(model=model)
 
-                else:
-                    b.setCheckable(False)
-                    b.setEnabled(False)
-
-            # Shape strategy
-            raise
-            for s, s in (
-                ('dynamic', self.radio_dynamic),
-                ('static', self.radio_static),
-                ('fixed', self.radio_fixed),
-            ):
-                if s in model_arch.to_tensorrt.shape_strategy_types:
-                    s.setEnabled(True)
-                    s.setChecked(True)
-                    self.current_shape_strategy = s
-                else:
-                    s.setEnabled(False)
-
-            # Typing: read only, force to
-            if model_arch.to_tensorrt.weak_typing:
-                self.radio_weak.setChecked(True)
-            else:
-                self.radio_strong.setChecked(True)
-            for s in (self.radio_weak, self.radio_strong):
-                s.setEnabled(False)
 
             self.set_size_widget_enabled(self.current_shape_strategy)
             if previous_shape_strategy != self.current_shape_strategy:
@@ -434,6 +441,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         """User modified resolution
         Update the size widgets
         """
+        print(sw)
         sb_w, sb_h, cb_r = sw
         current_text: str = cb_r.currentText()
         w, h = PREDEFINED_SIZE[current_text]

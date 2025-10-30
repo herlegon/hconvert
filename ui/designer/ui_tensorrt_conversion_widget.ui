@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>446</width>
-    <height>275</height>
+    <height>316</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -35,7 +35,7 @@
       <number>6</number>
      </property>
      <property name="verticalSpacing">
-      <number>6</number>
+      <number>12</number>
      </property>
      <item row="0" column="0">
       <widget class="QLabel" name="label_18">
@@ -520,42 +520,7 @@
      <item row="3" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
-        <widget class="QRadioButton" name="radio_weak">
-         <property name="text">
-          <string>weak</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
-         <property name="checked">
-          <bool>false</bool>
-         </property>
-         <property name="autoExclusive">
-          <bool>true</bool>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">group_typing</string>
-         </attribute>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="radio_strong">
-         <property name="text">
-          <string>strong</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-         <property name="autoExclusive">
-          <bool>true</bool>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">group_typing</string>
-         </attribute>
-        </widget>
+        <widget class="HButtonGroup" name="h_button_group_typing"/>
        </item>
        <item>
         <spacer name="horizontalSpacer_12">
