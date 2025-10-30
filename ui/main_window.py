@@ -60,6 +60,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             color: {hrl_style.text_color};
         """)
 
+        # self.h_vertical_divider.set_line_color(hrl_style.widget_bgd)
+
         self.widget_model_browser.set_main_window(self)
         self.widget_tensorrt_model.set_main_window(self)
         self.widget_conversion.set_main_window(self)
@@ -95,6 +97,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_model_browser.signal_model_loaded.connect(self.event_model_loaded)
         self.widget_metadata.signal_inject_metadata.connect(self.event_inject_metadata)
         self.widget_progress.signal_start_stop_clicked.connect(self.event_convert)
+
+        self.widget_conversion.signal_conversion_selection_changed.connect(
+            self.event_conv_selection_changed
+        )
 
         self.action_open: QAction
         self.set_keyboard_shorcuts()
@@ -374,6 +380,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.widget_model_browser.setEnabled(True)
             self.widget_conversion.setEnabled(True)
             self.widget_metadata.setEnabled(True)
+
+
+    def event_conv_selection_changed(self) -> None:
+        self.widget_progress.ended()
+        self.widget_progress.hide_progress()
+        self.widget_conversion.setEnabled(True)
 
 
     def dropEvent(self, event: QDropEvent):

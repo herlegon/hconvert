@@ -1,4 +1,20 @@
+import os
+from hutils import parent_directory, absolute_path
 from typing import Literal
+
+from PySide6.QtCore import (
+    Qt,
+)
+from PySide6.QtGui import (
+    QPixmap,
+    QImage,
+    QColor,
+    QPainter,
+)
+# from PySide6.QtWidgets import (
+
+# )
+
 
 DEFAULT_SIZE: tuple[int, int] = (720, 540)
 
@@ -22,7 +38,7 @@ ShapeStrategyName = Literal['static', 'dynamic', 'fixed']
 
 
 ONNX_DEFAULT_CONVERSION_SETTINGS: dict[str, str | bool | int | tuple[int, int]] = {
-    'version': 20,
+    'version': 21,
     'dtype': 'fp32',
     'shape_strategy': 'static',
     'shape': (720, 540)
@@ -39,3 +55,27 @@ SUPPORTED_MODEL_EXTENSIONS: tuple[str] = (
     ".param",
     ".ncnn",
 )
+
+
+IMAGE_DIR = absolute_path(os.path.join(parent_directory(__file__), "img"))
+def load_png_scaled(filename: str, height: int) -> QPixmap:
+    """
+    Load a PNG image from `path` and scale it to the given height
+    while keeping its aspect ratio.
+
+    Args:
+        path (str): Path to the PNG file.
+        height (int): Desired height in pixels.
+
+    Returns:
+        QPixmap: The scaled QPixmap.
+    """
+    pixmap_fp = os.path.join(IMAGE_DIR, filename)
+    pixmap = QPixmap(pixmap_fp)
+
+    if pixmap.isNull():
+        raise FileNotFoundError(f"Cannot load image: {pixmap_fp}")
+    if height != -1 and height != pixmap.height():
+        return pixmap.scaledToHeight(height, Qt.TransformationMode.SmoothTransformation)
+
+    return pixmap

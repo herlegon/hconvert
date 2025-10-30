@@ -44,7 +44,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         # self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
 
         self.selections: dict[ConversionChoices, tuple[str, str]] = {
-            'safetensors': ("SafeTensors", "To a SafeTensors file (s)"),
+            'safetensors': ("Safetensors", "To a Safetensors file (s)"),
             'onnx': ("ONNX", "To an ONNX model (o)"),
             'tensorrt': ("TensorRT", "To a TensorRT engine (t)"),
         }
@@ -233,6 +233,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
         self.adjust_height()
         self.block_signals(False)
+        self.signal_conversion_selection_changed.emit()
 
 
     def selected(self) -> ConversionChoices | None:

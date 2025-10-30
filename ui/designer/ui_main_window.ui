@@ -130,7 +130,10 @@
        </layout>
       </item>
       <item row="0" column="1">
-       <widget class="Line" name="line">
+       <widget class="Line" name="h_vertical_divider">
+        <property name="frameShadow">
+         <enum>QFrame::Shadow::Plain</enum>
+        </property>
         <property name="orientation">
          <enum>Qt::Orientation::Vertical</enum>
         </property>

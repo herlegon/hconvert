@@ -95,7 +95,6 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
                     child_layout.invalidate()
 
         self.main_layout.invalidate()
-        self.groupbox_onnx_conversion.adjustSize()
         self.adjustSize()
 
 

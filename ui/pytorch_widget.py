@@ -1,5 +1,9 @@
 from __future__ import annotations
-from hwidgets import HStyle
+import os
+from hutils import get_extension, parent_directory
+from hwidgets import (
+    HStyle,
+)
 from pynnlib import (
     NnModel,
     NnFrameworkType,
@@ -9,10 +13,17 @@ from PySide6.QtCore import (
     QCoreApplication,
     Qt,
 )
+from PySide6.QtGui import (
+    QPixmap,
+)
 from PySide6.QtWidgets import (
     QWidget,
 )
+
+from .common import load_png_scaled
 from .designer.ui_pytorch_widget import Ui_PyTorchWidget
+
+
 
 
 class PyTorchWidget(QWidget, Ui_PyTorchWidget):
@@ -31,6 +42,18 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
 
         self.lineedit_size_constraints_min.setClearButtonEnabled(False)
         self.lineedit_size_constraints_min.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        logo_height: int = 24
+        self.framework_logo.clear()
+        self.framework_logo.setFixedHeight(logo_height)
+        self.framework_name.clear()
+
+        self.framework_img: dict[str, QPixmap] = {
+            'onnx': load_png_scaled("onnx_32px.png", height=logo_height),
+            'safetensors': load_png_scaled("safetensors_32px.png", height=logo_height),
+            'pytorch': load_png_scaled("pytorch_32px.png", height=logo_height),
+            'tensorrt': load_png_scaled("tensorrt_200px.png", height=logo_height),
+        }
 
         self.adjustSize()
 
@@ -62,7 +85,16 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
             title = QCoreApplication.translate("PyTorchWidget", u"PyTorch", None)
         else:
             title = QCoreApplication.translate("PyTorchWidget", u"Model", None)
-        self.groupbox_pytorch_model.setTitle(title)
+
+        framework_name: str = str(model.framework.type.value)
+        if get_extension(model.filepath) == '.safetensors':
+            framework_name = 'safetensors'
+
+        if framework_name == 'tensorrt':
+            self.framework_name.setText(framework_name)
+        else:
+            self.framework_name.clear()
+        self.framework_logo.setPixmap(self.framework_img[framework_name.lower()])
 
 
         self.lineedit_arch_name.setText(model.arch_name)

@@ -61,8 +61,19 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
         self.clear()
         self.spinbox_opset.setValue(ONNX_DEFAULT_CONVERSION_SETTINGS['version'])
-        self.radio_fp32.setChecked(bool(ONNX_DEFAULT_CONVERSION_SETTINGS['dtype'] == 'fp32'))
-        self.radio_static.setChecked(bool(ONNX_DEFAULT_CONVERSION_SETTINGS['shape_strategy'] == 'static'))
+
+        _dtypes: dict[str, tuple[str, str]] = {
+            'fp32': ("fp32", "float32"),
+            'fp16': ("fp16", "float16"),
+            'bf16': ("bf16", "bfloat16"),
+        }
+        self.h_button_group_dtypes.set_buttons(_dtypes)
+
+        _shapes: dict[str, tuple[str, str]] = {
+            'dynamic': ("dynamic", "Input size is not a constraint"),
+            'static': ("static", "Input image size must be the one specified below"),
+        }
+        self.h_button_group_shapes.set_buttons(_shapes)
         self.spinbox_w.setValue(ONNX_DEFAULT_CONVERSION_SETTINGS['shape'][0])
         self.spinbox_h.setValue(ONNX_DEFAULT_CONVERSION_SETTINGS['shape'][1])
         self.update_resolution_text()
@@ -70,8 +81,9 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
         self.adjustSize()
 
-        self.radio_static.toggled.connect(self.shape_strategy_changed)
-        self.radio_dynamic.toggled.connect(self.shape_strategy_changed)
+        self.h_button_group_shapes.signal_selection_changed.connect(
+            self.shape_strategy_changed
+        )
 
         self.spinbox_w.valueChanged.connect(self.size_modified)
         self.spinbox_h.valueChanged.connect(self.size_modified)
@@ -91,12 +103,12 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.block_signals(True)
         self.spinbox_opset.clear()
         spinbox_width = 50
-        self.radio_dynamic.setChecked(False)
-        self.radio_static.setChecked(False)
+        self.h_button_group_shapes.set_current_button('dynamic')
 
         self.spinbox_opset.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.PlusMinus)
-        for r in self.group_dtypes.buttons():
-            r.setChecked(False)
+        for b in self.h_button_group_dtypes.buttons():
+            b.setChecked(False)
+
         self.spinbox_w.lineEdit().clear()
         self.spinbox_h.lineEdit().clear()
         self.spinbox_w.clear()
@@ -162,27 +174,22 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         arch: NnPytorchArchitecture = model.arch
 
         # Datatypes
-        for d, r in (
-            ('fp32', self.radio_fp32),
-            ('bf16', self.radio_bf16),
-            ('fp16', self.radio_fp16),
-        ):
+        for b in self.h_button_group_dtypes.buttons():
+            b.setEnabled(bool(b.key in arch.to_onnx.dtypes))
+        for d in ('fp32', 'fp16', 'bf16'):
             if d in arch.to_onnx.dtypes:
-                r.setEnabled(True)
-                r.setChecked(True)
-            else:
-                r.setEnabled(False)
+                self.h_button_group_dtypes.set_current_button(d)
+                break
+
 
         # Shape strategy
-        for s, r in (
-            ('static', self.radio_static),
-            ('dynamic', self.radio_dynamic),
-        ):
+        for s in ('static', 'dynamic'):
+            b = self.h_button_group_shapes.get_button(s)
             if s in arch.to_onnx.shape_strategy_types:
-                r.setEnabled(True)
-                r.setChecked(True)
+                b.setEnabled(True)
+                b.setChecked(True)
             else:
-                r.setEnabled(False)
+                b.setEnabled(False)
 
         # Use the size constraints to set min/max values
         size_constraint: SizeConstraint = arch.size_constraint
@@ -198,7 +205,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             self.spinbox_h.setSingleStep(1)
 
         # clear spinbox/combobox if dynamic
-        if self.radio_dynamic.isChecked():
+        if self.h_button_group_shapes.current_button().key == 'dynamic':
             self.spinbox_w.clear()
             self.spinbox_h.clear()
             self.combobox_resolution.setCurrentIndex(-1)
@@ -213,7 +220,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         """User action to set from/to dynamic, fixed/static
         """
         self.block_signals(True)
-        to_static = self.radio_static.isChecked()
+        to_static = self.h_button_group_shapes.current_button().key == 'static'
 
         if  self.shape_strategy == 'static' and not to_static:
             # static -> dynamic
@@ -266,16 +273,10 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
 
     def values(self) -> dict[str, str | int | tuple[int, int]]:
-        if self.radio_fp32.isChecked():
-            dtype =  'fp32'
-        elif self.radio_fp16.isChecked():
-            dtype = 'fp16'
-        elif self.radio_bf16.isChecked():
-            dtype = 'bf16'
         settings: dict[str, str | int | tuple[int, int]] = {
             'opset': self.spinbox_opset.value(),
-            'dtype': dtype,
-            'shape_strategy': 'static' if self.radio_static.isChecked() else 'dynamic',
+            'dtype': self.h_button_group_dtypes.current_button().key,
+            'shape_strategy': self.h_button_group_shapes.current_button().key,
             'shape': (self.spinbox_w.value(), self.spinbox_h.value()),
         }
         return settings
