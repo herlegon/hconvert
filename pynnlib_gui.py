@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import logging
 import os
 import signal
 import sys
@@ -35,7 +36,8 @@ def main():
 
     arguments = parser.parse_args()
 
-    from hwidgets.hstyle import HStyle
+    # FileOutputHandler = logging.FileHandler('l
+
 
 
     application = QApplication(sys.argv)

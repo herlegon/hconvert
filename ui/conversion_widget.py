@@ -31,7 +31,7 @@ ConversionChoices = Literal['safetensors', 'onnx', 'tensorrt']
 
 
 class ConversionWidget(QWidget, Ui_ConversionWidget):
-    signal_conversion_selection_changed = Signal()
+    signal_settings_modified = Signal()
 
     def __init__(self, parent: QMainWindow):
         super().__init__(parent)
@@ -59,6 +59,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
         self.adjustSize()
         self.selection.signal_selection_changed.connect(self.selection_changed)
+        self.widget_onnx_conversion.signal_settings_modified.connect(self.settings_modified)
 
 
     def set_main_window(self, main_window: MainWindow) -> None:
@@ -236,7 +237,11 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         self._previous_selection = k
         self.adjust_height()
         self.block_signals(False)
-        self.signal_conversion_selection_changed.emit()
+        self.settings_modified()
+
+
+    def settings_modified(self) -> None:
+        self.signal_settings_modified.emit()
 
 
     def selected(self) -> ConversionChoices | None:

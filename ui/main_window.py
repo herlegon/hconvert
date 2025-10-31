@@ -40,7 +40,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QWidget
 )
-
+from .logger import alog
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     signal_preview_modified = Signal(dict)
@@ -98,8 +98,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_metadata.signal_inject_metadata.connect(self.event_inject_metadata)
         self.widget_progress.signal_start_stop_clicked.connect(self.event_convert)
 
-        self.widget_conversion.signal_conversion_selection_changed.connect(
-            self.event_conv_selection_changed
+        self.widget_conversion.signal_settings_modified.connect(
+            self.event_conversion_settings_modified
         )
 
         self.action_open: QAction
@@ -323,6 +323,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def event_progress(self, status: dict) -> None:
+        alog.debug("received signal_progress:")
+        alog.debug(status)
         # status: dict(
         #   'state': Literal['stopped', 'running'],
         #   'type': Literal['progress', 'undetermined'],
@@ -336,6 +338,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def event_task_ended(self, exception: str | None) -> None:
+        alog.debug("received signal_task_ended")
         # self.setEnabled(True)
         self.widget_conversion.setEnabled(True)
         self.widget_metadata.setEnabled(True)
@@ -382,7 +385,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.widget_metadata.setEnabled(True)
 
 
-    def event_conv_selection_changed(self) -> None:
+    def event_conversion_settings_modified(self) -> None:
         self.widget_progress.ended()
         self.widget_progress.hide_progress()
         self.widget_conversion.setEnabled(True)

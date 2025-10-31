@@ -22,7 +22,7 @@ from hwidgets import HStyle
 from .designer.ui_progress_widget import Ui_ProgressWidget
 if TYPE_CHECKING:
     from .main_window import MainWindow
-
+from .logger import alog
 
 
 class ProgressWidget(QWidget, Ui_ProgressWidget):
@@ -62,7 +62,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         self.label.setVisible(b)
         self.lineEdit_out_model_fp.setVisible(b)
         self.button_containing_folder.setVisible(b)
-        self.progress_bar.setValue(0)
+        # self.progress_bar.setValue(0)
         if b:
             self._main_window.reset_widget_monitor()
         if self.progress_bar.isVisible() != b:
@@ -87,9 +87,9 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
 
     def ended(self) -> None:
+        alog.error(f"{__class__.__name__} ended")
         self.set_visible(True)
-        self.progress_bar.setRange(0, 100)
-        self.progress_bar.setValue(100)
+        self.progress_bar.stop()
         # self.button_convert.setText("Convert")
         # self.button_convert.setEnabled(True)
         self.is_converting = False
@@ -100,6 +100,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
     def stop(self) -> None:
         # Stop without showing progress/path/usage
+        alog.error(f"{__class__.__name__} stop")
         self.set_visible(False)
         self.button_convert.setText("Convert")
         self.button_convert.setEnabled(True)
@@ -122,6 +123,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         self.button_convert.setEnabled(False)
         if self.is_converting:
             # Stop conversion
+            alog.error(f"{__class__.__name__} event_cancel_button_clicked")
             state = 'stop'
             self.is_converting = False
             self.button_convert.setText("Convert")
@@ -183,8 +185,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
             self.button_convert.setText("Stop")
 
             if status['type'] == 'undetermined' and status['progress'] == 0:
-                self.progress_bar.setRange(0, 0)
-                self.progress_bar.setValue(0)
+                self.progress_bar.start()
                 # self.progress_bar.setEnabled(True)
                 self.progress_bar.setEnabled(False)
 
@@ -192,6 +193,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
                 self.button_convert.setText("Stop")
                 self.button_convert.setEnabled(True)
                 self.progress_bar.setEnabled(False)
+
             else:
                 self.button_convert.setText("Convert")
                 self.button_convert.setEnabled(False)
@@ -202,3 +204,6 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
             self.lineEdit_out_model_fp.setToolTip(self.out_model_fp)
 
             self.set_visible(True)
+
+        elif self.is_converting:
+            alog.error(f"{__class__.__name__} unknown state: {status['state']} while converting")

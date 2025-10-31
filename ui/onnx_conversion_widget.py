@@ -18,6 +18,7 @@ from .common import (
 )
 from PySide6.QtCore import (
     Qt,
+    Signal,
 )
 from PySide6.QtWidgets import (
     QWidget,
@@ -32,6 +33,7 @@ from .designer.ui_onnx_conversion_widget import Ui_OnnxConversionWidget
 
 
 class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
+    signal_settings_modified: Signal = Signal()
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -81,6 +83,9 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             self.shape_strategy_changed
         )
 
+        self.spinbox_opset.valueChanged.connect(self.event_setting_modified)
+        self.h_button_group_dtypes.signal_selection_changed.connect(self.event_setting_modified)
+        self.h_button_group_shapes.signal_selection_changed.connect(self.event_setting_modified)
         self.spinbox_w.valueChanged.connect(self.size_modified)
         self.spinbox_h.valueChanged.connect(self.size_modified)
         self.combobox_resolution.currentIndexChanged.connect(self.resolution_selected)
@@ -267,6 +272,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.shape_strategy = 'static' if to_static else 'dynamic'
         self.set_shape_size_enabled(strategy=self.shape_strategy)
         self.block_signals(False)
+        self.event_setting_modified()
 
 
     def size_modified(self, value: int) -> None:
@@ -277,6 +283,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.spinbox_w.lineEdit().deselect()
         self.spinbox_h.lineEdit().deselect()
         self.combobox_resolution.blockSignals(False)
+        self.event_setting_modified()
 
 
     def resolution_selected(self, index: int) -> None:
@@ -294,6 +301,11 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             self.spinbox_h.lineEdit().deselect()
             self.spinbox_w.blockSignals(False)
             self.spinbox_h.blockSignals(False)
+            self.event_setting_modified()
+
+
+    def event_setting_modified(self) -> None:
+        self.signal_settings_modified.emit()
 
 
     def values(self) -> dict[str, str | int | tuple[int, int]]:

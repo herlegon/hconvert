@@ -28,7 +28,7 @@ from pynnlib import (
 if TYPE_CHECKING:
     from ui.main_window import MainWindow
 
-
+from ui.logger import alog
 
 class Controller(QObject):
     signal_progress: Signal = Signal(dict)
@@ -157,8 +157,9 @@ class Controller(QObject):
 
 
     def event_start_conversion(self, settings: dict[str, str | dict[str, Any]]) -> None:
-        print(lightcyan("Start conversion"))
-        pprint(settings)
+        alog.debug("event_start_conversion")
+        alog.debug(f"{settings}")
+
         saved_metadata = deepcopy(self.in_model.metadata)
         self.in_model.metadata = settings['metadata']
         exception: str = ""
@@ -196,13 +197,12 @@ class Controller(QObject):
 
             out_model_fp = generate_out_model_fp(to=NnFrameworkType.ONNX, **common_kwargs)
             self.emit_start_signal(False, out_model_fp)
-            print(lightcyan(out_model_fp))
+            alog.debug(f"out model: {out_model_fp}")
 
             try:
                 nnlib.convert_to_onnx(**common_kwargs)
             except Exception as e:
                 exception = str(e)
-                print(exception)
 
         elif to == 'tensorrt':
             exception = self.convert_to_tensorrt(settings)
@@ -212,7 +212,7 @@ class Controller(QObject):
 
         self.signal_task_ended.emit(exception)
         if exception:
-            print(exception)
+            alog.error(exception)
             self.emit_cancelled_signal()
         else:
             self.emit_ended_signal()
