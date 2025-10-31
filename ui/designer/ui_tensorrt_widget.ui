@@ -167,6 +167,9 @@
         </widget>
        </item>
        <item>
+        <widget class="HButtonGroup" name="h_button_group_dtypes"/>
+       </item>
+       <item>
         <spacer name="horizontalSpacer_6">
          <property name="orientation">
           <enum>Qt::Orientation::Horizontal</enum>
@@ -227,6 +230,9 @@
           <string notr="true">group_typing</string>
          </attribute>
         </widget>
+       </item>
+       <item>
+        <widget class="HButtonGroup" name="h_button_group_typing"/>
        </item>
        <item>
         <spacer name="horizontalSpacer_12">
@@ -311,6 +317,9 @@
           <string notr="true">group_shape_strategy</string>
          </attribute>
         </widget>
+       </item>
+       <item>
+        <widget class="HButtonGroup" name="h_button_group_shapes"/>
        </item>
        <item>
         <spacer name="horizontalSpacer_7">
@@ -553,11 +562,18 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>HButtonGroup</class>
+   <extends>QWidget</extends>
+   <header>hwidgets</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="group_typing"/>
   <buttongroup name="group_fp"/>
+  <buttongroup name="group_typing"/>
   <buttongroup name="group_shape_strategy"/>
  </buttongroups>
 </ui>

@@ -34,6 +34,11 @@ from .common import (
     predefined_shapes_inv,
     ShapeStrategyName,
 )
+from .ui_types import (
+    ui_dtypes,
+    ui_typing,
+    ui_shapes,
+)
 
 
 
@@ -51,26 +56,9 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             "max": (1920, 1080),
         }
 
-        _dtypes: dict[str, tuple[str, str]] = {
-            'fp32': ("fp32", "float32"),
-            'fp16': ("fp16", "float16"),
-            'bf16': ("bf16", "bfloat16"),
-        }
-        self.h_button_group_dtypes.set_buttons(_dtypes)
-
-        _typing: dict[str, tuple[str, str]] = {
-            'weak': ("weak", "Legacy. Fallback if conversion is not supported with weak typing."),
-            'strong': ("strong", "Preferred"),
-        }
-        self.h_button_group_typing.set_buttons(_typing)
-
-        _shapes: dict[str, tuple[str, str]] = {
-            'dynamic': ("dynamic", "Input size is not a constraint"),
-            'fixed': ("fixed", "Input image size must be the one specified below"),
-            'static': ("static", "Input image size must be the one specified below"),
-        }
-        self.h_button_group_shapes.set_buttons(_shapes)
-
+        self.h_button_group_dtypes.set_buttons(ui_dtypes)
+        self.h_button_group_typing.set_buttons(ui_typing)
+        self.h_button_group_shapes.set_buttons(ui_shapes)
 
         self._editable_widgets: tuple[type[QWidget]] = (
             *self.findChildren(QComboBox),
@@ -222,7 +210,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
     def restore_sizes(self, ignore_opt: bool = False) -> None:
-        print("restore size")
         self.spinbox_w_min.setValue(self.previous_shapes['min'][0])
         self.spinbox_h_min.setValue(self.previous_shapes['min'][1])
         self.spinbox_w_max.setValue(self.previous_shapes['max'][0])
@@ -437,7 +424,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
     def size_modified(self, sw: tuple[QSpinBox, QSpinBox, QComboBox], value: int = -1) -> None:
         """User modified width/height
         """
-        print(f"size_modified")
         sb_w, sp_h, cb_r = sw
         cb_r.blockSignals(True)
         size = (sb_w.value(), sp_h.value())
@@ -453,7 +439,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
     def copy_from_opt_to_min_max(self) -> None:
         # When the modified field is the optimized valueand the strategy is fixed,
         # then modify the min and max
-        print(f"copy: {self.current_shape_strategy}")
         if self.current_shape_strategy == 'fixed':
             self.block_signals(True)
             sb_w, sb_h, cb_r = (self.spinbox_w_opt, self.spinbox_h_opt, self.combobox_resolution_opt)
@@ -472,7 +457,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         """User modified resolution
         Update the size widgets
         """
-        print(sw)
         sb_w, sb_h, cb_r = sw
         current_text: str = cb_r.currentText()
         if not current_text:

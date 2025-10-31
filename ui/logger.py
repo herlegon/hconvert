@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-from hutils import lightcyan, green, yellow, red, white
+from hutils import darkgrey, lightcyan, green, lightgrey, yellow, red, white
 
 class ColorFormatter(logging.Formatter):
     COLORS = {
@@ -23,8 +23,11 @@ class ColorFormatter(logging.Formatter):
             # Fallback to basename if relpath fails (e.g., different drives on Windows)
             rel_path = os.path.basename(record.pathname)
 
+        filename = darkgrey(os.path.basename(record.pathname))
         link = f"{rel_path}:{record.lineno}"
-        return color_fn(f"{msg}  ({link})")
+        # Format: [LEVEL]  filename: message (file:line)
+        formatted = f"[{record.levelname}]  {filename}: {record.getMessage()}  ({link})"
+        return color_fn(formatted)
 
 # logging.disable(logging.CRITICAL)
 
@@ -32,7 +35,7 @@ class ColorFormatter(logging.Formatter):
 alog: logging.Logger = logging.getLogger("heron")
 
 handler = logging.StreamHandler(sys.stdout)
-formatter = ColorFormatter("[%(levelname)s] %(message)s")
+formatter = ColorFormatter()
 handler.setFormatter(formatter)
 alog.addHandler(handler)
 alog.setLevel(logging.DEBUG)

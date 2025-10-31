@@ -40,7 +40,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         self._main_window: MainWindow = None
         self._previous_selection: ConversionChoices = 'safetensors'
 
-        self.layout_main.addStretch()
+        # self.widget_layout.addStretch()
         # self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
 
         self.selections: dict[ConversionChoices, tuple[str, str]] = {
@@ -105,8 +105,11 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
 
     def adjust_height(self) -> None:
-        self.updateGeometry()
-        self.adjustSize()
+        self.blockSignals(True)
+        self.widget_layout.invalidate()
+        # self.updateGeometry()
+        # self.adjustSize()
+        self.blockSignals(False)
         QTimer.singleShot(0, self._main_window.adjust_height)
 
 
@@ -121,8 +124,8 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
                 b.setChecked(False)
             self.frame_onnx.setVisible(False)
             self.frame_tensorrt.setVisible(False)
-            self.adjust_height()
             self.block_signals(False)
+            self.adjust_height()
             return
 
 

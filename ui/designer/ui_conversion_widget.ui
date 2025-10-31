@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="layout_main">
+  <layout class="QVBoxLayout" name="widget_layout">
    <property name="spacing">
     <number>16</number>
    </property>

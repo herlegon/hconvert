@@ -41,7 +41,6 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         self.setEnabled(False)
         self.button_undo.setEnabled(False)
         self.button_save_as.setEnabled(False)
-        self.adjustSize()
 
         self.initial_metadata: dict[str, str] | None = None
         self.current_widget: QWidget | None = None

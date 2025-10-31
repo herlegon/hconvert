@@ -11,6 +11,13 @@ from pynnlib import (
 from .common import (
     predefined_shapes_inv,
 )
+from .logger import alog
+from .ui_types import (
+    ui_dtypes,
+    ui_typing,
+    ui_shapes,
+)
+
 from PySide6.QtCore import (
     Qt,
 )
@@ -34,6 +41,10 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
         hrl_style = HStyle()
         self.setupUi(self, hrl_style)
         self._main_window: MainWindow = None
+
+        self.h_button_group_dtypes.set_buttons(ui_dtypes)
+        self.h_button_group_typing.set_buttons(ui_typing)
+        self.h_button_group_shapes.set_buttons(ui_shapes)
 
         self.size_widgets: tuple[tuple[QLineEdit, QLineEdit, QLineEdit]] = (
             (self.label_size_min, self.lineedit_shape_min, self.label_resolution_min),
@@ -81,6 +92,7 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
         self.label_resolution_opt.clear()
         self.label_resolution_max.clear()
 
+
     def set_row_visible(self, rows: tuple[int], visible: bool) -> None:
         for row in rows:
             label: QWidget = self.main_layout.itemAtPosition(row, 0).widget()
@@ -117,46 +129,30 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
             self.lineedit_opset.setText(f"{model.opset}")
 
         # dtype: corresponds to input dtype
-        if model.io_dtypes['input'] == 'fp32':
-            self.radio_fp32.setCheckable(True)
-            self.radio_fp32.setChecked(True)
-        elif model.io_dtypes['input'] == 'fp16':
-            self.radio_fp16.setCheckable(True)
-            self.radio_fp16.setChecked(True)
-        elif model.io_dtypes['input'] == 'bf16':
-            self.radio_bf16.setCheckable(True)
-            self.radio_bf16.setChecked(True)
-        else:
-            print("Error: dtype is not found")
+        try:
+            self.h_button_group_dtypes.set_current_button(model.io_dtypes['input'])
+        except:
+            alog.error(f"Not supported: {model.io_dtypes['input']}")
 
         # typing
-        typing: str = model.metadata.get("typing", "")
-        if typing == 'strong':
-            self.radio_strong.setCheckable(True)
-            self.radio_strong.setChecked(True)
-        elif typing == 'weak':
-            self.radio_weak.setCheckable(True)
-            self.radio_weak.setChecked(True)
+        typing: str = model.metadata.get("typing", "weak")
+        if typing != "":
+            self.h_button_group_typing.set_current_button(typing)
+        else:
+            for b in self.h_button_group_typing.buttons():
+                b.setChecked(False)
 
         # shape strategy and sizes
         size = " x ".join(map(str, model.shape_strategy.opt_size))
         self.lineedit_shape_opt.setText(size)
         self.label_resolution_opt.setText(predefined_shapes_inv.get(size.replace(" x ", "x"), ""))
 
-        if model.shape_strategy.type in ('static', 'fixed'):
-            if 'static' in model.shape_strategy.type:
-                self.radio_static.setCheckable(True)
-                self.radio_static.setChecked(True)
-            else:
-                self.radio_fixed.setCheckable(True)
-                self.radio_fixed.setChecked(True)
-
+        shape_strategy: str = model.shape_strategy.type
+        self.h_button_group_shapes.set_current_button(shape_strategy)
+        if shape_strategy in ('static', 'fixed'):
             self.set_row_visible((5, 7), visible=False)
 
-        elif model.shape_strategy.type == 'dynamic':
-            self.radio_dynamic.setCheckable(True)
-            self.radio_dynamic.setChecked(True)
-
+        elif shape_strategy == 'dynamic':
             self.set_row_visible((5, 7), visible=True)
 
             size = " x ".join(map(str, model.shape_strategy.min_size))
@@ -168,14 +164,10 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
             self.label_resolution_max.setText(predefined_shapes_inv.get(size.replace(" x ", "x"), "failed"))
 
         else:
-            warn("shape strategy is unknow")
+            alog.error(f"unknown shape strategy: {shape_strategy}")
 
         # Disable editable widgets but set color in black
-        for w in (
-            *self.findChildren(QLineEdit),
-            *self.findChildren(QRadioButton),
-            *self.findChildren(QCheckBox)
-        ):
+        for w in self.findChildren(QLineEdit):
             w.setEnabled(True)
         # self.setStyleSheet("""
         #     QRadioButton:disabled { color: black; }

@@ -13,6 +13,10 @@ from .common import (
     predefined_shapes_inv,
     ShapeStrategyName,
 )
+from .ui_types import (
+    ui_dtypes,
+    ui_shapes
+)
 
 from PySide6.QtCore import (
     Qt,
@@ -21,12 +25,10 @@ from PySide6.QtCore import (
 from PySide6.QtWidgets import (
     QWidget,
     QLineEdit,
-    QRadioButton,
     QWidget,
     QLayout,
 )
 from .designer.ui_onnx_widget import Ui_OnnxWidget
-
 
 
 class OnnxWidget(QWidget, Ui_OnnxWidget):
@@ -38,18 +40,11 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
 
         self.shape_strategy: ShapeStrategyName = 'dynamic'
 
-        _dtypes: dict[str, tuple[str, str]] = {
-            'fp32': ("fp32", "float32"),
-            'fp16': ("fp16", "float16"),
-            'bf16': ("bf16", "bfloat16"),
-        }
-        self.h_button_group_dtypes.set_buttons(_dtypes)
+        self.h_button_group_dtypes.set_buttons(ui_dtypes)
 
-        _shapes: dict[str, tuple[str, str]] = {
-            'dynamic': ("dynamic", "Input size is not a constraint"),
-            'static': ("static", "Input image size must be the one specified below"),
-        }
-        self.h_button_group_shapes.set_buttons(_shapes)
+        _ui_shapes = ui_shapes.copy()
+        del _ui_shapes['fixed']
+        self.h_button_group_shapes.set_buttons(_ui_shapes)
 
         self.clear()
         self.adjustSize()

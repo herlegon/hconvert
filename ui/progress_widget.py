@@ -34,6 +34,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         self.setupUi(self, hrl_style)
         self.progress_bar = self.h_indeterminate_progress
         self.gpu_usage = self.h_radial_progress_bar_gpu
+        self.gpu_usage.setFixedSize(64, 64)
 
 
         self._main_window: MainWindow = None
@@ -41,6 +42,9 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         self.set_visible(False)
         self.is_converting: bool = False
         self.out_model_fp: str = ""
+
+        self.original_stylesheet = self.label_save_as.styleSheet()
+        self.end_stylesheet = self.original_stylesheet + "\nQLabel { color: green; }"
 
         self.button_convert.released.connect(self.event_convert_button_clicked)
         self.button_containing_folder.released.connect(self.event_open_containing_folder)
@@ -51,21 +55,25 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
 
     def adjust_height(self) -> None:
-        print(yellow(f"{__class__} adjust_weight"))
-        self.updateGeometry()
-        self.adjustSize()
-        QTimer.singleShot(0, self._main_window.adjust_height)
+        if self.progress_bar.isVisible():
+            self.blockSignals(True)
+            alog.debug(yellow("adjust_weight"))
+            self.updateGeometry()
+            self.adjustSize()
+            self.blockSignals(False)
+            QTimer.singleShot(0, self._main_window.adjust_height)
 
 
     def set_visible(self, b: bool) -> None:
+        alog.debug(f"set progress widget visible: {b}")
         self.gpu_usage.setVisible(b)
-        self.label.setVisible(b)
+        self.label_save_as.setVisible(b)
         self.lineEdit_out_model_fp.setVisible(b)
         self.button_containing_folder.setVisible(b)
         # self.progress_bar.setValue(0)
         if b:
             self._main_window.reset_widget_monitor()
-        if self.progress_bar.isVisible() != b:
+        if b and self.progress_bar.isVisible() != b:
             self.adjust_height()
         self.progress_bar.setVisible(b)
         self.updateGeometry()
@@ -78,7 +86,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
 
     def hide_progress(self) -> None:
-        print("hide!!!!!!!")
+        alog.debug(f"hide progress widget")
         if self.lineEdit_out_model_fp.isVisible():
             self.button_convert.setText("Convert")
             self.button_convert.setEnabled(True)
@@ -87,15 +95,18 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
 
     def ended(self) -> None:
-        alog.error(f"{__class__.__name__} ended")
+        alog.debug(f"{__class__.__name__} ended")
         self.set_visible(True)
-        self.progress_bar.stop()
-        # self.button_convert.setText("Convert")
-        # self.button_convert.setEnabled(True)
-        self.is_converting = False
-        self.label.setEnabled(True)
-        self.lineEdit_out_model_fp.setEnabled(True)
-        self.button_containing_folder.setEnabled(True)
+        if self.is_converting:
+            self.progress_bar.stop()
+            # self.button_convert.setText("Convert")
+            # self.button_convert.setEnabled(True)
+            self.is_converting = False
+            self.label_save_as.setEnabled(True)
+            self.label_save_as.setText("Saved as")
+            self.label_save_as.setStyleSheet(self.end_stylesheet)
+            self.lineEdit_out_model_fp.setEnabled(True)
+            self.button_containing_folder.setEnabled(True)
 
 
     def stop(self) -> None:
@@ -106,7 +117,8 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         self.button_convert.setEnabled(True)
         self.progress_bar.setEnabled(False)
         self.is_converting = False
-        self.label.setEnabled(False)
+        self.label_save_as.setEnabled(False)
+        self.label_save_as.setStyleSheet(self.original_stylesheet)
         self.lineEdit_out_model_fp.clear()
         self.lineEdit_out_model_fp.setEnabled(False)
         self.button_containing_folder.setEnabled(False)
@@ -127,6 +139,8 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
             state = 'stop'
             self.is_converting = False
             self.button_convert.setText("Convert")
+            self.label_save_as.setStyleSheet(self.original_stylesheet)
+            self.lineEdit_out_model_fp.clear()
             self.signal_start_stop_clicked.emit(state)
 
 
@@ -139,7 +153,8 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         state = 'start'
         self.is_converting = True
         self.button_convert.setText("Stop")
-        self.label.setEnabled(False)
+        self.label_save_as.setEnabled(False)
+        self.label_save_as.setStyleSheet(self.original_stylesheet)
         self.lineEdit_out_model_fp.setEnabled(False)
         self.signal_start_stop_clicked.emit(state)
 
@@ -159,6 +174,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
 
     def set_conversion_enabled(self, b: bool) -> None:
+        alog.debug(f"set_conversion_enabled: {b}")
         self.button_convert.setEnabled(b)
 
 
@@ -200,6 +216,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
                 self.progress_bar.setEnabled(False)
 
             self.out_model_fp = status['out_model_fp']
+            self.label_save_as.setText("Saving as")
             self.lineEdit_out_model_fp.setText(self.out_model_fp)
             self.lineEdit_out_model_fp.setToolTip(self.out_model_fp)
 

@@ -209,7 +209,6 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
 
         # Shape strategy
-        print(f"onnx: {arch.to_onnx.shape_strategy_types}")
         for s in ('static', 'dynamic'):
             b = self.h_button_group_shapes.get_button(s)
             if s in arch.to_onnx.shape_strategy_types:

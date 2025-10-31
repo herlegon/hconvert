@@ -140,9 +140,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_onnx_model.setFixedWidth(self.max_info_widget_width)
         self.widget_tensorrt_model.setFixedWidth(self.max_info_widget_width)
 
-        print(f"torch: {self.widget_pytorch_model.geometry().width()}")
-        print(f"onnx: {self.widget_onnx_model.geometry().width()}")
-        print(f"tensorrt: {self.widget_tensorrt_model.geometry().width()}")
+        alog.debug("apply user settings: geometry")
+        alog.debug(f"  torch: {self.widget_pytorch_model.geometry().width()}")
+        alog.debug(f"  onnx: {self.widget_onnx_model.geometry().width()}")
+        alog.debug(f"  tensorrt: {self.widget_tensorrt_model.geometry().width()}")
         self.show()
         self.widget_conversion.adjust_height()
         self.adjust_height()
@@ -239,20 +240,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def adjust_height(self) -> None:
         current_width = self.width()
+        alog.debug(f"adjust height; current width = {current_width}")
 
-        self.setMinimumSize(0, 0)
-        self.centralWidget().adjustSize()
+
+
+        # self.setMinimumSize(0, 0)
+        # self.centralWidget().adjustSize()
         content_size = self.centralWidget().sizeHint()
 
         # Account for window frame and margins
         new_height = content_size.height() + self.menuBar().height()
+        # self.setMinimumHeight(new_height)
+        self.blockSignals(True)
         self.setMinimumHeight(new_height)
+        self.setMaximumHeight(new_height)  # fix height
+        self.resize(current_width, new_height)
 
         # Resize window to minimum height, keeping width unchanged
-        self.resize(current_width, new_height)
+        self.layout_conversion.invalidate()
         self.setFixedHeight(new_height)
+        self.blockSignals(False)
 
-        QTimer.singleShot(100, lambda: self.set_min_max_width)
+        alog.debug(f"new width = {current_width}")
+        QTimer.singleShot(0, lambda: self.set_min_max_width)
 
 
     def refresh_model_info(self, model: NnModel) -> None:
@@ -342,7 +352,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # self.setEnabled(True)
         self.widget_conversion.setEnabled(True)
         self.widget_metadata.setEnabled(True)
-
         self.widget_metadata.injection_done()
 
         if exception is not None and exception:
@@ -369,7 +378,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             conversion_settings.update({
                 'metadata': self.widget_metadata.values()
             })
-            print("start converting")
+            alog.debug("start converting")
             pprint(conversion_settings)
 
             self.widget_conversion.setEnabled(False)
@@ -386,6 +395,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def event_conversion_settings_modified(self) -> None:
+        alog.debug("signa received: modified settings")
         self.widget_progress.ended()
         self.widget_progress.hide_progress()
         self.widget_conversion.setEnabled(True)
