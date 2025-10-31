@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>345</width>
-    <height>296</height>
+    <height>338</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -226,16 +226,78 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="button_undo">
+      <widget class="QPushButton" name="h_button_undo">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
        <property name="text">
-        <string>Undo</string>
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../icons/undo_24dp_000000_FILL0_wght400_GRAD0_opsz24.png</normaloff>../icons/undo_24dp_000000_FILL0_wght400_GRAD0_opsz24.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="button_save_as">
+      <widget class="QPushButton" name="h_button_save_as">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
        <property name="text">
-        <string>Save As</string>
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../icons/save_as_24dp_000000_FILL0_wght400_GRAD0_opsz24.png</normaloff>../icons/save_as_24dp_000000_FILL0_wght400_GRAD0_opsz24.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
        </property>
       </widget>
      </item>

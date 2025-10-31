@@ -90,7 +90,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QProgressBar" name="h_progress">
+        <widget class="QProgressBar" name="h_indeterminate_progress">
          <property name="sizePolicy">
           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
            <horstretch>1</horstretch>

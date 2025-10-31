@@ -14,6 +14,7 @@ pyside6-uic ./ui/designer/ui_tensorrt_widget.ui -o ./ui/designer/ui_tensorrt_wid
 python ../hwidgets/scripts/q_to_h.py ./ui/designer/ui_tensorrt_widget.py
 
 pyside6-uic ./ui/designer/ui_metadata_widget.ui -o ./ui/designer/ui_metadata_widget.py
+python ./ui/patch_ui.py ./ui/designer/ui_metadata_widget.py
 python ../hwidgets/scripts/q_to_h.py ./ui/designer/ui_metadata_widget.py
 
 pyside6-uic ./ui/designer/ui_conversion_widget.ui -o ./ui/designer/ui_conversion_widget.py
@@ -33,7 +34,7 @@ python ../hwidgets/scripts/q_to_h.py ./ui/designer/ui_progress_widget.py
 
 
 export QT_QPA_PLATFORM=xcb
-# python pynnlib_gui.py --model /home/adg/z-personnel/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.pth
-# python pynnlib_gui.py --model /home/adg/z-personnel/ml_models/1x_Anime1080Fixer_SuperUltraCompact_op20_fp32None.onnx
+# python pynnlib_gui.py --model /opt/ml_models/z-personnel/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.pth
+python pynnlib_gui.py --model /opt/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.pth
 
-python pynnlib_gui.py --model /home/adg/z-personnel/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.safetensors
+# python pynnlib_gui.py --model /opt/ml_models/z-personnel/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.safetensors

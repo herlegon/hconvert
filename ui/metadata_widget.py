@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QTextEdit,
     QWidget,
+    QSizePolicy,
 )
 from .designer.ui_metadata_widget import Ui_MetadataWidget
 
@@ -26,10 +27,16 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
         hrl_style = HStyle()
         self.setupUi(self, hrl_style)
+        self.button_undo = self.h_button_undo
+        self.button_save_as = self.h_button_save_as
+
+
         self.button_undo.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.button_undo.setToolTip("Undo modifications (Ctrl+U)")
         self.button_save_as.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.button_save_as.setToolTip("Save or overwrite(Ctrl+S)")
+        # self.button_undo.setIcon(load)
+
 
         self.setEnabled(False)
         self.button_undo.setEnabled(False)
@@ -46,6 +53,9 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         self.textedit_comment.setAcceptDrops(False)
 
         self.clear()
+        self.adjustSize()
+        # self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        # self.setFixedHeight(self.sizeHint().height())
 
         for w in self.text_widgets:
             w: QLineEdit | QTextEdit

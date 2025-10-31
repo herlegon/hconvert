@@ -37,12 +37,24 @@ predefined_shapes_inv: dict[str, str] = {
 ShapeStrategyName = Literal['static', 'dynamic', 'fixed']
 
 
-ONNX_DEFAULT_CONVERSION_SETTINGS: dict[str, str | bool | int | tuple[int, int]] = {
+ONNX_DEFAULT_SETTINGS: dict[str, str | bool | int | tuple[int, int]] = {
     'version': 21,
     'dtype': 'fp32',
     'shape_strategy': 'static',
-    'shape': (720, 540)
+    'shape': (720, 540),
 }
+
+
+TENSORRT_DEFAULT_SETTINGS: dict[str, str | bool | int | tuple[int, int]] = {
+    'version': 21,
+    'dtype': 'fp16',
+    'shape_strategy': 'fixed',
+    'shape_min':(64,64),
+    'shape_opt': (720, 540),
+    'shape_max': (1920, 1080),
+}
+
+
 
 
 SUPPORTED_MODEL_EXTENSIONS: tuple[str] = (
@@ -57,7 +69,7 @@ SUPPORTED_MODEL_EXTENSIONS: tuple[str] = (
 )
 
 
-IMAGE_DIR = absolute_path(os.path.join(parent_directory(__file__), "img"))
+ICON_DIR = absolute_path(os.path.join(parent_directory(__file__), "icons"))
 def load_png_scaled(filename: str, height: int) -> QPixmap:
     """
     Load a PNG image from `path` and scale it to the given height
@@ -70,7 +82,7 @@ def load_png_scaled(filename: str, height: int) -> QPixmap:
     Returns:
         QPixmap: The scaled QPixmap.
     """
-    pixmap_fp = os.path.join(IMAGE_DIR, filename)
+    pixmap_fp = os.path.join(ICON_DIR, filename)
     pixmap = QPixmap(pixmap_fp)
 
     if pixmap.isNull():

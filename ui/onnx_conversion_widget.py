@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pprint import pprint
 from typing import Type
-from hutils import red
+from hutils import red, lightcyan
 from hwidgets import HStyle
 from pynnlib import (
     NnModel,
@@ -14,7 +14,7 @@ from .common import (
     PREDEFINED_SIZE,
     predefined_shapes_inv,
     ShapeStrategyName,
-    ONNX_DEFAULT_CONVERSION_SETTINGS,
+    ONNX_DEFAULT_SETTINGS,
 )
 from PySide6.QtCore import (
     Qt,
@@ -38,8 +38,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         hrl_style = HStyle()
         self.setupUi(self, hrl_style)
         self._saved_shape: tuple[int, int] = DEFAULT_SIZE
-        self.shape_strategy: ShapeStrategyName = 'dynamic'
-        self._tensorrt_static_shape: tuple[int, int] = (0, 0)
+        self.shape_strategy: ShapeStrategyName = ''
 
         self._editable_widgets: list[type[QWidget]] = [
             *self.findChildren(QComboBox),
@@ -59,7 +58,7 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.combobox_resolution.addItems(list(PREDEFINED_SIZE.keys()))
         self.combobox_resolution.setCurrentIndex(-1)
 
-        self.spinbox_opset.setValue(ONNX_DEFAULT_CONVERSION_SETTINGS['version'])
+        self.spinbox_opset.setValue(ONNX_DEFAULT_SETTINGS['version'])
 
         _dtypes: dict[str, tuple[str, str]] = {
             'fp32': ("fp32", "float32"),
@@ -73,13 +72,9 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             'static': ("static", "Input image size must be the one specified below"),
         }
         self.h_button_group_shapes.set_buttons(_shapes)
-        self.spinbox_w.setValue(ONNX_DEFAULT_CONVERSION_SETTINGS['shape'][0])
-        self.spinbox_h.setValue(ONNX_DEFAULT_CONVERSION_SETTINGS['shape'][1])
-        self.update_resolution_text()
-        self.shape_strategy_changed(True)
 
         self.clear()
-
+        self.set_default_settings()
         self.adjustSize()
 
         self.h_button_group_shapes.signal_selection_changed.connect(
@@ -101,12 +96,12 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
 
     def clear(self) -> None:
+        print(lightcyan("clear"))
         self.block_signals(True)
         self.spinbox_opset.clear()
         spinbox_width = 50
         self.h_button_group_shapes.set_current_button('dynamic')
 
-        self.spinbox_opset.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.PlusMinus)
         for b in self.h_button_group_dtypes.buttons():
             b.setChecked(False)
 
@@ -114,10 +109,39 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         self.spinbox_h.lineEdit().clear()
         self.spinbox_w.clear()
         self.spinbox_h.clear()
+        self.update_resolution_text()
 
         self.spinbox_opset.setMinimumWidth(spinbox_width)
         self.spinbox_opset.setMaximumWidth(spinbox_width)
         self.block_signals(False)
+
+
+    def set_default_settings(self) -> None:
+        print(lightcyan("set_default_shapes"))
+        self.spinbox_opset.setValue(ONNX_DEFAULT_SETTINGS['version'])
+        self.h_button_group_shapes.set_current_button(
+            ONNX_DEFAULT_SETTINGS['shape_strategy']
+        )
+        self.h_button_group_dtypes.set_current_button(
+            ONNX_DEFAULT_SETTINGS['dtype']
+        )
+        self.shape_strategy_changed(True)
+        self.spinbox_w.setValue(ONNX_DEFAULT_SETTINGS['shape'][0])
+        self.spinbox_h.setValue(ONNX_DEFAULT_SETTINGS['shape'][1])
+        self.update_resolution_text()
+
+
+    def save_current_size(self) -> None:
+        self._saved_shape = (
+            self.spinbox_w.value(), self.spinbox_h.value()
+        )
+
+
+    def restore_size(self, ignore_opt: bool = False) -> None:
+        print(lightcyan(f"restore_size; {self._saved_shape}"))
+        self.spinbox_w.setValue(self._saved_shape[0])
+        self.spinbox_h.setValue(self._saved_shape[1])
+        self.update_resolution_text()
 
 
     def update_resolution_text(self) -> None:
@@ -128,28 +152,22 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
         )
 
 
-    def save_current_size(self) -> None:
-        self._saved_shape = (
-            self.spinbox_w.value(), self.spinbox_h.value()
-        )
-
-
-    def restore_size(self, ignore_opt: bool = False) -> None:
-        self.spinbox_w.setValue(self._saved_shape[0])
-        self.spinbox_h.setValue(self._saved_shape[1])
-        self.update_resolution_text()
-
-
-    def update_size_widgets(self, strategy: ShapeStrategyName) -> None:
+    def set_shape_size_enabled(self, strategy: ShapeStrategyName) -> None:
+        # Signals must be blocked before calling
+        print(lightcyan(f"set_shape_size_enabled: {strategy}"))
         if strategy == 'static':
             self.spinbox_w.setEnabled(True)
             self.spinbox_h.setEnabled(True)
+            self.spinbox_w.lineEdit().deselect()
+            self.spinbox_h.lineEdit().deselect()
             self.combobox_resolution.setEnabled(True)
 
         else:
-            self.spinbox_w.lineEdit().clear()
-            self.spinbox_h.lineEdit().clear()
-            self.combobox_resolution.setCurrentIndex(-1)
+            self.spinbox_w.setValue(0)
+            self.spinbox_h.setValue(0)
+            self.update_resolution_text()
+            self.spinbox_w.clear()
+            self.spinbox_h.clear()
             self.spinbox_w.setEnabled(False)
             self.spinbox_h.setEnabled(False)
             self.combobox_resolution.setEnabled(False)
@@ -174,6 +192,8 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
         arch: NnPytorchArchitecture = model.arch
 
+        self.block_signals(True)
+
         # Datatypes
         for b in self.h_button_group_dtypes.buttons():
             b.setEnabled(bool(b.key in arch.to_onnx.dtypes))
@@ -184,11 +204,13 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
 
         # Shape strategy
+        print(f"onnx: {arch.to_onnx.shape_strategy_types}")
         for s in ('static', 'dynamic'):
             b = self.h_button_group_shapes.get_button(s)
             if s in arch.to_onnx.shape_strategy_types:
                 b.setEnabled(True)
                 b.setChecked(True)
+                self.h_button_group_shapes.set_current_button(s)
             else:
                 b.setEnabled(False)
 
@@ -206,43 +228,44 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
             self.spinbox_h.setSingleStep(1)
 
         # clear spinbox/combobox if dynamic
+        print(f"onnx cap: {self.h_button_group_shapes.current_button().key}")
+        self.set_shape_size_enabled(self.h_button_group_shapes.current_button().key)
         if self.h_button_group_shapes.current_button().key == 'dynamic':
-            self.spinbox_w.clear()
-            self.spinbox_h.clear()
-            self.combobox_resolution.setCurrentIndex(-1)
-        else:
             self.size_modified(-1)
 
+        self.shape_strategy = self.h_button_group_shapes.current_button().key
         self.block_signals(False)
+        print(lightcyan(f"update_capabilities: {self.h_button_group_shapes.current_button().key}"))
         return True
 
 
     def shape_strategy_changed(self, state: bool) -> None:
         """User action to set from/to dynamic, fixed/static
         """
+        print(lightcyan(f"shape_strategy_changed. unused: state={state}"))
         self.block_signals(True)
         to_static = self.h_button_group_shapes.current_button().key == 'static'
+        print(lightcyan(f"current shape strategy: {self.shape_strategy}"))
 
         if  self.shape_strategy == 'static' and not to_static:
+            print(lightcyan(f"  static -> dynamic"))
             # static -> dynamic
             self.save_current_size()
 
         elif self.shape_strategy != 'static' and to_static:
+            print(lightcyan(f"  dynamic -> static"))
             # dynamic -> static
             self.restore_size()
             # Use the shape set by tensorRT
-            if all(self._tensorrt_static_shape):
-                self.spinbox_w.setValue(self._tensorrt_static_shape[0])
-                self.spinbox_h.setValue(self._tensorrt_static_shape[1])
-                self.update_resolution_text()
 
         else:
             self.block_signals(False)
+            print("ignore")
             return
 
         self._current_size = (self.spinbox_w.value(), self.spinbox_h.value())
         self.shape_strategy = 'static' if to_static else 'dynamic'
-        self.update_size_widgets(strategy=self.shape_strategy)
+        self.set_shape_size_enabled(strategy=self.shape_strategy)
         self.block_signals(False)
 
 

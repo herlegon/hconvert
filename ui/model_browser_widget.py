@@ -273,7 +273,8 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
 
         if model_fp:
             self.previous_directory = parent_directory(model_fp)
-            self.combobox_model_fp.lineEdit().setText(str(Path(model_fp)))
+            print(model_fp)
+            self.combobox_model_fp.setCurrentText(model_fp)
             file_dialog.close()
             self.signal_model_loaded.emit(model_fp)
 

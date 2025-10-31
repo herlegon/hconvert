@@ -38,7 +38,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         hrl_style = HStyle()
         self.setupUi(self, hrl_style)
         self._main_window: MainWindow = None
-        self._initial_selection: ConversionChoices = 'safetensors'
+        self._previous_selection: ConversionChoices = 'safetensors'
 
         self.layout_main.addStretch()
         # self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
@@ -68,7 +68,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
     def apply_user_settings(self, settings: dict) -> None:
         self.frame_onnx.setVisible(False)
         self.frame_tensorrt.setVisible(False)
-        self._initial_selection = settings.get('selection', '')
+        self._previous_selection = settings.get('selection', '')
         self.adjust_height()
 
 
@@ -179,21 +179,21 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
                     tensorrt_button.setEnabled(False)
 
             elif model.framework.type == NnFrameworkType.TENSORRT:
-                self.selection.get_button('tensorrt').setChecked(True)
+                self.conversion_selection_changed('tensorrt')
                 self.frame_onnx.setVisible(False)
                 self.frame_tensorrt.setVisible(False)
-                self.adjust_height()
+                # self.adjust_height()
 
-            if self._initial_selection:
+            if self._previous_selection:
                 for k in ('safetensors', 'onnx', 'tensorrt'):
                     if (
-                        self._initial_selection == k
+                        self._previous_selection == k
                         and self.selection.get_button(k).isEnabled()
                     ):
-                        self.selection.get_button(k).setChecked(True)
+                        self.selection.set_current_button(k)
                         break
-                self._initial_selection = ""
-                self.adjust_height()
+                self._previous_selection = ""
+                # self.adjust_height()
 
 
     def selection_button(self, k: ConversionChoices) -> QToolButton:
@@ -206,8 +206,9 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
     def selection_changed(self, index: int) -> None:
         key: ConversionChoices = self.selection.get_button(index).key
-        print(key)
-        self.conversion_selection_changed(key)
+        print(f"selection changed: {self._previous_selection} -> {key}")
+        if key != self._previous_selection:
+            self.conversion_selection_changed(key)
 
 
     def conversion_selection_changed(self, k: ConversionChoices) -> None:
@@ -231,6 +232,8 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             self.block_signals(False)
             return
 
+        self.selection.set_current_button(k)
+        self._previous_selection = k
         self.adjust_height()
         self.block_signals(False)
         self.signal_conversion_selection_changed.emit()

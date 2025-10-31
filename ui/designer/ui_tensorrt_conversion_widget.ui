@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>446</width>
-    <height>316</height>
+    <width>470</width>
+    <height>334</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="widget_layout">
    <property name="spacing">
     <number>0</number>
    </property>
@@ -32,25 +32,13 @@
    <item>
     <layout class="QFormLayout" name="main_layout">
      <property name="horizontalSpacing">
-      <number>6</number>
+      <number>12</number>
      </property>
      <property name="verticalSpacing">
       <number>12</number>
      </property>
      <item row="0" column="0">
-      <widget class="QLabel" name="label_18">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>120</width>
-         <height>0</height>
-        </size>
-       </property>
+      <widget class="QLabel" name="label_gpu">
        <property name="text">
         <string>GPU</string>
        </property>
@@ -60,7 +48,7 @@
       <widget class="QComboBox" name="combobox_gpu"/>
      </item>
      <item row="1" column="0">
-      <widget class="QLabel" name="label_version">
+      <widget class="QLabel" name="label_opset">
        <property name="text">
         <string>ONNX opset</string>
        </property>
@@ -115,7 +103,7 @@
       </layout>
      </item>
      <item row="2" column="0">
-      <widget class="QLabel" name="label_16">
+      <widget class="QLabel" name="label_precision">
        <property name="text">
         <string>Precision</string>
        </property>
@@ -137,6 +125,33 @@
          <property name="sizeHint" stdset="0">
           <size>
            <width>10</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_typing">
+       <property name="text">
+        <string>Typing</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="HButtonGroup" name="h_button_group_typing"/>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_12">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>0</width>
            <height>20</height>
           </size>
          </property>
@@ -175,7 +190,7 @@
       </layout>
      </item>
      <item row="5" column="0">
-      <widget class="QLabel" name="label_shape_w">
+      <widget class="QLabel" name="label_shape_min">
        <property name="enabled">
         <bool>true</bool>
        </property>
@@ -288,7 +303,7 @@
       </layout>
      </item>
      <item row="6" column="0">
-      <widget class="QLabel" name="label_shape_r">
+      <widget class="QLabel" name="label_shape_opt">
        <property name="enabled">
         <bool>true</bool>
        </property>
@@ -401,7 +416,7 @@
       </layout>
      </item>
      <item row="7" column="0">
-      <widget class="QLabel" name="label_10">
+      <widget class="QLabel" name="label_shape_max">
        <property name="text">
         <string>Maximum</string>
        </property>
@@ -510,33 +525,6 @@
        </item>
       </layout>
      </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="label_typing">
-       <property name="text">
-        <string>Typing</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <item>
-        <widget class="HButtonGroup" name="h_button_group_typing"/>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer_12">
-         <property name="orientation">
-          <enum>Qt::Orientation::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>0</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
-     </item>
     </layout>
    </item>
   </layout>
@@ -550,9 +538,4 @@
  </customwidgets>
  <resources/>
  <connections/>
- <buttongroups>
-  <buttongroup name="group_typing"/>
-  <buttongroup name="group_shape_strategy"/>
-  <buttongroup name="group_dtype"/>
- </buttongroups>
 </ui>

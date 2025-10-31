@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="widget_layout">
    <property name="spacing">
     <number>0</number>
    </property>
@@ -143,9 +143,6 @@
      </item>
      <item row="3" column="0">
       <widget class="QLabel" name="label_shape_w">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
        <property name="text">
         <string>Input shape</string>
        </property>
@@ -267,8 +264,4 @@
  </customwidgets>
  <resources/>
  <connections/>
- <buttongroups>
-  <buttongroup name="group_dtypes"/>
-  <buttongroup name="group_shape_strategy"/>
- </buttongroups>
 </ui>

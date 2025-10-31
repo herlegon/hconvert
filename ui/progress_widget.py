@@ -1,4 +1,6 @@
 from __future__ import annotations
+import os
+import sys
 from hutils import (
     parent_directory,
     yellow,
@@ -13,6 +15,7 @@ from PySide6.QtCore import (
 from PySide6.QtWidgets import (
     QWidget,
     QMainWindow,
+    QMessageBox,
 )
 
 from hwidgets import HStyle
@@ -29,7 +32,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         super().__init__(parent)
         hrl_style = HStyle()
         self.setupUi(self, hrl_style)
-        self.progress_bar = self.h_progress
+        self.progress_bar = self.h_indeterminate_progress
         self.gpu_usage = self.h_radial_progress_bar_gpu
 
 
@@ -41,6 +44,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
         self.button_convert.released.connect(self.event_convert_button_clicked)
         self.button_containing_folder.released.connect(self.event_open_containing_folder)
+
 
     def set_main_window(self, main_window: MainWindow) -> None:
         self._main_window = main_window
@@ -141,7 +145,15 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
     def event_open_containing_folder(self):
         if self.out_model_fp:
             directory: str = parent_directory(self.out_model_fp)
-            print(f"open out folder: {directory}")
+            try:
+                if sys.platform == "win32":
+                    os.startfile(directory)
+                elif sys.platform == "Darwin":
+                    os.system(f'open "{directory}"')
+                else:
+                    os.system(f'xdg-open "{directory}"')
+            except Exception as e:
+                QMessageBox.warning(self, "Error", f"Could not open directory:\n{e}")
 
 
     def set_conversion_enabled(self, b: bool) -> None:

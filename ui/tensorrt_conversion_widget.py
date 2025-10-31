@@ -30,6 +30,7 @@ from .designer.ui_tensorrt_conversion_widget import Ui_TensorRTConversionWidget
 from .common import (
     DEFAULT_SIZE,
     PREDEFINED_SIZE,
+    TENSORRT_DEFAULT_SETTINGS,
     predefined_shapes_inv,
     ShapeStrategyName,
 )
@@ -92,6 +93,9 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             cb_r.setCurrentIndex(-1)
 
         self.clear()
+
+        self.set_default_shapes()
+
         self.adjustSize()
 
         # Signals
@@ -128,7 +132,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         self.block_signals(True)
 
         self.h_button_group_dtypes.set_current_button('fp32')
-        self.h_button_group_shapes.set_current_button('static')
+        self.h_button_group_shapes.set_current_button('dynamic')
 
         for sb_w, sb_h, cb_r in self.size_widgets:
             sb_w.lineEdit().clear()
@@ -136,11 +140,37 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             sb_h.lineEdit().clear()
             sb_h.clear()
             cb_r.setCurrentIndex(-1)
-
+        self.set_size_widget_enabled('dynamic')
         self.block_signals(False)
 
 
+    def set_default_shapes(self) -> None:
+        print(lightgreen("set_default_shapes"))
+        self.spinbox_opset.setValue(TENSORRT_DEFAULT_SETTINGS['version'])
+        self.h_button_group_shapes.set_current_button(
+            TENSORRT_DEFAULT_SETTINGS['shape_strategy']
+        )
+        self.h_button_group_dtypes.set_current_button(
+            TENSORRT_DEFAULT_SETTINGS['dtype']
+        )
+        self.shape_strategy_changed(True)
+        self.spinbox_w_min.setValue(TENSORRT_DEFAULT_SETTINGS['shape_min'][0])
+        self.spinbox_h_min.setValue(TENSORRT_DEFAULT_SETTINGS['shape_min'][1])
+        self.spinbox_w_opt.setValue(TENSORRT_DEFAULT_SETTINGS['shape_opt'][0])
+        self.spinbox_h_opt.setValue(TENSORRT_DEFAULT_SETTINGS['shape_opt'][1])
+        self.spinbox_w_max.setValue(TENSORRT_DEFAULT_SETTINGS['shape_max'][0])
+        self.spinbox_h_max.setValue(TENSORRT_DEFAULT_SETTINGS['shape_max'][1])
+        self.update_resolution_text()
+
+        self.previous_shapes: dict[str, tuple[int, int]] = {
+            "min": TENSORRT_DEFAULT_SETTINGS['shape_min'],
+            "opt": TENSORRT_DEFAULT_SETTINGS['shape_opt'],
+            "max": TENSORRT_DEFAULT_SETTINGS['shape_max'],
+        }
+
+
     def update_resolution_text(self, index: int = -1) -> None:
+        # Update all if index == -1 else only the selected one
         widgets = (
             self.size_widgets if index == -1 else (self.size_widgets[index],)
         )
@@ -343,6 +373,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         elif model.framework.type == NnFrameworkType.PYTORCH:
             model_arch: NnPytorchArchitecture = model.arch
 
+            self.spinbox_opset.setEnabled(True)
             self._update_dtype_capabilities(model=model)
             self._update_shape_strategy_capabilities(model=model)
             self._update_typing_capabilities(model=model)
@@ -444,6 +475,8 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         print(sw)
         sb_w, sb_h, cb_r = sw
         current_text: str = cb_r.currentText()
+        if not current_text:
+            current_text = "540p NTSC 4:3 sq"
         w, h = PREDEFINED_SIZE[current_text]
 
         for sb, v in ((sb_w, w), (sb_h, h)):
