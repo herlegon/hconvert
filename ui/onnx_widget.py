@@ -3,6 +3,7 @@ from pprint import pprint
 from hutils import (
     red
 )
+from .logger import alog
 from hwidgets import HStyle
 from pynnlib import (
     NnModel,
@@ -111,10 +112,9 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
 
         # datatypes
         if 'fp32' in model.dtypes and 'fp16' in model.dtypes:
-            print(red("ERRROR, onnx has both fp16 and fp32"))
+            alog.error("ERRROR, onnx has both fp16 and fp32")
 
         dtype = model.io_dtypes['input']
-        print(red(dtype))
         for b in self.h_button_group_dtypes.buttons():
             if b.key == dtype:
                 b.setEnabled(True)
@@ -124,10 +124,8 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
 
         # Shape strategy
         if model.shape_strategy.type == 'static':
-            print(red("STATIC"))
             self.set_shape_visible(True)
 
-            self.h_button_group_shapes.get_button('static').setEnabled(True)
             self.h_button_group_shapes.get_button('static').setChecked(True)
             self.h_button_group_shapes.get_button('dynamic').setEnabled(False)
             size = " x ".join(map(str, model.shape_strategy.opt_size))
@@ -135,7 +133,6 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
             self.label_resolution.setText(predefined_shapes_inv.get(size.replace(" x ", "x"), ""))
 
         else:
-            print(red("dyna"))
             self.h_button_group_shapes.get_button('dynamic').setEnabled(True)
             self.h_button_group_shapes.get_button('static').setEnabled(False)
             self.set_shape_visible(False)

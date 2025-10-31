@@ -107,8 +107,8 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
     def adjust_height(self) -> None:
         self.blockSignals(True)
         self.widget_layout.invalidate()
-        # self.updateGeometry()
-        # self.adjustSize()
+        self.updateGeometry()
+        self.adjustSize()
         self.blockSignals(False)
         QTimer.singleShot(0, self._main_window.adjust_height)
 
@@ -169,7 +169,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
                     self.selection.get_button('tensorrt').setEnabled(True)
                 # default: select onnx
                 onnx_button.setChecked(True)
-                self.conversion_selection_changed('onnx')
+                self.conversion_selection_changed('onnx', initial=True)
 
             elif model.framework.type == NnFrameworkType.ONNX:
                 self.selection.get_button('safetensors').setEnabled(False)
@@ -178,12 +178,12 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
                 if tensorrt_cap:
                     tensorrt_button.setEnabled(True)
                     tensorrt_button.setChecked(True)
-                    self.conversion_selection_changed('tensorrt')
+                    self.conversion_selection_changed('tensorrt', initial=True)
                 else:
                     tensorrt_button.setEnabled(False)
 
             elif model.framework.type == NnFrameworkType.TENSORRT:
-                self.conversion_selection_changed('tensorrt')
+                self.conversion_selection_changed('tensorrt', initial=True)
                 self.frame_onnx.setVisible(False)
                 self.frame_tensorrt.setVisible(False)
                 # self.adjust_height()
@@ -215,7 +215,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             self.conversion_selection_changed(key)
 
 
-    def conversion_selection_changed(self, k: ConversionChoices) -> None:
+    def conversion_selection_changed(self, k: ConversionChoices, initial: bool = False) -> None:
         self.block_signals(True)
 
         is_checkable = self.selection.get_button(k).isCheckable()
@@ -240,7 +240,10 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         self._previous_selection = k
         self.adjust_height()
         self.block_signals(False)
-        self.settings_modified()
+
+        # Do not send a signal if it's the triggered by the parsing
+        if not initial:
+            self.settings_modified()
 
 
     def settings_modified(self) -> None:

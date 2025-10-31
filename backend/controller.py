@@ -66,6 +66,7 @@ class Controller(QObject):
 
 
     def parse_model(self, model_fp: str) -> None:
+        alog.debug(f"parse model: {model_fp}")
         ext = get_extension(model_fp)
         trt_extensions: tuple[int] = get_supported_model_extensions(NnFrameworkType.TENSORRT)
 
@@ -81,8 +82,9 @@ class Controller(QObject):
 
         elapsed = time.time() - start_time
 
+        alog.debug(f"parsed in {1000*elapsed:.03f}ms")
         self.emit_ended_signal()
-        print(f"parsed in {1000*elapsed:.03f}ms")
+
         # Send a null signal because the object cannot be sent via a signal
         if self.in_model is not None:
             self.signal_model_parsed.emit(model_fp)
@@ -100,7 +102,7 @@ class Controller(QObject):
         self.in_model.metadata = action['metadata'].copy()
         model_fp: str = action['filepath']
         try:
-            save_as(model_fp=model_fp, model=self.in_model)
+            save_as(model_fp=model_fp, model=self.in_model, autonaming=False)
         except Exception as e:
             self.signal_task_ended.emit(str(e))
             return

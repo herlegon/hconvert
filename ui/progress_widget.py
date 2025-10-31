@@ -86,8 +86,8 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
 
     def hide_progress(self) -> None:
-        alog.debug(f"hide progress widget")
         if self.lineEdit_out_model_fp.isVisible():
+            alog.debug(f"hide progress widget")
             self.button_convert.setText("Convert")
             self.button_convert.setEnabled(True)
             self.progress_bar.setEnabled(False)
@@ -96,7 +96,7 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
 
     def ended(self) -> None:
         alog.debug(f"{__class__.__name__} ended")
-        self.set_visible(True)
+        # self.set_visible(True)
         if self.is_converting:
             self.progress_bar.stop()
             # self.button_convert.setText("Convert")

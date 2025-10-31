@@ -128,19 +128,37 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
         if model.opset:
             self.lineedit_opset.setText(f"{model.opset}")
 
+        for b in (
+            *self.h_button_group_dtypes.buttons(),
+            *self.h_button_group_typing.buttons(),
+            *self.h_button_group_shapes.buttons()
+        ):
+            b.setEnabled(True)
+            b.setCheckable(True)
+
         # dtype: corresponds to input dtype
-        try:
-            self.h_button_group_dtypes.set_current_button(model.io_dtypes['input'])
-        except:
-            alog.error(f"Not supported: {model.io_dtypes['input']}")
+        dtype = model.io_dtypes['input']
+        for b in self.h_button_group_dtypes.buttons():
+            if b.key == dtype:
+                b.setEnabled(True)
+                b.setChecked(True)
+            else:
+                b.setEnabled(False)
 
         # typing
         typing: str = model.metadata.get("typing", "weak")
-        if typing != "":
-            self.h_button_group_typing.set_current_button(typing)
-        else:
+        if typing == "":
             for b in self.h_button_group_typing.buttons():
                 b.setChecked(False)
+                b.setEnabled(False)
+        else:
+            for b in self.h_button_group_typing.buttons():
+                if b.key == typing:
+                    b.setEnabled(True)
+                    b.setChecked(True)
+                else:
+                    b.setChecked(False)
+                    b.setEnabled(False)
 
         # shape strategy and sizes
         size = " x ".join(map(str, model.shape_strategy.opt_size))
@@ -148,7 +166,14 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
         self.label_resolution_opt.setText(predefined_shapes_inv.get(size.replace(" x ", "x"), ""))
 
         shape_strategy: str = model.shape_strategy.type
-        self.h_button_group_shapes.set_current_button(shape_strategy)
+        for b in self.h_button_group_shapes.buttons():
+            if b.key == shape_strategy:
+                b.setEnabled(True)
+                b.setChecked(True)
+            else:
+                b.setChecked(False)
+                b.setEnabled(False)
+
         if shape_strategy in ('static', 'fixed'):
             self.set_row_visible((5, 7), visible=False)
 
@@ -174,3 +199,11 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
         #     QCheckBox:disabled { color: black; }
         #     QLineEdit:disabled { color: black; }
         # """)
+
+        for b in (
+            *self.h_button_group_dtypes.buttons(),
+            *self.h_button_group_typing.buttons(),
+            *self.h_button_group_shapes.buttons()
+        ):
+            b.setCheckable(False)
+            b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)

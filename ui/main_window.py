@@ -289,6 +289,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def event_model_loaded(self, model_fp: str) -> None:
+        alog.debug("model has been loaded")
         self._is_loading = True
         self.setEnabled(False)
         QApplication.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
@@ -303,6 +304,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def event_model_parsed(self, model_fp: str) -> None:
+        alog.debug("model has been parsed")
         QApplication.restoreOverrideCursor()
         self._is_loading = False
         self.widget_model_browser.update_model_fp(filepath=model_fp)
@@ -311,7 +313,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setEnabled(True)
         self.refresh_model_info(model=model)
         self.widget_conversion.refresh_conversion_selection(model=model)
+        if model.framework.type == NnFrameworkType.TENSORRT:
+            self.widget_progress.set_conversion_enabled(False)
+        else:
+            self.widget_progress.set_conversion_enabled(True)
         # self.adjust_height()
+        alog.debug("UI has been refreshed")
 
 
     def event_inject_metadata(self, metadata: dict[str, str]) -> None:
@@ -319,7 +326,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         model_fp: str | None = inject_metadata_dialog(self, model_fp=model.filepath)
         if model_fp is not None:
             self.setEnabled(False)
-            print("Injection started")
+            alog.debug("Injection started")
             self.signal_inject_metadata.emit({
                 'filepath': model_fp,
                 'metadata': metadata

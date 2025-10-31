@@ -222,7 +222,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
     def _update_dtype_capabilities(self, model: NnModel) -> None:
         if model.framework.type == NnFrameworkType.ONNX:
-            in_dtypes = set(model.io_dtypes['input'])
+            in_dtypes = [model.io_dtypes['input'], ]
 
         elif model.framework.type == NnFrameworkType.PYTORCH:
             model_arch: NnPytorchArchitecture = model.arch
@@ -234,6 +234,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
                 b.setEnabled(True)
                 b.setCheckable(True)
                 b.setChecked(True)
+                b.setCheckable(False)
             else:
                 b.setCheckable(False)
                 b.setEnabled(False)
