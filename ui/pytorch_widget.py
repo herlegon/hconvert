@@ -52,9 +52,10 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
             'onnx': load_png_scaled("onnx_32px.png", height=logo_height),
             'safetensors': load_png_scaled("safetensors_32px.png", height=logo_height),
             'pytorch': load_png_scaled("pytorch_32px.png", height=logo_height),
-            'tensorrt': load_png_scaled("tensorrt_200px.png", height=logo_height),
+            'tensorrt': load_png_scaled("tensorrt_24px_transparent.png", height=logo_height),
         }
-
+        self.framework_logo.setStyleSheet("background: transparent;")
+        self.framework_logo.setAttribute(Qt.WA_TranslucentBackground, True)
         self.adjustSize()
 
 

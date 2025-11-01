@@ -246,7 +246,7 @@ class Controller(QObject):
             model=self.in_model,
             shape_strategy=shape_strategy,
             dtype=dtype,
-            force_weak_typing=args['typing'],
+            force_weak_typing=bool(args['typing'] == 'weak'),
             # optimization_level=,
             opset=args['opset'],
             device=device,
@@ -256,10 +256,11 @@ class Controller(QObject):
         out_model_fp = generate_out_model_fp(to=NnFrameworkType.TENSORRT, **common_kwargs)
         self.emit_start_signal(False, out_model_fp)
 
-        try:
-            nnlib.convert_to_tensorrt(**common_kwargs)
-        except Exception as e:
-            exception = str(e)
+        # try:
+        #     nnlib.convert_to_tensorrt(**common_kwargs)
+        # except Exception as e:
+        #     exception = str(e)
+        nnlib.convert_to_tensorrt(**common_kwargs)
 
         return exception
 

@@ -221,45 +221,74 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
     def _update_dtype_capabilities(self, model: NnModel) -> None:
-        if model.framework.type == NnFrameworkType.ONNX:
-            in_dtypes = [model.io_dtypes['input'], ]
-
-        elif model.framework.type == NnFrameworkType.PYTORCH:
+        if model.framework.type == NnFrameworkType.PYTORCH:
             model_arch: NnPytorchArchitecture = model.arch
             in_dtypes = model_arch.to_tensorrt.dtypes
 
-        for d in ('fp32', 'bf16', 'fp16'):
-            b = self.h_button_group_dtypes.get_button(d)
-            if d in in_dtypes:
-                b.setEnabled(True)
-                b.setCheckable(True)
-                b.setChecked(True)
-                b.setCheckable(False)
-            else:
-                b.setCheckable(False)
-                b.setEnabled(False)
-            b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            for d in ('fp32', 'bf16', 'fp16'):
+                b = self.h_button_group_dtypes.get_button(d)
+                if d in in_dtypes:
+                    b.setEnabled(True)
+                    b.setCheckable(True)
+                    b.setChecked(True)
+                    b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+                else:
+                    b.setCheckable(False)
+                    b.setEnabled(False)
+                    b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+
+        elif model.framework.type == NnFrameworkType.ONNX:
+            in_dtypes = [model.io_dtypes['input'], ]
+            for d in ('fp32', 'bf16', 'fp16'):
+                b = self.h_button_group_dtypes.get_button(d)
+                if d in in_dtypes:
+                    b.setEnabled(True)
+                    b.setCheckable(True)
+                    b.setChecked(True)
+                    b.setCheckable(False)
+                else:
+                    b.setCheckable(False)
+                    b.setEnabled(False)
+                b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
 
     def _update_typing_capabilities(self, model: NnModel) -> None:
+        weak_forced: bool = False
+        try:
+            weak_forced = model.torch_arch.to_tensorrt.weak_typing
+        except:
+            pass
+        try:
+            weak_forced = model.arch.to_tensorrt.weak_typing
+        except:
+            pass
+
         for b in self.h_button_group_typing.buttons():
             b.setCheckable(False)
+        print(red(f"_update_typing_capabilities: weak:{weak_forced}"))
 
-        if model.arch.to_tensorrt is None:
-            for b in self.h_button_group_typing.buttons():
-                b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
-                b.setCheckable(True)
-            self.h_button_group_typing.set_current_button('strong')
+        # Disable all buttons
+        for b in self.h_button_group_typing.buttons():
+            b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            b.setCheckable(False)
+
+        if weak_forced:
+            # Check only weak
+            b = self.h_button_group_typing.get_button('weak')
+            b.setCheckable(True)
+            b.setChecked(True)
+            b.setCheckable(False)
+            b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
 
         else:
-            if model.arch.to_tensorrt.weak_typing:
-                self.h_button_group_typing.set_current_button('weak')
-            else:
-                self.h_button_group_typing.set_current_button('strong')
+            # Check strong first but let the user choose
+            b = self.h_button_group_typing.get_button('strong')
+            b.setCheckable(True)
+            b.setChecked(True)
 
             for b in self.h_button_group_typing.buttons():
-                b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-                b.setCheckable(False)
+                b.setCheckable(True)
+                b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
 
 
     def _update_shape_strategy_capabilities(self, model: NnModel) -> None:

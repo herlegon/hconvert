@@ -7,6 +7,7 @@ from typing import Type
 from hutils import (
     absolute_path,
     is_access_granted,
+    parent_directory,
     path_split,
 )
 from hwidgets import HStyle
@@ -53,6 +54,7 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
 
         self.button_out_dir_browse.released.connect(self.event_select_dir_clicked)
         self.button_input_folder.released.connect(self.event_select_in_dir)
+        self.comboBox_out_dir.currentTextChanged.connect(self.event_text_changed)
 
 
     def apply_user_settings(self, prefs: dict) -> None:
@@ -156,6 +158,13 @@ class SelectOutDirWidget(QWidget, Ui_SelectOutDirWidget):
     def conversion_ended(self) -> None:
         # Append the output directory if it wasn't an existing folder
         self.append_to_combobox(self.comboBox_out_dir.lineEdit().text())
+
+
+    def event_text_changed(self) -> None:
+        if self.comboBox_out_dir.lineEdit().text() == self.in_model_dir:
+            self.button_input_folder.setChecked(True)
+        else:
+            self.button_input_folder.setChecked(False)
 
 
     def event_select_dir_clicked(self) -> None:
