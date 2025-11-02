@@ -49,7 +49,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     signal_preview_modified = Signal(dict)
     signal_convert_action = Signal(dict)
     signal_stop_action = Signal()
-    signal_model_loaded = Signal(str)
+    signal_model_selected = Signal(str)
     signal_inject_metadata = Signal(dict)
 
 
@@ -303,7 +303,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         ):
             w.clear()
         self.widget_progress.set_visible(False)
-        self.signal_model_loaded.emit(model_fp)
+        self.widget_model_browser.set_filepath(model_fp=model_fp)
+        self.signal_model_selected.emit(model_fp)
 
 
     def event_model_parsed(self, model_fp: str) -> None:

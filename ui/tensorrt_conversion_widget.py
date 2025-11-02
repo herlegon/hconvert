@@ -445,6 +445,8 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
         elif model.framework.type == NnFrameworkType.PYTORCH:
             self.spinbox_opset.setEnabled(True)
+            self.spinbox_opset.setReadOnly(False)
+            self.spinbox_opset.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
             self._update_dtype_capabilities(model=model)
             self._update_typing_capabilities(model=model)
             self._update_shape_strategy_capabilities(model=model)

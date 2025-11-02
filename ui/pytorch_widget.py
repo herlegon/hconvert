@@ -92,9 +92,18 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
             self.framework_name.clear()
         self.framework_logo.setPixmap(self.framework_img[framework_name.lower()])
 
+        # Let's use the torch arch name or metadata
+        arch_name = model.arch_name
+        if model.framework.type != NnFrameworkType.PYTORCH:
+            if arch_name in ("unknown", "generic"):
+                metadata_arch_name =  model.metadata.get('arch_name', '')
+                if model.torch_arch is not None:
+                    arch_name = model.torch_arch.name
+                elif metadata_arch_name:
+                    arch_name = metadata_arch_name
 
-        self.lineedit_arch_name.setText(model.arch_name)
-        if model.arch_name not in ("unknown", "generic"):
+        self.lineedit_arch_name.setText(arch_name)
+        if arch_name not in ("unknown", "generic"):
             self.pushbutton_link.setEnabled(True)
         else:
             self.pushbutton_link.setEnabled(False)

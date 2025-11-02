@@ -55,7 +55,7 @@ class Controller(QObject):
 
     def set_view(self, view: MainWindow):
         self.view = view
-        self.view.signal_model_loaded.connect(self.parse_model)
+        self.view.signal_model_selected.connect(self.parse_model)
         self.view.signal_inject_metadata.connect(self.event_inject_metadata)
         self.view.signal_convert_action.connect(self.event_start_conversion)
         self.view.signal_stop_action.connect(self.event_stop_conversion)
