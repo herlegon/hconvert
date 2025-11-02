@@ -122,7 +122,7 @@ class ReadOnlyComboBox(QComboBox):
 
 
 class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
-    signal_model_loaded = Signal(str)
+    signal_model_selected = Signal(str)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -256,7 +256,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         self.combobox_model_fp.blockSignals(True)
         model_fp = self.combobox_model_fp.itemText(index)
         self.combobox_model_fp.blockSignals(False)
-        self.signal_model_loaded.emit(model_fp)
+        self.signal_model_selected.emit(model_fp)
 
 
     def event_model_picker(self):
@@ -276,7 +276,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
             print(model_fp)
             self.combobox_model_fp.setCurrentText(model_fp)
             file_dialog.close()
-            self.signal_model_loaded.emit(model_fp)
+            self.signal_model_selected.emit(model_fp)
 
 
     def set_filepath(self, model_fp: str) -> None:

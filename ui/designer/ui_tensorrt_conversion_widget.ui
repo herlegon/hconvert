@@ -364,32 +364,6 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QSpinBox" name="spinbox_h_opt">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimum">
-           <number>16</number>
-          </property>
-          <property name="maximum">
-           <number>2160</number>
-          </property>
-          <property name="value">
-           <number>2160</number>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_x_w_opt">
-          <property name="text">
-           <string>x</string>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="QSpinBox" name="spinbox_w_opt">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -408,6 +382,32 @@
           </property>
           <property name="value">
            <number>4096</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_x_w_opt">
+          <property name="text">
+           <string>x</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spinbox_h_opt">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimum">
+           <number>16</number>
+          </property>
+          <property name="maximum">
+           <number>2160</number>
+          </property>
+          <property name="value">
+           <number>2160</number>
           </property>
          </widget>
         </item>

@@ -39,7 +39,7 @@ from .ui_types import (
     ui_typing,
     ui_shapes,
 )
-
+from .logger import alog
 
 
 class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
@@ -81,9 +81,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             cb_r.setCurrentIndex(-1)
 
         self.clear()
-
         self.set_default_shapes()
-
         self.adjustSize()
 
         # Signals
@@ -112,6 +110,10 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             w.blockSignals(b)
 
 
+    def signals_blocked(self) -> bool:
+        return self._editable_widgets[0].signalsBlocked()
+
+
     def editable_widgets(self) -> list[Type[QWidget]]:
         return list(self._editable_widgets)
 
@@ -133,7 +135,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
     def set_default_shapes(self) -> None:
-        print(lightgreen("set_default_shapes"))
+        alog.debug(lightgreen("set_default_shapes"))
         self.spinbox_opset.setValue(TENSORRT_DEFAULT_SETTINGS['version'])
         self.h_button_group_shapes.set_current_button(
             TENSORRT_DEFAULT_SETTINGS['shape_strategy']
@@ -176,7 +178,7 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
     def set_size_widget_enabled(self, strategy: ShapeStrategyName) -> None:
-        print(f"  update_size_widgets: strategy=", f"{strategy}")
+        alog.debug(f"  update_size_widgets: strategy= {strategy}")
         if strategy == 'dynamic':
             for i, (sb_w, sb_h, cb_r) in enumerate(self.size_widgets):
                 sb_w.setEnabled(True)
@@ -184,20 +186,24 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
                 cb_r.setEnabled(True)
         else:
             # Disable min/max shapes
-            print(f"   {strategy}")
+            alog.debug(yellow(f"   {strategy}"))
             for i, (sb_w, sb_h, cb_r) in enumerate(self.size_widgets):
                 if i == 1:
-                    sb_w.setEnabled(True)
-                    sb_h.setEnabled(True)
-                    cb_r.setEnabled(True)
+                    self.set_opt_modifications_enabled(True)
                     continue
 
+                sb_w.setEnabled(True)
+                sb_w.clear()
                 sb_w.lineEdit().clear()
-                sb_h.lineEdit().clear()
-                cb_r.setCurrentIndex(-1)
-
                 sb_w.setEnabled(False)
+
+                sb_h.setEnabled(True)
+                sb_h.clear()
+                sb_h.lineEdit().clear()
                 sb_h.setEnabled(False)
+
+                cb_r.setEnabled(True)
+                cb_r.setCurrentIndex(-1)
                 cb_r.setEnabled(False)
 
 
@@ -292,39 +298,85 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
 
 
     def _update_shape_strategy_capabilities(self, model: NnModel) -> None:
-        self.current_shape_strategy = model.shape_strategy.type
-        if model.shape_strategy.type == 'static':
-            b = self.h_button_group_shapes.get_button('static')
-            b.setEnabled(True)
-            b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-            b.setChecked(True)
-            for s in ('dynamic', 'fixed'):
-                self.h_button_group_shapes.get_button(s).setEnabled(False)
+        were_blocked = self.signals_blocked()
+        if not were_blocked:
+            self.block_signals(True)
+        alog.debug(f"update shape strategy to: {model.shape_strategy.type}")
 
-        else:
-            self.h_button_group_shapes.get_button('static').setEnabled(False)
-            for s in ('dynamic', 'fixed'):
+        # Shape strategy switch
+        if model.framework.type == NnFrameworkType.ONNX:
+            # Get ONNX strategy
+            # TODO: look at the supported dtype torch_arch
+            static_b = self.h_button_group_shapes.get_button('static')
+            static_b.setEnabled(True)
+            static_b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            static_b.setChecked(False)
+
+            if model.shape_strategy.type == 'static':
+                static_b.setChecked(True)
+                static_b.setCheckable(False)
+                for s in ('dynamic', 'fixed'):
+                    self.h_button_group_shapes.get_button(s).setEnabled(False)
+                self.h_button_group_shapes.set_current_button('static')
+
+            else:
+                static_b.setEnabled(False)
+                if model.arch.to_tensorrt is not None:
+                    supported_shape_strategy = model.arch.to_tensorrt.shape_strategy_types
+                else:
+                    supported_shape_strategy = ('dynamic', 'fixed')
+
+                for s in ('dynamic', 'fixed'):
+                    b = self.h_button_group_shapes.get_button(s)
+                    b.setEnabled(True)
+                    if s in supported_shape_strategy:
+                        b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+                        b.setChecked(False)
+                        b.setCheckable(True)
+                    else:
+                        b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+                        b.setCheckable(False)
+                        b.setEnabled(False)
+
+        elif model.framework.type == NnFrameworkType.PYTORCH:
+            # TODO: look at the supported dtype
+            # This function will enable/disable the shape strategy values
+            supported_shapes = model.arch.to_tensorrt.shape_strategy_types
+            for s in ('dynamic', 'static', 'fixed'):
                 b = self.h_button_group_shapes.get_button(s)
-                b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
                 b.setEnabled(True)
-                b.setCheckable(True)
-            self.h_button_group_shapes.set_current_button('fixed')
-        self.current_shape_strategy = ''
-        self.shape_strategy_changed(self.h_button_group_shapes.current_button().key)
+                if s in supported_shapes:
+                    b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+                    b.setCheckable(True)
+                    b.setChecked(True)
+                else:
+                    b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+                    b.setChecked(False)
+                    b.setCheckable(False)
+                    b.setEnabled(False)
 
-        self.set_size_widget_enabled(self.current_shape_strategy)
+        # The prefered strategy button is checked, force update
+        self.current_shape_strategy = ''
+        self.shape_strategy_changed(key=self.h_button_group_shapes.current_button().key)
+
+        # Shape strategy values
         if model.shape_strategy.type == 'static':
+            alog.debug(f"update shape strategy to: {model.shape_strategy.type}")
             w, h = model.shape_strategy.opt_size
             self.spinbox_w_opt.setValue(w)
             self.spinbox_h_opt.setValue(h)
             self.update_opt_resolution_text()
-            self.set_opt_modifications_enabled(False)
+            self.spinbox_w_opt.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            self.spinbox_h_opt.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            self.combobox_resolution_opt.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
         else:
             self.set_opt_modifications_enabled(True)
-            print(f"_update_shape_strategy_capabilities: {model.shape_strategy.type}")
             self.restore_sizes(ignore_opt=False)
             self.update_resolution_text()
+
+        if not were_blocked:
+            self.block_signals(False)
 
 
     def update_capabilities(self, model: NnModel) -> bool:
@@ -380,54 +432,51 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         if model.framework.type == NnFrameworkType.ONNX:
             print(red("TODO: Let's enable/disable widgets"))
             self.spinbox_opset.setValue(model.opset)
-            self.spinbox_opset.setEnabled(False)
+            self.spinbox_opset.setEnabled(True)
+            if model.shape_strategy.type == 'static':
+                self.spinbox_opset.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            else:
+                self.spinbox_opset.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
 
             self._update_dtype_capabilities(model=model)
-            self._update_shape_strategy_capabilities(model=model)
             self._update_typing_capabilities(model=model)
+            self._update_shape_strategy_capabilities(model=model)
 
 
         elif model.framework.type == NnFrameworkType.PYTORCH:
-            model_arch: NnPytorchArchitecture = model.arch
-
             self.spinbox_opset.setEnabled(True)
             self._update_dtype_capabilities(model=model)
-            self._update_shape_strategy_capabilities(model=model)
             self._update_typing_capabilities(model=model)
+            self._update_shape_strategy_capabilities(model=model)
 
-
-            self.set_size_widget_enabled(self.current_shape_strategy)
             if previous_shape_strategy != self.current_shape_strategy:
-                print(yellow("  updating capabilities, shape strategy changed"))
                 # Fill the size values
                 if self.current_shape_strategy in ('fixed', 'static'):
-                    print(f"  fixed, static use default size: {DEFAULT_SIZE}")
                     w, h = DEFAULT_SIZE
                     self.spinbox_w_opt.setValue(w)
                     self.spinbox_h_opt.setValue(h)
                     self.update_opt_resolution_text()
 
                 elif self.current_shape_strategy == 'dynamic':
-                    print(f"  dynamic: {DEFAULT_SIZE}")
                     self.restore_sizes(ignore_opt=False)
                     self.update_resolution_text()
 
-        self.setEnabled(True)
         self.block_signals(False)
 
         return True
 
 
-    def shape_strategy_changed(self, button: Literal['fixed', 'static', 'dynamic']) -> None:
+    def shape_strategy_changed(self, key: Literal['fixed', 'static', 'dynamic']) -> None:
         """User action to set from/to dynamic, fixed/static
         """
-        print(f"\nBUtton state changed: {button}")
-        self.block_signals(True)
+        print(f"\nBUtton state changed: {key}")
+        were_blocked = self.signals_blocked()
+        if not were_blocked:
+            self.block_signals(True)
         previous_strategy: str = self.current_shape_strategy
-        s = self.h_button_group_shapes.current_button().key
-        to_dynamic: bool = bool(s == 'dynamic')
-        to_fixed: bool = bool(s == 'fixed')
-        to_static: bool = bool(s == 'static')
+        to_dynamic: bool = bool(key == 'dynamic')
+        to_fixed: bool = bool(key == 'fixed')
+        to_static: bool = bool(key == 'static')
 
         print(purple(f"shape_strategy_changed:"))
         print(f"{previous_strategy} -> {'fixed' if to_fixed else ''}{'static' if to_static else ''}{'dynamic' if to_dynamic else ''}")
@@ -448,7 +497,8 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
             self.set_size_widget_enabled(strategy=self.current_shape_strategy)
             self.restore_sizes(ignore_opt=False)
 
-        self.block_signals(False)
+        if not were_blocked:
+            self.block_signals(False)
 
 
     def size_modified(self, sw: tuple[QSpinBox, QSpinBox, QComboBox], value: int = -1) -> None:

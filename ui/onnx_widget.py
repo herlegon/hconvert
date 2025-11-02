@@ -144,5 +144,3 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         ):
             b.setCheckable(False)
             b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-
-

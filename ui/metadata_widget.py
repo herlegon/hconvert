@@ -49,7 +49,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
             *self.findChildren(QPlainTextEdit, options=Qt.FindChildOption.FindChildrenRecursively),
             *self.findChildren(QTextEdit, options=Qt.FindChildOption.FindChildrenRecursively)
         )
-        self.textedit_comment.setAcceptDrops(False)
+        self.textedit_purpose.setAcceptDrops(False)
 
         self.clear()
         self.adjustSize()
@@ -60,7 +60,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
             w: QLineEdit | QTextEdit
             w.setAcceptDrops(False)
             w.textChanged.connect(self.event_edition_started)
-        self.textedit_comment.textChanged.connect(self.event_edition_started)
+        self.textedit_purpose.textChanged.connect(self.event_edition_started)
         self.button_undo.released.connect(self.event_undo)
         self.button_save_as.released.connect(self.event_save_as)
 
@@ -96,22 +96,18 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         self.block_signals(True)
         if metadata is not None:
             self.lineedit_name.setText(metadata.get("name", ""))
-            self.lineedit_date.setText(metadata.get("date", ""))
-            self.lineedit_version.setText(metadata.get("version", ""))
             self.lineedit_author.setText(metadata.get("author", ""))
             self.lineedit_license.setText(metadata.get("license", ""))
-            self.textedit_comment.setPlainText(metadata.get("comment", ""))
+            self.textedit_purpose.setPlainText(metadata.get("purpose", ""))
         self.block_signals(False)
 
 
     def values(self) -> dict[str, str]:
         return {
             'name': self.lineedit_name.text(),
-            'date': self.lineedit_date.text(),
-            'version': self.lineedit_version.text(),
             'author': self.lineedit_author.text(),
             'license': self.lineedit_license.text(),
-            'comment': self.textedit_comment.toPlainText(),
+            'purpose': self.textedit_purpose.toPlainText(),
         }
 
 

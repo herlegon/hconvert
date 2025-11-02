@@ -53,8 +53,6 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
         )
 
         self.editable_widgets: list[type[QWidget]] = [
-            *self.findChildren(QRadioButton),
-            *self.findChildren(QCheckBox),
             *self.findChildren(QLineEdit),
             *[w for group in self.size_widgets for w in group],
         ]

@@ -7,13 +7,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import (
     QPixmap,
-    QImage,
-    QColor,
-    QPainter,
 )
-# from PySide6.QtWidgets import (
-
-# )
 
 
 DEFAULT_SIZE: tuple[int, int] = (720, 540)

@@ -55,7 +55,7 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
             'tensorrt': load_png_scaled("tensorrt_24px_transparent.png", height=logo_height),
         }
         self.framework_logo.setStyleSheet("background: transparent;")
-        self.framework_logo.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.framework_logo.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.adjustSize()
 
 

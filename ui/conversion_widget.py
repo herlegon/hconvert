@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QToolButton,
 )
 from .designer.ui_conversion_widget import Ui_ConversionWidget
+from .logger import alog
 if TYPE_CHECKING:
     from .main_window import MainWindow
 
@@ -210,7 +211,7 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
     def selection_changed(self, index: int) -> None:
         key: ConversionChoices = self.selection.get_button(index).key
-        print(f"selection changed: {self._previous_selection} -> {key}")
+        alog.debug(f"selection changed: {self._previous_selection} -> {key}")
         if key != self._previous_selection:
             self.conversion_selection_changed(key)
 

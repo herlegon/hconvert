@@ -101,11 +101,11 @@ class Controller(QObject):
     def event_inject_metadata(self, action: dict[str, str | dict[str, str]]) -> None:
         self.in_model.metadata = action['metadata'].copy()
         model_fp: str = action['filepath']
-        try:
-            save_as(model_fp=model_fp, model=self.in_model, autonaming=False)
-        except Exception as e:
-            self.signal_task_ended.emit(str(e))
-            return
+        # try:
+        save_as(model_fp=model_fp, model=self.in_model, autonaming=False)
+        # except Exception as e:
+        #     self.signal_task_ended.emit(str(e))
+        #     return
 
         self.parse_model(model_fp)
         self.signal_task_ended.emit("")

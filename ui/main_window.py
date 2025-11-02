@@ -42,6 +42,9 @@ from PySide6.QtWidgets import (
 )
 from .logger import alog
 
+DEBUG_HEIGHT: bool = False
+
+
 class MainWindow(QMainWindow, Ui_MainWindow):
     signal_preview_modified = Signal(dict)
     signal_convert_action = Signal(dict)
@@ -94,7 +97,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.controller.moveToThread(self._thread)
         self._thread.start()
 
-        self.widget_model_browser.signal_model_loaded.connect(self.event_model_loaded)
+        self.widget_model_browser.signal_model_selected.connect(self.event_model_selected)
         self.widget_metadata.signal_inject_metadata.connect(self.event_inject_metadata)
         self.widget_progress.signal_start_stop_clicked.connect(self.event_convert)
 
@@ -240,10 +243,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def adjust_height(self) -> None:
         current_width = self.width()
-        alog.debug(f"adjust height; current width = {current_width}")
-
-
-
+        if DEBUG_HEIGHT:
+            alog.debug(f"adjust height; current width = {current_width}")
         # self.setMinimumSize(0, 0)
         # self.centralWidget().adjustSize()
         content_size = self.centralWidget().sizeHint()
@@ -261,7 +262,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setFixedHeight(new_height)
         self.blockSignals(False)
 
-        alog.debug(f"new width = {current_width}")
+        if DEBUG_HEIGHT:
+            alog.debug(f"new width = {current_width}")
         QTimer.singleShot(0, lambda: self.set_min_max_width)
 
 
@@ -288,8 +290,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_metadata.refresh_model_info(model)
 
 
-    def event_model_loaded(self, model_fp: str) -> None:
-        alog.debug("model has been loaded")
+    def event_model_selected(self, model_fp: str) -> None:
+        alog.debug(f"selected: {model_fp}")
         self._is_loading = True
         self.setEnabled(False)
         QApplication.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
@@ -300,6 +302,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.widget_metadata,
         ):
             w.clear()
+        self.widget_progress.set_visible(False)
         self.signal_model_loaded.emit(model_fp)
 
 
@@ -386,7 +389,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 'metadata': self.widget_metadata.values()
             })
             alog.debug("start converting")
-            pprint(conversion_settings)
 
             self.widget_conversion.setEnabled(False)
             self.widget_metadata.setEnabled(False)
@@ -413,7 +415,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         model_fp: str = absolute_path(event.mimeData().urls()[0].toLocalFile())
         self.widget_model_browser.set_filepath(model_fp=model_fp)
-        self.event_model_loaded(model_fp=model_fp)
+        self.event_model_selected(model_fp=model_fp)
 
 
     def dragEnterEvent(self, event: QDragEnterEvent):

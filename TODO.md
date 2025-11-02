@@ -1,7 +1,13 @@
+# Bugs
+- ONNX metadata has not torch arch
+
+
+
 (*) reusable
 
 
 # Mandatory
+- If an onnx model, tensorrt conversion widget: look at the supported dtype of the initial arch
 - Add opt level because it may change the basename: do not add it for level = 3 (default)
 - when an onnx model is loaded, if model.torch_arch is none "no support for this"
 - when a model is not supported, open dialog for message and clear all widgets
