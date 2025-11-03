@@ -3,6 +3,7 @@ from pprint import pprint
 from deserialize import from_serializable
 from hutils import red
 from serializers import serialize_model
+import sys
 from pynnlib import (
     nnlib,
     NnModel
@@ -12,19 +13,7 @@ from pynnlib_api import (
     NnFrameworkType,
 )
 
-# -------------------------------
-# Main program
-# -------------------------------
-import sys
 
-
-# Mapping of JSON "class" field to actual Python classes
-CLASS_MAP = {
-    "SizeConstraint": SizeConstraint,
-    # Add others if available
-    # "ShapeStrategy": ShapeStrategy,
-    # "TensorRTConv": TensorRTConv,
-}
 
 
 def main():
@@ -70,8 +59,9 @@ def main():
     print(model_obj)
 
     # Access known-class attributes
-    print(model_obj.arch.size_constraint.min)  # Should be a tuple, e.g. [64, 64]
-    print(type(model_obj.arch.size_constraint))  # <class '__main__.SizeConstraint'>
+    size_constraint: SizeConstraint = model_obj.arch.size_constraint
+    print(size_constraint.min)  # Should be a tuple, e.g. [64, 64]
+
 
 
 if __name__ == "__main__":

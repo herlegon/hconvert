@@ -1,5 +1,6 @@
 from __future__ import annotations
 from copy import deepcopy
+import subprocess
 from hutils import (
     absolute_path,
     path_basename,
@@ -73,12 +74,46 @@ class Controller(QObject):
         device = 'cuda' if ext in trt_extensions else 'cpu'
         start_time = time.time()
         self.in_model = None
-        try:
-            self.in_model: NnModel = nnlib.open(model_fp, device=device)
-        except Exception as e:
-            exception = str(e)
-            print(exception)
-            raise ValueError(str(e))
+
+        cmd = ["python", "backend.py", "-m", model_fp]
+        # Start subprocess
+        process: subprocess.Popen = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,  # merge stderr into stdout
+            text=True,
+            bufsize=1,                 # line-buffered
+        )
+
+        # Read lines in real time
+        for line in process.stdout:
+            line = line.rstrip()
+            if line:
+                # Send each line to GUI widget
+                self.signal_progress.emit(line)
+
+        process.wait()  # wait for the process to finish
+        if process.returncode != 0:
+            self.signal_model_parsed.emit("")
+            raise RuntimeError(f"Backend process failed: {process.returncode}")
+
+        # The backend should output the JSON as the last line, for example
+        # Option 1: collect all lines and parse last JSON
+        process.stdout.seek(0)  # rewind if possible (or buffer lines)
+        # better: collect last line while reading
+        json_str = None
+        for line in process.stdout:
+            line = line.rstrip()
+            if line.startswith("{") and line.endswith("}"):
+                json_str = line
+
+        print(json_str)
+        # try:
+        #     self.in_model: NnModel = nnlib.open(model_fp, device=device)
+        # except Exception as e:
+        #     exception = str(e)
+        #     print(exception)
+        #     raise ValueError(str(e))
 
         elapsed = time.time() - start_time
 
