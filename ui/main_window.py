@@ -18,7 +18,7 @@ from .widget_monitor import WidgetMonitor
 from .inject_metadata_dialog import inject_metadata_dialog
 from .designer.ui_main_window import Ui_MainWindow
 if TYPE_CHECKING:
-    from backend.controller import Controller
+    from ui.controller import Controller
 from PySide6.QtCore import (
     Qt,
     QThread,

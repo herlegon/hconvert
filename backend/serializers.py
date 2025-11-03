@@ -1,6 +1,6 @@
 
 from dataclasses import is_dataclass, fields
-import enum
+from enum import Enum
 from pprint import pprint
 from pynnlib import (
     NnModel,
@@ -29,8 +29,8 @@ def to_serializable(value, _visited=None):
     if isinstance(value, (str, int, float, bool)):
         return value
 
-    if isinstance(value, enum.Enum):
-        return str(value.value)
+    if isinstance(value, Enum):
+        return {"_enum": type(value).__name__, "value": value.value}
 
     if callable(value):
         return None

@@ -1,13 +1,16 @@
 import json
 from pprint import pprint
 from deserialize import from_serializable
+from hutils import red
 from serializers import serialize_model
 from pynnlib import (
-    SizeConstraint,
     nnlib,
     NnModel
 )
-
+from pynnlib_api import (
+    SizeConstraint,
+    NnFrameworkType,
+)
 
 # -------------------------------
 # Main program
@@ -59,6 +62,9 @@ def main():
     print(model_obj.shape_strategy.min_size)  # [0, 0]
 
     print(model_obj.framework.type)
+    fwk_type: NnFrameworkType = model_obj.framework.type
+    if fwk_type == NnFrameworkType.PYTORCH:
+        print(red("oh YEAAAAAHHHHH"))
 
     # Debug
     print(model_obj)

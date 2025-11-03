@@ -1,9 +1,9 @@
 from types import SimpleNamespace
 
-from pynnlib import (
+from pynnlib_api import (
     SizeConstraint,
-    nnlib,
-    NnModel
+    NnFrameworkType,
+    TensorRTConv,
 )
 
 
@@ -11,9 +11,8 @@ from pynnlib import (
 # Mapping of JSON "class" field to actual Python classes
 CLASS_MAP = {
     "SizeConstraint": SizeConstraint,
-    # Add others if available
-    # "ShapeStrategy": ShapeStrategy,
-    # "TensorRTConv": TensorRTConv,
+    "NnFrameworkType": NnFrameworkType,
+    "TensorRTConv": TensorRTConv,
 }
 
 
@@ -30,6 +29,11 @@ def from_serializable(obj):
     Uses 'class' to instantiate known classes.
     """
     if isinstance(obj, dict):
+        # Handle enum
+        if "_enum" in obj:
+            enum_cls = CLASS_MAP[obj["_enum"]]
+            return enum_cls(obj["value"])
+
         cls_name = obj.get('_class')
 
         # Determine the target class

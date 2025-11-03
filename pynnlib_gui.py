@@ -5,7 +5,7 @@ import signal
 import sys
 
 from PySide6.QtWidgets import QApplication
-from backend.controller import Controller
+from ui.controller import Controller
 
 
 if sys.platform == "win32":
