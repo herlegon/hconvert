@@ -78,9 +78,11 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
         self.clear()
         if model is None:
             self.setEnabled(False)
+            self.setVisible(False)
             return
 
         self.setEnabled(True)
+        self.setVisible(True)
 
         framework_name: str = str(model.framework.type.value)
         if get_extension(model.filepath) == '.safetensors':

@@ -32,6 +32,7 @@ from hwidgets import HStyle
 
 from .common import SUPPORTED_MODEL_EXTENSIONS
 from .designer.ui_model_browser_widget import Ui_ModelBrowserWidget
+from .logger import alog
 if TYPE_CHECKING:
     from .main_window import MainWindow
 
@@ -86,6 +87,7 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
         for f in history[:self.max_items]:
             if f and os.path.isfile(f) and get_extension(f) in SUPPORTED_MODEL_EXTENSIONS:
                 self.combobox_model_fp.addItem(str(Path(f)))
+        self.combobox_model_fp.setCurrentIndex(-1)
         self.combobox_model_fp.blockSignals(False)
 
 
@@ -141,16 +143,26 @@ class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):
     #         self.combobox_model_fp.removeItem(self.combobox_model_fp.count() - 1)
 
 
-    def update_model_fp(self, filepath: str = "") -> None:
+    def update_model_fp(self, filepath: str = "", is_valid: bool = True) -> None:
         self.combobox_model_fp.blockSignals(True)
-        if filepath:
+        alog.warning(f"model_fp={filepath}, valid={is_valid}")
+        if filepath and is_valid:
             model_fp: Path = Path(filepath)
             self.append_to_combobox(model_fp)
             self.previous_directory = parent_directory(str(model_fp))
 
-        else:
-            self.combobox_model_fp.lineEdit().clear()
+        elif not filepath or not is_valid:
+            line_edit = self.combobox_model_fp.lineEdit()
+            if line_edit is not None:
+                self.combobox_model_fp.lineEdit().clear()
             self.combobox_model_fp.clearEditText()
+            self.combobox_model_fp.setCurrentIndex(-1)
+
+        if not is_valid:
+            index: int = self.combobox_model_fp.findText(filepath)
+            if index >= 0:
+                alog.warning(f"remove item, index={index}")
+                self.combobox_model_fp.removeItem(index)
 
         self.combobox_model_fp.blockSignals(False)
 

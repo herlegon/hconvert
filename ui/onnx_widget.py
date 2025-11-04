@@ -98,8 +98,10 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         self.clear()
         if model is None or model.framework.type != NnFrameworkType.ONNX:
             self.setEnabled(False)
+            self.setVisible(False)
             return
 
+        self.setVisible(True)
         self.setEnabled(True)
         self.lineedit_opset.setText(f"{model.opset}")
 

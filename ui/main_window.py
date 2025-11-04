@@ -143,6 +143,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_onnx_model.setFixedWidth(self.max_info_widget_width)
         self.widget_tensorrt_model.setFixedWidth(self.max_info_widget_width)
 
+        # Hide all widgets until model loaded
+        self.refresh_model_info(model=None)
+
         alog.debug("apply user settings: geometry")
         alog.debug(f"  torch: {self.widget_pytorch_model.geometry().width()}")
         alog.debug(f"  onnx: {self.widget_onnx_model.geometry().width()}")
@@ -281,13 +284,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.widget_onnx_model.show()
             self.widget_tensorrt_model.hide()
 
-        if model.framework.type == NnFrameworkType.TENSORRT:
+        elif model.framework.type == NnFrameworkType.TENSORRT:
             self.widget_onnx_model.hide()
             self.widget_tensorrt_model.show()
 
         self.widget_onnx_model.refresh_model_info(model)
         self.widget_tensorrt_model.refresh_model_info(model)
         self.widget_metadata.refresh_model_info(model)
+        self.widget_conversion.refresh_conversion_selection(model=model)
+        self.widget_progress.setVisible(bool(model is not None))
+        self.h_vertical_divider.setVisible(bool(model is not None))
 
 
     def event_model_selected(self, model_fp: str) -> None:
@@ -308,19 +314,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def event_model_parsed(self, model_fp: str) -> None:
-        alog.debug("model has been parsed")
+        alog.debug("Model has been parsed")
         QApplication.restoreOverrideCursor()
         self._is_loading = False
-        self.widget_model_browser.update_model_fp(filepath=model_fp)
         model: NnModel = self.controller.get_in_model_info()
 
-        self.setEnabled(True)
         self.refresh_model_info(model=model)
-        self.widget_conversion.refresh_conversion_selection(model=model)
-        if model.framework.type == NnFrameworkType.TENSORRT:
-            self.widget_progress.set_conversion_enabled(False)
-        else:
-            self.widget_progress.set_conversion_enabled(True)
+        self.widget_model_browser.update_model_fp(
+            filepath=model_fp,
+            is_valid=bool(model is not None),
+        )
+        self.setEnabled(True)
+
+        if model is not None:
+            if model.framework.type == NnFrameworkType.TENSORRT:
+                self.widget_progress.set_conversion_enabled(False)
+            else:
+                self.widget_progress.set_conversion_enabled(True)
         # self.adjust_height()
         alog.debug("UI has been refreshed")
 
@@ -354,6 +364,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #   'out_model_fp': str,
         # )
         self.widget_progress.event_progress(status=status)
+        if 'state' not in status:
+            return
+
         if status['state'] != 'running':
             self.widget_model_browser.setEnabled(True)
 

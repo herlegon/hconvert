@@ -117,8 +117,9 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         self.button_undo.setEnabled(False)
 
         if model is None:
-            self.setEnabled(False)
+            self.setVisible(False)
             return
+        self.setVisible(True)
 
         self.initial_metadata = deepcopy(model.metadata)
         self.fill_fields(self.initial_metadata)

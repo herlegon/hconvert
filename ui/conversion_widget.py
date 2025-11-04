@@ -127,8 +127,9 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             self.frame_tensorrt.setVisible(False)
             self.block_signals(False)
             self.adjust_height()
+            self.setVisible(False)
             return
-
+        self.setVisible(True)
 
         print(lightcyan("refresh_conversion_selection"))
         print(f"  get arch details to enable/disable widgets for conversion")

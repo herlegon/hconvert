@@ -6,6 +6,7 @@ from hutils import (
     path_basename,
     get_extension,
     lightcyan,
+    purple,
 )
 import os
 from pprint import pprint
@@ -90,24 +91,26 @@ class Controller(QObject):
             line = line.rstrip()
             if line:
                 # Send each line to GUI widget
-                self.signal_progress.emit(line)
+                # self.signal_progress.emit(line)
+                print(purple(line))
 
         process.wait()  # wait for the process to finish
         if process.returncode != 0:
-            self.signal_model_parsed.emit("")
-            raise RuntimeError(f"Backend process failed: {process.returncode}")
+            self.signal_model_parsed.emit(model_fp)
+            alog.error(f"Backend process failed: {process.returncode}")
 
-        # The backend should output the JSON as the last line, for example
-        # Option 1: collect all lines and parse last JSON
-        process.stdout.seek(0)  # rewind if possible (or buffer lines)
-        # better: collect last line while reading
-        json_str = None
-        for line in process.stdout:
-            line = line.rstrip()
-            if line.startswith("{") and line.endswith("}"):
-                json_str = line
+        else:
+            # The backend should output the JSON as the last line, for example
+            # Option 1: collect all lines and parse last JSON
+            process.stdout.seek(0)  # rewind if possible (or buffer lines)
+            # better: collect last line while reading
+            json_str = None
+            for line in process.stdout:
+                line = line.rstrip()
+                if line.startswith("{") and line.endswith("}"):
+                    json_str = line
 
-        print(json_str)
+        # print(json_str)
         # try:
         #     self.in_model: NnModel = nnlib.open(model_fp, device=device)
         # except Exception as e:
@@ -121,10 +124,7 @@ class Controller(QObject):
         self.emit_ended_signal()
 
         # Send a null signal because the object cannot be sent via a signal
-        if self.in_model is not None:
-            self.signal_model_parsed.emit(model_fp)
-        else:
-            self.signal_model_parsed.emit("")
+        self.signal_model_parsed.emit(model_fp)
 
 
 

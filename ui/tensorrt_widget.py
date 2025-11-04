@@ -113,7 +113,7 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
 
 
     def refresh_model_info(self, model: NnModel | None) -> None:
-        if model.framework.type != NnFrameworkType.TENSORRT:
+        if model is None or model.framework.type != NnFrameworkType.TENSORRT:
             self.clear()
             return
 

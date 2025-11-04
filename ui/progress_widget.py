@@ -190,6 +190,10 @@ class ProgressWidget(QWidget, Ui_ProgressWidget):
         #   'out_model_fp': str
         # )
 
+        if 'state' not in status:
+            alog.error(f"{__class__.__name__} Missing \'state\' ")
+            return
+
         if status['state'] == 'cancelled' and self.is_converting:
             self.stop()
 
