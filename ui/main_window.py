@@ -1,4 +1,5 @@
 from __future__ import annotations
+from argparse import Namespace
 from functools import partial
 from pprint import pprint
 from typing import TYPE_CHECKING, Any, Type
@@ -17,8 +18,7 @@ from .user_settings import UserSettings
 from .widget_monitor import WidgetMonitor
 from .inject_metadata_dialog import inject_metadata_dialog
 from .designer.ui_main_window import Ui_MainWindow
-if TYPE_CHECKING:
-    from ui.controller import Controller
+from .controller import Controller
 from PySide6.QtCore import (
     Qt,
     QThread,
@@ -53,7 +53,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     signal_inject_metadata = Signal(dict)
 
 
-    def __init__(self, controller: Controller):
+    def __init__(self, args: Namespace):
         super().__init__()
         hrl_style = HStyle()
         self.setupUi(self, hrl_style)
@@ -71,7 +71,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_progress.set_main_window(self)
         self.setAcceptDrops(True)
 
-        self.controller: Controller = controller
         self.user_settings: UserSettings = UserSettings()
 
         self._is_loading: bool = False
@@ -93,10 +92,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             monitored_widgets, self.widget_progress.hide_progress
         )
 
-        self._thread = QThread()
-        self.controller.moveToThread(self._thread)
-        self._thread.start()
-
         self.widget_model_browser.signal_model_selected.connect(self.event_model_selected)
         self.widget_metadata.signal_inject_metadata.connect(self.event_inject_metadata)
         self.widget_progress.signal_start_stop_clicked.connect(self.event_convert)
@@ -108,10 +103,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.action_open: QAction
         self.set_keyboard_shorcuts()
 
-        # Signals from the backend
+        # Controller
+        self.controller = Controller(view=self, args=args)
+
+        # Signals from the controller
         self.controller.signal_model_parsed.connect(self.event_model_parsed)
         self.controller.signal_task_ended.connect(self.event_task_ended)
         self.controller.signal_progress.connect(self.event_progress)
+
+        # Signals from the backend
+        # self.controller.stdout_message.connect(lambda msg: print(f"OUT: {msg}"))
+        self.controller.stderr_line.connect(lambda s: print(f"ERR: {s}"))
+        self.controller.backend_down.connect(lambda: print("BACKEND DOWN"))
+
+        self.controller.start()
+
+        if args.model:
+            self.event_model_selected(args.model)
 
 
     def apply_user_settings(self):
@@ -180,10 +188,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def close_event(self):
         if not self.is_closing:
             self.is_closing = True
-            self.controller.exit()
+            self.controller.stop()
             self.close_all_widgets()
-            self._thread.quit()
-            self._thread.wait()
 
 
     def close_all_widgets(self):

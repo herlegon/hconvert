@@ -1,11 +1,8 @@
 from argparse import ArgumentParser
-import logging
-import os
 import signal
 import sys
 
 from PySide6.QtWidgets import QApplication
-from ui.controller import Controller
 
 
 if sys.platform == "win32":
@@ -38,15 +35,11 @@ def main():
 
     # FileOutputHandler = logging.FileHandler('l
 
-
-
     application = QApplication(sys.argv)
     QApplication.setStyle("Fusion")
-    controller = Controller(model_fp=arguments.model, dev=arguments.dev)
 
     from ui.main_window import MainWindow
-    main_window = MainWindow(controller=controller)
-    controller.set_view(main_window)
+    main_window = MainWindow(args=arguments)
     main_window.show()
 
     sys.exit(application.exec())
