@@ -8,6 +8,8 @@ import time
 import traceback
 from multiprocessing import Process, Queue
 
+from hutils import lightgreen
+
 
 # log = logging.getLogger('Backend')
 # logger.setLevel(logging.INFO)
@@ -25,6 +27,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 HEARTBEAT_TIMEOUT = 12.0
 
@@ -85,17 +90,12 @@ async def heartbeat_monitor(last_ping_func, stop_event):
 
 
 async def read_stdin_lines():
-    """Async generator yielding lines from stdin."""
     loop = asyncio.get_running_loop()
-    reader = asyncio.StreamReader()
-    protocol = asyncio.StreamReaderProtocol(reader)
-    await loop.connect_read_pipe(lambda: protocol, sys.stdin)
     while True:
-        line = await reader.readline()
+        line = await loop.run_in_executor(None, sys.stdin.readline)
         if not line:
-            await asyncio.sleep(0.1)
-            continue
-        yield line.decode().strip()
+            break
+        yield line
 
 
 async def main():
@@ -141,6 +141,7 @@ async def main():
             task_proc.start()
             await send_stdout({"type": "info", "message": f"task_started id={msg.get('id')}"})
             asyncio.create_task(watch_worker(msg.get("id"), task_proc, task_queue))
+            print(lightgreen("started"))
 
         elif cmd == "kill_task":
             if task_proc and task_proc.is_alive():

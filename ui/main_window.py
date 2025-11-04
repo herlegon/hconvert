@@ -113,7 +113,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Signals from the backend
         # self.controller.stdout_message.connect(lambda msg: print(f"OUT: {msg}"))
-        self.controller.stderr_line.connect(lambda s: print(f"ERR: {s}"))
+        self.controller.stderr_line.connect(lambda s: print(f"status: {s}"))
         self.controller.backend_down.connect(lambda: print("BACKEND DOWN"))
 
         self.controller.start()

@@ -278,7 +278,7 @@ class Controller(QObject):
                 if not line:
                     break
                 text = line.decode(errors="replace").strip()
-                print(f"<<< {text}")
+                print(f"<<< {time.time()} {text}")
                 if not text:
                     continue
                 try:
@@ -353,8 +353,9 @@ class Controller(QObject):
                         self._proc.stdin.write(line.encode())
                         print(f">>> ping")
                         await self._proc.stdin.drain()
-                except Exception:
+                except Exception as e:
                     # backend likely dead; emit backend_down and break
+                    print(str(e))
                     try:
                         self.backend_down.emit()
                     except Exception:
@@ -366,7 +367,7 @@ class Controller(QObject):
                 if now - self._last_pong > self.pong_timeout:
                     try:
                         self.stderr_line.emit("No pong from backend (timeout)")
-                        print(red("No pong from backend (timeout)"))
+                        print(red(f"{time.time()}No pong from backend (timeout)"))
                         self.backend_down.emit()
                     except Exception:
                         pass
