@@ -121,24 +121,33 @@ class Controller(QObject):
 
 
     @Slot()
-    def start_backend(self, backend_script: str):
-        """Start backend subprocess in a thread and forward stdout/stderr."""
-        print(f"start_backend")
-        if self._backend_process and self._backend_process.poll() is None:
-            self.signal_log.emit("Backend is already running")
-            print("Backend is already running")
-            return
+    def start_backend(self, backend_script: str, dev_mode: bool = False) -> None:
+        """Starts backend subprocess in a thread and forward stdout/stderr.
+        ignored if dev_mode. No need to catch trace
+        """
+        if not dev_mode:
+            print(f"start_backend")
+            if self._backend_process and self._backend_process.poll() is None:
+                self.signal_log.emit("Backend is already running")
+                print("Backend is already running")
+                return
 
-        # Clear the ready event before starting
-        self._server_ready_event.clear()
-        self._is_server_ready = False
+            # Clear the ready event before starting
+            self._server_ready_event.clear()
+            self._is_server_ready = False
 
-        self._backend_thread = threading.Thread(
-            target=self._backend_runner, args=(backend_script,), daemon=True
-        )
-        self._backend_thread.start()
-        self.signal_log.emit(f"Starting backend: {backend_script}")
+            self._backend_thread = threading.Thread(
+                target=self._backend_runner, args=(backend_script,), daemon=True
+            )
+            self._backend_thread.start()
+            self.signal_log.emit(f"Starting backend: {backend_script}")
 
+        else:
+            # COnsider that the server is already running
+            self._last_pong = time.time()
+            self._is_server_ready = True
+            self._server_ready_event.set()
+            self.signal_log.emit("Backend is ready")
 
 
     def _backend_runner(self, backend_script: str):

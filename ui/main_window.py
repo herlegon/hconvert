@@ -134,10 +134,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # controller.signal_system_usage.connect(update_telemetry)
         # controller.signal_log.connect(print_log)
 
-        if not self.dev_mode:
-            self.controller.start_backend(
-                absolute_path(os.path.join(__file__, os.pardir, os.pardir, "backend", "server.py"))
-            )
+        self.controller.start_backend(
+            absolute_path(os.path.join(__file__, os.pardir, os.pardir, "backend", "server.py")),
+            dev_mode=self.dev_mode,
+        )
 
         # Start the Thread
         self.controller.start()
