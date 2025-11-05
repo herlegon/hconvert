@@ -31,7 +31,7 @@ def main():
         help="Load this model"
     )
 
-    arguments = parser.parse_args()
+    args = parser.parse_args()
 
     # FileOutputHandler = logging.FileHandler('l
 
@@ -39,7 +39,7 @@ def main():
     QApplication.setStyle("Fusion")
 
     from ui.main_window import MainWindow
-    main_window = MainWindow(args=arguments)
+    main_window = MainWindow(args=args)
     main_window.show()
 
     sys.exit(application.exec())

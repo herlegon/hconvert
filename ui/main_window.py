@@ -2,7 +2,7 @@ from __future__ import annotations
 from argparse import Namespace
 from functools import partial
 from pprint import pprint
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Any, Literal, Type
 from hwidgets import HStyle
 from pynnlib import (
     NnModel,
@@ -24,6 +24,7 @@ from PySide6.QtCore import (
     QThread,
     QTimer,
     Signal,
+    Slot,
 )
 from PySide6.QtGui import (
     QAction,
@@ -76,6 +77,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._is_loading: bool = False
         self.is_closing: bool = False
 
+        self.dev_mode: bool = False
+        if args.dev:
+            self.dev_mode = True
+
+        self.initial_model: str = ""
+        if args.model:
+            self.initial_model = args.model
+
         self.apply_user_settings()
         # set_stylesheet(self)
 
@@ -103,23 +112,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.action_open: QAction
         self.set_keyboard_shorcuts()
 
+        self.setEnabled(False)
+
         # Controller
         self.controller = Controller(view=self, args=args)
+        self.controller_thread = QThread()
+        self.controller.moveToThread(self.controller_thread)
+        self.controller_thread.setObjectName("ControllerThread")
+        self.controller_thread.start()
 
         # Signals from the controller
         self.controller.signal_model_parsed.connect(self.event_model_parsed)
         self.controller.signal_task_ended.connect(self.event_task_ended)
         self.controller.signal_progress.connect(self.event_progress)
+        self.controller.signal_backend_status.connect(self.on_backend_status)
 
-        # Signals from the backend
-        # self.controller.stdout_message.connect(lambda msg: print(f"OUT: {msg}"))
-        self.controller.stderr_line.connect(lambda s: print(f"status: {s}"))
-        self.controller.backend_down.connect(lambda: print("BACKEND DOWN"))
+        # Connect signals
+        # controller.signal_progress.connect(update_progress_bar)
+        # controller.signal_system_usage.connect(update_telemetry)
+        # controller.signal_log.connect(print_log)
 
+        # Start the Thread
         self.controller.start()
-
-        if args.model:
-            self.event_model_selected(args.model)
 
 
     def apply_user_settings(self):
@@ -181,15 +195,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def closeEvent(self, event: QCloseEvent):
         self.save_user_settings()
-        self.close_event()
-        super().closeEvent(event)
-
-
-    def close_event(self):
         if not self.is_closing:
             self.is_closing = True
             self.controller.stop()
-            self.close_all_widgets()
+            self.controller_thread.quit()
+            self.controller_thread.wait()
+            # self.close_all_widgets()
+        super().closeEvent(event)
 
 
     def close_all_widgets(self):
@@ -454,3 +466,37 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             event.setDropAction(Qt.DropAction.MoveAction)
         if not is_allowed:
             print("Oh noooo!!!")
+
+
+    @Slot()
+    def on_backend_status(self, status: Literal['running', 'stopped']) -> None:
+        if status == 'running':
+            if not self.isEnabled():
+                self.setEnabled(True)
+
+            if  self.initial_model:
+                self.event_model_selected(self.initial_model)
+                self.initial_model = ""
+
+        elif status == 'stopped':
+            if self.dev_mode:
+                self.controller.retry_connect()
+
+            else:
+                msg = QMessageBox(self)
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setWindowTitle("Backend Offline")
+                msg.setText("The backend is not reachable.")
+                msg.setInformativeText("Do you want to restart it or quit the application?")
+                retry_btn = msg.addButton("Retry", QMessageBox.ButtonRole.AcceptRole)
+                quit_btn = msg.addButton("Quit", QMessageBox.ButtonRole.RejectRole)
+                msg.setDefaultButton(retry_btn)
+                msg.exec()
+
+                if msg.clickedButton() == retry_btn:
+                    self.controller.retry_connect()
+                else:
+                    self.close()
+
+        else:
+            alog.error(f"unknow backend status: \'{status}\'")
