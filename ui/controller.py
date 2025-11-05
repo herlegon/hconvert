@@ -171,6 +171,26 @@ class Controller(QObject):
                     pass
 
 
+    @Slot()
+    def shutdown(self):
+        """Handle graceful shutdown when the window is closed"""
+        alog.info("Shutting down the backend...")
+
+        # Send a shutdown command to the backend (if needed)
+        if self._ws:
+            try:
+                shutdown_command = {"cmd": "shutdown"}  # Example shutdown command
+                asyncio.run_coroutine_threadsafe(self.send(shutdown_command), self._loop)
+                alog.info("Shutdown command sent to server")
+            except Exception as e:
+                alog.error(f"Failed to send shutdown command: {e}")
+
+        # Stop the asyncio loop
+        self.stop()  # This calls the stop method that you've already implemented
+        alog.info("Controller stopped")
+
+
+
     async def _main(self):
         retries = 0
         delay = 3
@@ -303,7 +323,7 @@ class Controller(QObject):
 
     @Slot()
     def cancel_task(self):
-        alog.debug(f">>> cancel: {data}")
+        alog.debug(f">>> cancel")
         self.send_command({"cmd": "cancel"})
 
 

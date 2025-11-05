@@ -197,7 +197,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.save_user_settings()
         if not self.is_closing:
             self.is_closing = True
-            self.controller.stop()
+            self.controller.shutdown()
             self.controller_thread.quit()
             self.controller_thread.wait()
             # self.close_all_widgets()
