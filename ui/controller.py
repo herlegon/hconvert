@@ -501,7 +501,6 @@ class Controller(QObject):
                 print(exception)
                 raise ValueError(str(e))
 
-
         elapsed = time.time() - start_time
 
         alog.debug(f"parsed in {1000*elapsed:.03f}ms")

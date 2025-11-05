@@ -24,19 +24,9 @@ from websockets import (
 from logger import slog
 from client import client_ws, shutdown_event
 import multiprocessing as mp
-from tasks import small_cmd_queue, small_worker
+from worker import nn_cmd_queue, nn_worker
 
 
-
-
-async def forward_events(ws: ServerConnection, event_queue: multiprocessing.Queue):
-    """Forward WorkerEvent objects to frontend as JSON."""
-    while True:
-        try:
-            event: WorkerEvent = event_queue.get_nowait()
-            await send_json(ws, {"type": event.type, "data": event.data})
-        except Exception:
-            await asyncio.sleep(0.1)
 
 
 
@@ -54,13 +44,13 @@ async def shutdown(server):
             slog.warning(f"Error closing client WS: {e}")
 
     # Terminate and join the worker
-    small_cmd_queue.put("shutdown")
-    if small_worker.is_alive():
-        small_worker.join(timeout=2)  # wait for exit
-        if small_worker.is_alive():
-            slog.warning(f"Worker {small_worker.name} still alive, sending SIGKILL")
-            os.kill(small_worker.pid, signal.SIGKILL)
-            small_worker.join(timeout=1)
+    nn_cmd_queue.put("shutdown")
+    if nn_worker.is_alive():
+        nn_worker.join(timeout=2)  # wait for exit
+        if nn_worker.is_alive():
+            slog.warning(f"Worker {nn_worker.name} still alive, sending SIGKILL")
+            os.kill(nn_worker.pid, signal.SIGKILL)
+            nn_worker.join(timeout=1)
 
     # Close server
     try:

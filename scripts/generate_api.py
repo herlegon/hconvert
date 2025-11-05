@@ -1,6 +1,8 @@
 import inspect
+import os
 from pathlib import Path
 from typing import List, Type
+from hutils import absolute_path
 import pynnlib
 
 # --- Dataclasses / classes to extract ---
@@ -106,7 +108,7 @@ for cls in TARGET_CLASSES:
 api_content = imports + "\n\n" + "\n\n".join(sources)
 
 # --- Write API file ---
-api_file_path = "pynnlib_api.py"
+api_file_path = absolute_path(os.path.join("ui", "pynnlib_api.py"))
 with open(api_file_path, "w") as f:
     f.write(api_content)
 

@@ -7,7 +7,7 @@ import time
 import psutil
 import websockets
 # from tasks import run_long_task_async
-from hutils import lightgreen, yellow
+from hutils import lightcyan, lightgreen, yellow
 from utils import send_json
 from telemetry import telemetry_loop
 from messages import WorkerCommand, WorkerEvent
@@ -19,6 +19,7 @@ from websockets import (
     ConnectionClosedError,
 )
 from logger import slog
+from worker import nn_cmd_queue, nn_event_queue
 
 # Only one client
 client_task: asyncio.Task = None
@@ -26,12 +27,42 @@ client_ws: ServerConnection = None
 shutdown_event = asyncio.Event()
 
 
+
+
+async def forward_events(ws: ServerConnection, event_queue: multiprocessing.Queue):
+    """Forward WorkerEvent objects to frontend as JSON."""
+    try:
+        while True:
+            try:
+                event: WorkerEvent = event_queue.get_nowait()
+            except Exception:
+                await asyncio.sleep(0.1)
+                continue
+
+            try:
+                print(lightcyan(f"send:"), event.data)
+                await send_json(ws, {"type": event.type, "data": event.data})
+            except websockets.ConnectionClosed:
+                # Client disconnected, exit loop
+                break
+            except Exception as e:
+                slog.warning(f"Failed to forward event: {e}")
+    except asyncio.CancelledError:
+        # Task was cancelled (on client disconnect)
+        pass
+
+
+
 async def handle_client(ws: ServerConnection):
     global client_task, client_ws
     slog.info(f"Client connected: {ws.remote_address}")
     client_ws = ws
 
-    # Start telemetry background task
+
+    # Forward worker events to this client
+    forward_task = asyncio.create_task(forward_events(ws, nn_event_queue))
+
+    # Start telemetry task
     client_task = asyncio.create_task(telemetry_loop(ws))
 
     try:
@@ -66,6 +97,16 @@ async def handle_client(ws: ServerConnection):
                 shutdown_event.set()
                 break
 
+            elif cmd == "parse":
+                slog.info(f"parse model: {data}")
+                nn_cmd_queue.put(
+                    WorkerCommand(
+                        cmd=cmd,
+                        payload=data.get('payload', {})
+                    )
+                )
+
+
             else:
                 slog.warning(f"Unknown command: {cmd}")
 
@@ -80,7 +121,12 @@ async def handle_client(ws: ServerConnection):
         if client_task:
             client_task.cancel()
             await asyncio.gather(client_task, return_exceptions=True)
-        slog.info(f"Cleaned up client: {client_ws.remote_address}")
+
+        # Cancel event forwarder task
+        if forward_task:
+            forward_task.cancel()
+            await asyncio.gather(forward_task, return_exceptions=True)
+
+        slog.info(f"Cleaned up client: {ws.remote_address}")
         client_ws = None
         client_task = None
-

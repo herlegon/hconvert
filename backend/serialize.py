@@ -100,7 +100,5 @@ def serialize_model(nn_model: NnModel) -> dict:
     base["_class"] = type(nn_model).__name__
 
 
-
-
     return base
 
