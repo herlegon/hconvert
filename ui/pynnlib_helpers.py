@@ -1,5 +1,3 @@
-
-
 from .pynnlib_api import SizeConstraint
 
 

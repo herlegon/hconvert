@@ -3,11 +3,9 @@ from argparse import Namespace
 from functools import partial
 import os
 from pprint import pprint
-import time
-from typing import TYPE_CHECKING, Any, Literal, Type
+from typing import Any, Literal, Type
 from hwidgets import HStyle
-from pynnlib import (
-    NnModel,
+from pynnlib_api import (
     NnFrameworkType,
 )
 from hutils import (

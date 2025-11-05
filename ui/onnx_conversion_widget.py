@@ -3,9 +3,9 @@ from pprint import pprint
 from typing import Type
 from hutils import red, lightcyan
 from hwidgets import HStyle
-from pynnlib import (
-    NnModel,
-    NnPytorchArchitecture,
+from pynnlib_api import (
+    # NnModel,
+    # NnPytorchArchitecture,
     NnFrameworkType,
     SizeConstraint,
 )

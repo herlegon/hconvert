@@ -25,6 +25,7 @@ TARGET_CLASSES: tuple[Type] = (
 TYPE_ALIASES = (
     "ShapeStrategyType",
     "Idtype",
+    "NnModelDtype",
 )
 
 

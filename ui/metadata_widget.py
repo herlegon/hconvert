@@ -1,9 +1,7 @@
 from copy import deepcopy
 from typing import Type
 from hwidgets import HStyle
-from pynnlib import (
-    NnModel,
-)
+
 from PySide6.QtCore import (
     Qt,
     Signal,
@@ -17,7 +15,9 @@ from PySide6.QtWidgets import (
     QSizePolicy,
 )
 from .designer.ui_metadata_widget import Ui_MetadataWidget
-
+# from pynnlib import (
+#     NnModel,
+# )
 
 class MetadataWidget(QWidget, Ui_MetadataWidget):
     signal_inject_metadata = Signal(dict)

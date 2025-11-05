@@ -6,6 +6,7 @@ from .pynnlib_api import (
     SizeConstraint,
     NnFrameworkType,
     TensorRTConv,
+    PyTorchModel,
 )
 
 
@@ -15,6 +16,7 @@ CLASS_MAP = {
     "SizeConstraint": SizeConstraint,
     "NnFrameworkType": NnFrameworkType,
     "TensorRTConv": TensorRTConv,
+    "PyTorchModel": PyTorchModel,
 }
 
 

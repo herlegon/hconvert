@@ -1,16 +1,13 @@
 from __future__ import annotations
-import os
-from hutils import get_extension, parent_directory
+from hutils import get_extension
 from hwidgets import (
     HStyle,
 )
-from pynnlib import (
-    NnModel,
+from pynnlib_api import (
+    # NnModel,
 )
 
-
 from PySide6.QtCore import (
-    QCoreApplication,
     Qt,
 )
 from PySide6.QtGui import (

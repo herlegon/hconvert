@@ -1,6 +1,5 @@
 from __future__ import annotations
 from functools import partial
-from pprint import pprint
 from typing import Literal, Type
 from hutils import (
     red,
@@ -10,10 +9,10 @@ from hutils import (
     yellow,
 )
 from hwidgets import HStyle
-from pynnlib import (
-    NnModel,
+from pynnlib_api import (
+    # NnModel,
     NnFrameworkType,
-    NnPytorchArchitecture,
+    # NnPytorchArchitecture,
 )
 from PySide6.QtCore import (
     Qt,
@@ -22,7 +21,6 @@ from PySide6.QtWidgets import (
     QWidget,
     QCheckBox,
     QComboBox,
-    QRadioButton,
     QSpinBox,
 )
 

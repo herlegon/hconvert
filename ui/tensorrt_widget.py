@@ -1,10 +1,8 @@
 from __future__ import annotations
-from pprint import pprint
 from typing import TYPE_CHECKING
-from warnings import warn
 from hwidgets import HStyle
-from pynnlib import (
-    NnModel,
+from pynnlib_api import (
+    # NnModel,
     NnFrameworkType,
 )
 

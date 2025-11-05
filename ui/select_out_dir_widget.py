@@ -1,4 +1,3 @@
-from copy import deepcopy
 import os
 from pathlib import (
     Path,
@@ -7,12 +6,11 @@ from typing import Type
 from hutils import (
     absolute_path,
     is_access_granted,
-    parent_directory,
     path_split,
 )
 from hwidgets import HStyle
-from pynnlib import (
-    NnModel,
+from pynnlib_api import (
+    # NnModel,
     NnFrameworkType,
 )
 

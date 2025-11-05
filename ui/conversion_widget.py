@@ -7,8 +7,8 @@ from hutils import (
     lightcyan,
 )
 from hwidgets import HStyle
-from pynnlib import (
-    NnModel,
+from pynnlib_api import (
+    # NnModel,
     NnFrameworkType,
 )
 from PySide6.QtCore import (

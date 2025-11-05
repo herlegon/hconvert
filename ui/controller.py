@@ -28,13 +28,13 @@ from PySide6.QtCore import (
     QTimer,
     Slot,
 )
-from pynnlib import (
-    generate_out_model_fp,
-    get_supported_model_extensions,
-    NnModel,
-    nnlib,
-    save_as,
-)
+# from pynnlib import (
+#     generate_out_model_fp,
+#     get_supported_model_extensions,
+#     NnModel,
+#     nnlib,
+#     save_as,
+# )
 from .pynnlib_api import (
     NnFrameworkType,
     ShapeStrategy,
