@@ -3,7 +3,7 @@ from websockets import (
     ServerConnection,
     ConnectionClosed,
 )
-from logger import alog
+from logger import slog
 
 
 async def send_json(ws: ServerConnection, data: dict):
@@ -11,6 +11,6 @@ async def send_json(ws: ServerConnection, data: dict):
     try:
         await ws.send(json.dumps(data))
     except ConnectionClosed:
-        alog.debug("send_json: connection closed, skipping send")
+        slog.debug("send_json: connection closed, skipping send")
 
 

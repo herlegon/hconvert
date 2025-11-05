@@ -9,7 +9,7 @@ from websockets import (
 )
 from hutils import red, yellow
 from utils import send_json
-from logger import alog
+from logger import slog
 
 TELEMETRY_RATE: float = 1.5
 
@@ -29,15 +29,15 @@ async def telemetry_loop(ws: ServerConnection):
             await asyncio.sleep(TELEMETRY_RATE)
 
     except ConnectionClosedOK:
-        alog.info("Telemetry loop: client disconnected normally")
+        slog.info("Telemetry loop: client disconnected normally")
 
     except ConnectionClosedError as e:
-        alog.warning(f"Telemetry loop: connection closed with error: {e}")
+        slog.warning(f"Telemetry loop: connection closed with error: {e}")
 
     except asyncio.CancelledError:
-        alog.info("Telemetry loop cancelled")
+        slog.info("Telemetry loop cancelled")
 
     except Exception as e:
-        alog.exception(f"Telemetry loop crashed: {e}")
+        slog.exception(f"Telemetry loop crashed: {e}")
 
 

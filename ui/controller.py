@@ -97,7 +97,13 @@ class Controller(QObject):
         self._loop = None
         self._ws: ClientConnection = None
         self._running = False
-        self._last_pong = time.time()
+        self._last_pong = None
+        self._is_shutting_down = False
+        self._is_server_ready: bool = False
+        self._server_ready_event: threading.Event = threading.Event()
+
+        self._backend_process: subprocess.Popen | None = None
+        self._backend_thread: threading.Thread | None = None
 
         self.connect_signals()
 
@@ -110,13 +116,111 @@ class Controller(QObject):
 
 
     def exit(self):
+        print(red("controller exit: why?"))
         self.view.close()
+
+
+    @Slot()
+    def start_backend(self, backend_script: str):
+        """Start backend subprocess in a thread and forward stdout/stderr."""
+        print(f"start_backend")
+        if self._backend_process and self._backend_process.poll() is None:
+            self.signal_log.emit("Backend is already running")
+            print("Backend is already running")
+            return
+
+        # Clear the ready event before starting
+        self._server_ready_event.clear()
+        self._is_server_ready = False
+
+        self._backend_thread = threading.Thread(
+            target=self._backend_runner, args=(backend_script,), daemon=True
+        )
+        self._backend_thread.start()
+        self.signal_log.emit(f"Starting backend: {backend_script}")
+
+
+
+    def _backend_runner(self, backend_script: str):
+        """Run the backend process and forward output to GUI / terminal."""
+        print(f"_backend_runner")
+        try:
+            self._backend_process = subprocess.Popen(
+                [sys.executable, "-u", backend_script],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                bufsize=1,
+                universal_newlines=True,  # gives str lines, cross-platform
+                start_new_session=False,  # keeps it tied to parent process group
+            )
+
+            # Wait until backend prints "READY"
+            for line in iter(self._backend_process.stdout.readline, ""):
+                sys.stdout.write(line)
+                sys.stdout.flush()
+                if "READY" in line:
+                    print("ready!!!!!")
+                    self._last_pong = time.time()
+                    self._is_server_ready = True
+                    self._server_ready_event.set()  # Signal that server is ready
+                    self.signal_log.emit("Backend is ready")
+                    break
+
+
+            # Forward stdout
+            def forward(stream, target):
+                for line in iter(stream.readline, ""):
+                    target.write(line)
+                    target.flush()
+                    line = line.rstrip()
+                    # print(line)
+                    # try:
+                    #     self.signal_log.emit(line)
+                    # except:
+                    #     pass
+                stream.close()
+
+            threads = [
+                threading.Thread(target=forward, args=(self._backend_process.stdout, sys.stdout)),
+                threading.Thread(target=forward, args=(self._backend_process.stderr, sys.stderr)),
+            ]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+
+            return_code = self._backend_process.wait()
+            self.signal_log.emit(f"Backend exited with code {return_code}")
+
+        finally:
+            self._backend_process = None
+
+
+    @Slot()
+    def stop_backend(self):
+        """Terminate backend process if running."""
+        print(f"stop_backend")
+
+        if self._backend_process and self._backend_process.poll() is None:
+            self.signal_log.emit("Stopping backend...")
+            self._backend_process.terminate()
+            try:
+                self._backend_process.wait(timeout=5)
+
+            except subprocess.TimeoutExpired:
+                self._backend_process.kill()
+                self._backend_process.wait()
+            self._backend_process = None
+
+        self._is_server_ready = False
+        self._server_ready_event.clear()
 
 
     @Slot()
     def start(self):
         """Start the asyncio loop
         """
+        print("controller: start")
         if self._running:
             alog.info("The asyncio loop is already running. Ignore.")
             return
@@ -160,6 +264,7 @@ class Controller(QObject):
 
     @Slot()
     def stop(self):
+        self._is_shutting_down = True
         self._running = False
         if getattr(self, "_loop", None):
             if not self._loop.is_closed():
@@ -174,6 +279,7 @@ class Controller(QObject):
     @Slot()
     def shutdown(self):
         """Handle graceful shutdown when the window is closed"""
+        self._is_shutting_down = True
         alog.info("Shutting down the backend...")
 
         # Send a shutdown command to the backend (if needed)
@@ -185,15 +291,53 @@ class Controller(QObject):
             except Exception as e:
                 alog.error(f"Failed to send shutdown command: {e}")
 
+        if self._backend_process and self._backend_process.poll() is None:
+            alog.info("Terminating backend process...")
+            self._backend_process.terminate()
+
+        if self._backend_process is not None:
+            try:
+                self._backend_process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                alog.warning("Backend didn't stop, killing...")
+                self._backend_process.kill()
+
         # Stop the asyncio loop
         self.stop()  # This calls the stop method that you've already implemented
         alog.info("Controller stopped")
 
 
+    async def _wait_for_server_ready(self, timeout: float = 30.0):
+        """Wait for the server to be ready, with timeout."""
+        start_time = time.time()
+        while self._running and not self._is_shutting_down:
+            if self._server_ready_event.wait(timeout=0.5):
+                return True
+
+            # Check for timeout
+            if time.time() - start_time > timeout:
+                self.signal_log.emit("Timeout waiting for backend to be ready")
+                return False
+
+            # Check if backend process died
+            if self._backend_process and self._backend_process.poll() is not None:
+                self.signal_log.emit("Backend process terminated before becoming ready")
+                return False
+
+        return False
+
 
     async def _main(self):
         retries = 0
         delay = 3
+
+        # Wait for server to be ready before attempting connection
+        self.signal_log.emit("Waiting for backend to be ready...")
+        if not await self._wait_for_server_ready():
+            self.signal_log.emit("Backend failed to start")
+            self._running = False
+            return
+
         while self._running:
             try:
                 alog.info(f"Connecting to {self._uri}")
@@ -234,7 +378,8 @@ class Controller(QObject):
 
             finally:
                 try:
-                    self.signal_backend_status.emit("stopped")
+                    if not self._is_shutting_down:
+                        self.signal_backend_status.emit("stopped")
                 except:
                     pass
                 self._ws = None
@@ -250,10 +395,6 @@ class Controller(QObject):
     def retry_connect(self):
         if not self._running:
             self.start()
-            # self._running = True
-            # self._loop.call_soon_threadsafe(
-            #     lambda: asyncio.create_task(self._main())
-            # )
         else:
             self.signal_log.emit("Retry requested but controller already running.")
 
@@ -293,7 +434,10 @@ class Controller(QObject):
             try:
                 await self.send({"cmd": "heartbeat"})
                 # if no pong in 10s, mark backend down
-                if time.time() - self._last_pong > 10:
+                if self._last_pong is None:
+                    self._last_pong = time.time()
+
+                elif time.time() - self._last_pong > 10:
                     self.signal_log.emit("Backend unresponsive")
                     self.signal_backend_status.emit()
                     break

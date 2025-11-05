@@ -1,7 +1,9 @@
 from __future__ import annotations
 from argparse import Namespace
 from functools import partial
+import os
 from pprint import pprint
+import time
 from typing import TYPE_CHECKING, Any, Literal, Type
 from hwidgets import HStyle
 from pynnlib import (
@@ -131,6 +133,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # controller.signal_progress.connect(update_progress_bar)
         # controller.signal_system_usage.connect(update_telemetry)
         # controller.signal_log.connect(print_log)
+
+        if not self.dev_mode:
+            self.controller.start_backend(
+                absolute_path(os.path.join(__file__, os.pardir, os.pardir, "backend", "server.py"))
+            )
 
         # Start the Thread
         self.controller.start()
@@ -468,7 +475,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             print("Oh noooo!!!")
 
 
-    @Slot()
+    # @Slot(str)
     def on_backend_status(self, status: Literal['running', 'stopped']) -> None:
         if status == 'running':
             if not self.isEnabled():
