@@ -371,9 +371,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_monitor.reset()
 
 
+    @Slot(dict)
     def event_progress(self, status: dict) -> None:
-        alog.debug("received signal_progress:")
-        alog.debug(status)
+        alog.debug(f"signal_progress: {status}")
         # status: dict(
         #   'state': Literal['stopped', 'running'],
         #   'type': Literal['progress', 'undetermined'],

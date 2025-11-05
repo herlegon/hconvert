@@ -45,6 +45,8 @@ from ui.logger import alog
 from websockets import (
     connect,
     ClientConnection,
+    ConnectionClosedError,
+    ConnectionClosedOK,
 )
 
 
@@ -134,12 +136,27 @@ class Controller(QObject):
             self.signal_log.emit(f"Controller loop crashed: {e}")
 
         finally:
-            if self._loop:
-                if self._loop.is_running():
-                    self._loop.stop()
+            # Clean shutdown
+            if self._loop and not self._loop.is_closed():
+                # Cancel all pending tasks cleanly
+                pending = asyncio.all_tasks(self._loop)
+                for task in pending:
+                    task.cancel()
+                try:
+                    self._loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                except Exception:
+                    pass
+
+                try:
+                    self._loop.run_until_complete(self._loop.shutdown_asyncgens())
+                except Exception:
+                    pass
                 self._loop.close()
-                self.signal_log.emit("Controller loop stopped")
+
+        if self._running:
+            self.signal_log.emit("Controller loop stopped")
         alog.info("The asyncio loop has been stopped")
+
 
     @Slot()
     def stop(self):
@@ -161,26 +178,52 @@ class Controller(QObject):
             try:
                 alog.info(f"Connecting to {self._uri}")
                 self.signal_log.emit(f"Connecting to {self._uri}")
-                async with connect(self._uri) as ws:
+                ws: ClientConnection
+                async with connect(
+                    uri=self._uri,
+                    proxy=None,
+                    ping_interval=3,
+                    ping_timeout=2,
+                ) as ws:
                     retries = 0
                     self._ws = ws
                     self.signal_log.emit("Connected to backend")
                     self.signal_backend_status.emit('running')
+
+                    # Update pong timestamp when we receive a pong
+                    ws.pong_handler = lambda _: setattr(self, "_last_pong", time.time())
+
                     await asyncio.gather(
                         self._recv_loop(),
                         self._heartbeat_loop(),
                     )
 
+            except (ConnectionClosedError, ConnectionClosedOK) as e:
+                alog.warning(f"WebSocket closed: {e}")
+                self.signal_log.emit(f"Connection closed: {e}")
+
             except Exception as e:
-                alog.error(f"Connection error: {e}")
                 retries += 1
+                await asyncio.sleep(3)
                 alog.error(f"Connection error ({retries}): {e}")
                 self.signal_log.emit(f"Connection error ({retries}): {e}")
-                self.signal_backend_status.emit('stopped')
-                # Stop the controller loop to let GUI decide
-                self._running = False
-                # await asyncio.sleep(delay)
 
+                # Stop controller loop until GUI decides
+                self._running = False
+                self._ws = None
+
+            finally:
+                try:
+                    self.signal_backend_status.emit("stopped")
+                except:
+                    pass
+                self._ws = None
+
+                if self._running:
+                    await asyncio.sleep(3)  # small retry delay
+
+        self._running = False
+        self._ws = None
         alog.info("asyncio loop has been terminated")
 
 
@@ -201,6 +244,7 @@ class Controller(QObject):
                 data = json.loads(msg)
                 msg_type = data.get("type")
                 if msg_type == "pong":
+                    alog.debug(f"<<< {msg_type}")
                     self._last_pong = time.time()
 
                 elif msg_type == "progress":
@@ -233,7 +277,7 @@ class Controller(QObject):
                     self.signal_log.emit("Backend unresponsive")
                     self.signal_backend_status.emit()
                     break
-                await asyncio.sleep(5)
+                await asyncio.sleep(3)
 
             except Exception:
                 break
@@ -253,11 +297,13 @@ class Controller(QObject):
     @Slot(dict)
     def send_command(self, data: dict):
         if self._loop:
+            alog.debug(f">>> data: {data}")
             asyncio.run_coroutine_threadsafe(self.send(data), self._loop)
 
 
     @Slot()
     def cancel_task(self):
+        alog.debug(f">>> cancel: {data}")
         self.send_command({"cmd": "cancel"})
 
 

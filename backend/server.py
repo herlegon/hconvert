@@ -55,21 +55,25 @@ async def handle_client(ws):
 
         if cmd_type == "heartbeat":
             await send_json(ws, {"type": "pong"})
+
         elif cmd_type == "parse":
             small_cmd_queue.put(WorkerCommand(cmd="parse", payload=payload))
+
         elif cmd_type == "convert":
             # Spawn heavy worker if not running
             if heavy_process is None or not heavy_process.is_alive():
                 heavy_cmd_queue = multiprocessing.Queue()
                 heavy_event_queue = multiprocessing.Queue()
-                heavy_process = multiprocessing.Process(target=heavy_task_worker, args=(heavy_cmd_queue, heavy_event_queue))
+                heavy_process = multiprocessing.Process(target=nnlib_worker, args=(heavy_cmd_queue, heavy_event_queue))
                 heavy_process.start()
                 # Start forwarder
                 asyncio.create_task(forward_events(ws, heavy_event_queue))
             heavy_cmd_queue.put(WorkerCommand(cmd="convert", payload=payload))
+
         elif cmd_type == "cancel":
             if heavy_cmd_queue:
                 heavy_cmd_queue.put(WorkerCommand(cmd="cancel"))
+
         elif cmd_type == "shutdown":
             small_cmd_queue.put(WorkerCommand(cmd="shutdown"))
             if heavy_cmd_queue:
@@ -77,8 +81,8 @@ async def handle_client(ws):
             break
 
 async def main():
-    async with websockets.serve(handle_client, "127.0.0.1", 8765):
-        print("Backend server running on ws://127.0.0.1:8765")
+    async with websockets.serve(handle_client, "127.0.0.1", 8442):
+        print("Backend server running on ws://127.0.0.1:8442")
         await asyncio.Future()  # run forever
 
 if __name__ == "__main__":
