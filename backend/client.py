@@ -40,8 +40,12 @@ async def forward_events(ws: ServerConnection, event_queue: multiprocessing.Queu
                 continue
 
             try:
-                print(lightcyan(f"send:"), event.data)
-                await send_json(ws, {"type": event.type, "data": event.data})
+                msg: dict = {
+                    "type": event.type,
+                    "data": event.data
+                }
+                print(lightcyan(f"send:"), msg)
+                await send_json(ws, msg)
             except websockets.ConnectionClosed:
                 # Client disconnected, exit loop
                 break

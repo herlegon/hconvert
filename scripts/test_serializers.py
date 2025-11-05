@@ -1,18 +1,24 @@
+from hutils import lightgreen, red, yellow
 import json
+import os
 from pprint import pprint
-from deserialize import from_serializable
-from hutils import red
-from serializers import serialize_model
-import sys
 from pynnlib import (
     nnlib,
     NnModel
 )
-from pynnlib_api import (
+import sys
+
+if not os.path.exists("ui"):
+    root_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+    if os.path.exists(os.path.join(root_path, "ui")):
+        sys.path.append(root_path)
+
+from backend.serialize import serialize_model
+from ui.deserialize import deserialize_model
+from pynnlib import (
     SizeConstraint,
     NnFrameworkType,
 )
-
 
 
 
@@ -40,10 +46,7 @@ def main():
 
 
     # Load JSON
-    data = json.loads(dto_json)
-
-    # Convert to objects
-    model_obj = from_serializable(data)
+    model_obj = deserialize_model(dto_json)
 
     # Access attributes dynamically
     print(model_obj._class)            # "PyTorchModel"
@@ -52,16 +55,24 @@ def main():
 
     print(model_obj.framework.type)
     fwk_type: NnFrameworkType = model_obj.framework.type
+    if fwk_type.value == NnFrameworkType.PYTORCH.value:
+        print(yellow("ok"))
+    else:
+        print(red("failed"))
+
     if fwk_type == NnFrameworkType.PYTORCH:
-        print(red("oh YEAAAAAHHHHH"))
+        print(lightgreen("oh YEAAAAAHHHHH"))
+    else:
+        print(red("failed"))
 
     # Debug
-    print(model_obj)
+    pprint(model_obj)
 
     # Access known-class attributes
     size_constraint: SizeConstraint = model_obj.arch.size_constraint
     print(size_constraint.min)  # Should be a tuple, e.g. [64, 64]
 
+    print(str(model.framework.type.value))
 
 
 if __name__ == "__main__":

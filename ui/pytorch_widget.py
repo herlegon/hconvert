@@ -6,8 +6,8 @@ from hwidgets import (
 )
 from pynnlib import (
     NnModel,
-    NnFrameworkType,
 )
+
 
 from PySide6.QtCore import (
     QCoreApplication,
@@ -18,6 +18,14 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QWidget,
+)
+
+from .pynnlib_api import (
+    NnFrameworkType,
+)
+from .pynnlib_helpers import (
+    get_arch_name,
+    get_size_constraint,
 )
 
 from .common import load_png_scaled
@@ -95,7 +103,7 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
         self.framework_logo.setPixmap(self.framework_img[framework_name.lower()])
 
         # Let's use the torch arch name or metadata
-        arch_name = model.arch_name
+        arch_name = get_arch_name(model)
         if model.framework.type != NnFrameworkType.PYTORCH:
             if arch_name in ("unknown", "generic"):
                 metadata_arch_name =  model.metadata.get('arch_name', '')
@@ -115,8 +123,9 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
         else:
             self.lineedit_scale.setText("?")
 
-        if model.size_constraint is not None:
-            w, h = model.size_constraint.min
+        size_constraint = get_size_constraint(model)
+        if size_constraint is not None:
+            w, h = size_constraint.min
             self.lineedit_size_constraints_min.setText(f"{w} x {h}")
-            self.lineedit_size_constraints_modulo.setText(f"{model.size_constraint.modulo}")
+            self.lineedit_size_constraints_modulo.setText(f"{size_constraint.modulo}")
 

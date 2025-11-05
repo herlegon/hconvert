@@ -13,6 +13,7 @@ from pynnlib import (
 from hutils import (
     absolute_path,
     get_extension,
+    red,
 )
 
 from .common import SUPPORTED_MODEL_EXTENSIONS
@@ -296,23 +297,47 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def refresh_model_info(self, model: NnModel) -> None:
-        self.widget_pytorch_model.refresh_model_info(model)
+        alog.debug(
+            f"refresh model info: {'none' if model is None else model.framework.type}"
+        )
         if model is None:
+            self.widget_pytorch_model.hide()
             self.widget_onnx_model.hide()
             self.widget_tensorrt_model.hide()
+        else:
+            fwk_type = model.framework.type
 
-        elif model.framework.type == NnFrameworkType.PYTORCH:
-            self.widget_onnx_model.hide()
-            self.widget_tensorrt_model.hide()
+            # print(fwk_type)  # returned NnFrameworkType.PYTORCH
+            # print(fwk_type.value)  # return PyTorch as expected
 
-        elif model.framework.type == NnFrameworkType.ONNX:
-            self.widget_onnx_model.show()
-            self.widget_tensorrt_model.hide()
+            # fwk_type = NnFrameworkType(model.framework.type.value)
 
-        elif model.framework.type == NnFrameworkType.TENSORRT:
-            self.widget_onnx_model.hide()
-            self.widget_tensorrt_model.show()
+            if fwk_type == NnFrameworkType.PYTORCH:
+                print(red("TOOOOOOOOOOOOOOOOOOOOOOOOOORCH"))
+                self.widget_pytorch_model.show()
+                self.widget_onnx_model.hide()
+                self.widget_tensorrt_model.hide()
 
+            elif fwk_type == NnFrameworkType.ONNX:
+                print(red("ep,dksjinbujkds,chvgnkdc,nhbvgndc,sfnvgnkc,vgbk"))
+                self.widget_pytorch_model.show()
+                self.widget_onnx_model.show()
+                self.widget_tensorrt_model.hide()
+
+            elif fwk_type == NnFrameworkType.TENSORRT:
+                self.widget_pytorch_model.show()
+                self.widget_onnx_model.hide()
+                self.widget_tensorrt_model.show()
+
+            else:
+                print(red("ERRROROORR"))
+                print(type(model.framework.type))
+                print(model.framework.type)
+                print(type(NnFrameworkType.PYTORCH))
+                print(NnFrameworkType.PYTORCH)
+
+
+        self.widget_pytorch_model.refresh_model_info(model)
         self.widget_onnx_model.refresh_model_info(model)
         self.widget_tensorrt_model.refresh_model_info(model)
         self.widget_metadata.refresh_model_info(model)
@@ -356,7 +381,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.widget_progress.set_conversion_enabled(False)
             else:
                 self.widget_progress.set_conversion_enabled(True)
-        # self.adjust_height()
+        self.adjust_height()
         alog.debug("UI has been refreshed")
 
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 from argparse import Namespace
 import asyncio
 from copy import deepcopy
+from ui.deserialize import deserialize_model
 import json
 from pathlib import Path
 import subprocess
@@ -30,14 +31,16 @@ from PySide6.QtCore import (
 from pynnlib import (
     generate_out_model_fp,
     get_supported_model_extensions,
-    Idtype,
     NnModel,
     nnlib,
-    NnFrameworkType,
     save_as,
-    ShapeStrategy,
-    ShapeStrategyType,
 )
+from .pynnlib_api import (
+    NnFrameworkType,
+    ShapeStrategy,
+    Idtype,
+)
+
 if TYPE_CHECKING:
     from ui.main_window import MainWindow
 
@@ -64,6 +67,8 @@ class Controller(QObject):
     signal_out_fp: Signal = Signal(dict)
     signal_model_parsed: Signal = Signal(str)
     signal_task_ended: Signal = Signal(str)
+
+    signal_model_parsing_started: Signal = Signal(str)
 
     # Signals to update GUI
     signal_log = Signal(str)
@@ -409,37 +414,87 @@ class Controller(QObject):
 
 
     async def _recv_loop(self):
+        """Receive messages from the WebSocket."""
         try:
-            async for msg in self._ws:
-                data = json.loads(msg)
-                msg_type = data.get("type")
-                if msg_type == "pong":
-                    alog.debug(f"<<< {msg_type}")
-                    self._last_pong = time.time()
+            async for message in self._ws:
+                if self._is_shutting_down:
+                    break
 
-                elif msg_type == "progress":
-                    self.signal_progress.emit(data.get("data", {}))
+                try:
+                    data = json.loads(message)
+                    await self._handle_message(data)
 
-                elif msg_type == "result":
-                    self.signal_result.emit(data.get("data", {}))
+                except json.JSONDecodeError as e:
+                    alog.error(f"Invalid JSON received: {e}")
 
-                elif msg_type == "log":
-                    self.signal_log.emit(data.get("data", ""))
-
-                elif msg_type == "system_usage":
-                    self.signal_system_usage.emit(data)
-
-                else:
-                    self.signal_log.emit(f"Unknown message type: {msg_type}")
+                except Exception as e:
+                    alog.error(f"Error handling message: {e}")
 
         except Exception as e:
-            self.signal_log.emit(f"Recv loop ended: {e}")
-            self.signal_backend_status.emit()
+            alog.error(f"Receive loop error: {e}")
+            raise
+
+
+    async def _handle_message(self, data: dict):
+        """Handle incoming messages from the backend."""
+        msg_type = data.get("type")
+        payload = data.get("data", {})
+
+        if msg_type == "pong":
+            # alog.debug(f"<<< {msg_type}")
+            self._last_pong = time.time()
+
+        elif msg_type == "parsed":
+            print(yellow(f"<<< {msg_type}"))
+            model_json = payload.get("model")
+
+            # Deserialize JSON back into Python object
+            self.in_model = deserialize_model(model_json)
+            alog.debug(f"Model parsed and received from backend")
+            # pprint(self.in_model)
+
+            self.emit_ended_signal()
+            self.signal_model_parsed.emit(self.in_model.filepath)
+
+
+            # if success:
+            #     model_fp = payload.get("path", "")
+            #     self.signal_log.emit(f"Model parsed successfully: {model_fp}")
+            # self.signal_model_parsed.emit(model_fp)
+            # else:
+            #     error = payload.get("error", "Unknown error")
+            #     self.signal_log.emit(f"Model parsing failed: {error}")
+
+        elif msg_type == "progress":
+            # Progress update
+            self.signal_progress.emit(payload)
+
+        elif msg_type == "result":
+            # Conversion result
+            self.signal_result.emit(payload)
+
+        elif msg_type == "task_ended":
+            # Task completed
+            task_name = payload.get("task", "")
+            self.signal_task_ended.emit(task_name)
+
+        elif msg_type == "log":
+            # Log message from backend
+            log_msg = payload.get("message", "")
+            self.signal_log.emit(log_msg)
+
+        elif msg_type == "system_usage":
+            # System usage statistics
+            self.signal_system_usage.emit(payload)
+
+        else:
+            alog.warning(f"Unknown message type: {msg_type}")
+
 
 
     async def _heartbeat_loop(self):
         while self._running and self._ws:
-            alog.info(f">>> ping")
+            # alog.info(f">>> ping")
             try:
                 await self.send({"cmd": "heartbeat"})
                 # if no pong in 10s, mark backend down
@@ -485,15 +540,17 @@ class Controller(QObject):
         alog.debug(f"parse model: {model_fp}")
         ext = get_extension(model_fp)
         trt_extensions: tuple[int] = get_supported_model_extensions(NnFrameworkType.TENSORRT)
-
         device = 'cuda' if ext in trt_extensions else 'cpu'
-        start_time = time.time()
-        self.in_model = None
 
         if self.separate_backend:
             self.send_command({"cmd": "parse", "payload": {"path": model_fp}})
 
+            # Emit that parsing has started
+            self.signal_model_parsing_started.emit(model_fp)
+
         else:
+            start_time = time.time()
+            self.in_model = None
             try:
                 self.in_model: NnModel = nnlib.open(model_fp, device=device)
             except Exception as e:
@@ -501,13 +558,13 @@ class Controller(QObject):
                 print(exception)
                 raise ValueError(str(e))
 
-        elapsed = time.time() - start_time
+            elapsed = time.time() - start_time
 
-        alog.debug(f"parsed in {1000*elapsed:.03f}ms")
-        self.emit_ended_signal()
+            alog.debug(f"parsed in {1000*elapsed:.03f}ms")
+            self.emit_ended_signal()
 
-        # Send a null signal because the object cannot be sent via a signal
-        self.signal_model_parsed.emit(model_fp)
+            # Send a null signal because the object cannot be sent via a signal
+            self.signal_model_parsed.emit(model_fp)
 
 
     def get_in_model_info(self) -> NnModel:
