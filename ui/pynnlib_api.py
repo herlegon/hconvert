@@ -1,8 +1,15 @@
 from __future__ import annotations
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Literal, Set, TypeAlias
 
+
+ShapeStrategyType = Literal[
+    'static',
+    'fixed',
+    'dynamic'
+]
 
 Idtype = Literal['fp32', 'fp16', 'bf16', 'int8']
 
@@ -14,6 +21,12 @@ class NnFrameworkType(Enum):
     ONNX = 'ONNX'
     PYTORCH = 'PyTorch'
     TENSORRT = 'TensorRT'
+
+
+@dataclass
+class NnFramework:
+    type: NnFrameworkType
+    architectures: OrderedDict[str, NnArchitecture]
 
 
 @dataclass
@@ -108,11 +121,47 @@ class NnGenericArchitecture:
     size_constraint: SizeConstraint = None
 
 
-ShapeStrategyType = Literal[
-    'static',
-    'fixed',
-    'dynamic'
-]
+@dataclass
+class GenericModel:
+    framework: NnFramework
+    arch: NnArchitecture
+    alt_arch_name: str = ''
+    scale: int = 0
+    in_nc: int = 0
+    out_nc: int = 0
+    io_dtypes: dict[Literal['input', 'output'], NnModelDtype] = field(default_factory=dict)
+    filepath: str = None
+    device: str = 'cpu'
+    dtypes: list[NnModelDtype] = field(default_factory=list)
+    force_weak_typing: bool = False
+    metadata: dict[str, str] = field(default_factory=dict)
+    shape_strategy: ShapeStrategy = field(default_factory=ShapeStrategy)
+    _arch_name: str = field(default='', init=False, repr=False)
+    _size_constraint: SizeConstraint | None = field(default=None, init=False, repr=False)
+
+
+@dataclass
+class OnnxModel:
+    opset: int = 21
+    alt_arch_name: str = ''
+    in_shape_order: str = 'NCHW'
+    torch_arch: NnPytorchArchitecture = None
+
+
+@dataclass
+class PyTorchModel:
+    num_feat: int = 0
+    num_conv: int = 0
+
+
+@dataclass
+class TrtModel:
+    engine_version: int = 0
+    opset: int = 21
+    device: str = ''
+    torch_arch: NnPytorchArchitecture = None
+    typing: Literal['', 'weak', 'strong'] = ''
+
 
 NnArchitecture = (
     NnGenericArchitecture

@@ -3,49 +3,43 @@ import inspect
 import os
 from pathlib import Path
 import re
-from typing import List, Type
-from hutils import absolute_path, red
 import pynnlib
 import ast
-import importlib
-import inspect
-import os
-from pathlib import Path
-import pkgutil
-import sys
-from typing import Optional, Dict, List, Type
+from typing import Type
 
 from hutils import absolute_path, lightgreen
-from pynnlib import (
-    PyTorchModel,
-)
+
 import pynnlib
-from pynnlib.framework import NnFramework
-from pynnlib.architecture import (
-    NnPytorchArchitecture,
-    NnOnnxArchitecture,
-    NnTensorrtArchitecture,
-    NnGenericArchitecture,
-)
-
-
-# --- Dataclasses / classes to extract ---
 from pynnlib import (
     SizeConstraint,
     ShapeStrategy,
     ShapeStrategyType,
     NnFrameworkType,
     Idtype,
+    OnnxModel,
+    PyTorchModel,
+    TrtModel,
+)
+from pynnlib.framework import (
+    NnFramework,
+)
+from pynnlib.architecture import (
+    NnPytorchArchitecture,
+    NnOnnxArchitecture,
+    NnTensorrtArchitecture,
+    NnGenericArchitecture,
 )
 from pynnlib.architecture import (
     NnArchitectureType,
     OnnxConv,
     TensorRTConv,
 )
+from pynnlib.model import GenericModel
 
 
 TARGET_CLASSES: tuple[tuple[Type, bool]] = (
     (NnFrameworkType, False),
+    (NnFramework, False),
     (SizeConstraint, True),
     (ShapeStrategy, True),
 
@@ -56,6 +50,12 @@ TARGET_CLASSES: tuple[tuple[Type, bool]] = (
     (NnOnnxArchitecture, False),
     (NnTensorrtArchitecture, False),
     (NnGenericArchitecture, True),
+
+    (GenericModel, False),
+    (OnnxModel, False),
+    (PyTorchModel, False),
+    (TrtModel, False),
+
 )
 
 TYPE_ALIASES = (
@@ -65,6 +65,7 @@ TYPE_ALIASES = (
     "NnArchitectureType",
     "NnArchitecture",
 )
+
 
 EXCLUDE_FIELDS = (
     "_caller_dir",
@@ -83,60 +84,16 @@ EXCLUDE_FIELDS = (
     "detect",
     "create_session",
     "_locked",
+    "executor",
+    "detect_arch",
+    "Session",
 )
-
-
-
-def find_class_source_path(cls):
-    """Import a class from pynnlib and return its file path."""
-    if isinstance(cls, str):
-        class_name = cls
-
-        # First, try to get it directly from pynnlib (if it's in __init__.py or __all__)
-        try:
-            cls = getattr(pynnlib, class_name, None)
-            if cls and inspect.isclass(cls):
-                filepath = inspect.getfile(cls)
-                print(f"✅ Found '{class_name}' directly in pynnlib")
-                return filepath
-        except Exception as e:
-            print(f"⚠️  Could not check pynnlib directly: {e}")
-
-        # Recursively search all submodules
-        for importer, modname, ispkg in pkgutil.walk_packages(
-            pynnlib.__path__,
-            pynnlib.__name__ + "."
-        ):
-            print(f"  Checking module: {modname}")
-            try:
-                mod = importlib.import_module(modname)
-                cls = getattr(mod, class_name, None)
-
-                if cls and inspect.isclass(cls):
-                    filepath = inspect.getfile(cls)
-                    print(f"✅ Found '{class_name}' in {modname}")
-                    return filepath
-
-            except ImportError as e:
-                print(f"  ⚠️  Could not import {modname}: {e}")
-                continue
-            except Exception as e:
-                print(f"  ⚠️  Error checking {modname}: {e}")
-                continue
-
-        sys.exit(f"❌ Could not find class '{class_name}' in the pynnlib package (searched recursively).")
-
-    # If it's already a class object, just get its file directly
-    else:
-        if not inspect.isclass(cls):
-            raise TypeError(f"Expected a class or string, got {type(cls)}")
-        return inspect.getfile(cls)
-
 
 
 def get_alias_source(name: str) -> str:
     """Extract the full definition of a type alias, including multi-line Literals."""
-    # --- Find the file if not provided ---
+
+    # Find the find
     base_path = Path(pynnlib.__file__).parent
     for py_file in base_path.rglob("*.py"):
         with open(py_file, "r") as f:
@@ -152,51 +109,9 @@ def get_alias_source(name: str) -> str:
     with file_path.open("r") as f:
         lines = f.readlines()
 
-    print(lightgreen(f"{name}: "))
-    print(f"look in {file_path}")
-
-
-
-    if False:
         start = None
-        for i, line in enumerate(lines):
-            stripped = line.strip()
-            if stripped.startswith(name):
-                print(f" stripped: [{stripped}]")
-                # Match various formats:
-                # 1. Name = Type
-                # 2. Name: TypeAlias = Type
-                # 3. Name: type[...] = Type
-                patterns = [
-                    rf"^{re.escape(name)}\s*=",  # Simple assignment
-                    rf"^{re.escape(name)}\s*:\s*TypeAlias\s*=",  # TypeAlias annotation
-                    rf"^{re.escape(name)}\s*:\s*type\[.*?\]\s*=",  # type[...] annotation
-                ]
-
-                if any(re.match(pattern, stripped) for pattern in patterns):
-                    print("matched")
-                    start = i
-                    break
-
-
-                # for i, line in enumerate(lines):
-                #     stripped = line.strip()
-                #     # Match line starting with alias name, allowing optional ":" or spaces, and containing "="
-                #     if re.match(rf"^{re.escape(name)}\s*(?::\s*\w+)?\s*=", stripped):
-                #         start = i
-                #         break
-
-        print(f"   {start}")
-
-        if start is None:
-            raise RuntimeError(f"Alias {name} not found in {file_path}")
-    else:
-
-        # --- Find alias start line ---
-        start = None
-        pattern = re.compile(
-            rf"^\s*{re.escape(name)}\s*(?::\s*\w+\s*)?="  # supports both 'Name =' and 'Name: TypeAlias ='
-        )
+        # supports both 'Name =' and 'Name: TypeAlias ='
+        pattern = re.compile(rf"^\s*{re.escape(name)}\s*(?::\s*\w+\s*)?=")
         for i, line in enumerate(lines):
             if pattern.match(line):
                 start = i
@@ -205,7 +120,7 @@ def get_alias_source(name: str) -> str:
         if start is None:
             raise RuntimeError(f"Alias {name} not found in {file_path}")
 
-    # --- Collect full alias definition ---
+    # Collect full alias definition
     collected = []
     depth_paren = depth_bracket = 0
     seen_eq = False
@@ -249,7 +164,7 @@ def get_class_source(cls: Type, exclude: list[str] | None = None) -> str:
     for line in lines:
         stripped = line.strip()
 
-        # --- Check if this line should trigger skip mode ---
+        # Check if this line should trigger skip mode
         if not skip_mode:
             # Skip if field name matches one in exclude list
             for name in exclude:
@@ -273,7 +188,7 @@ def get_class_source(cls: Type, exclude: list[str] | None = None) -> str:
                 cleaned.append(line)
                 continue
 
-        # --- We're inside a skipped field (multi-line) ---
+        # We're inside a skipped field (multi-line)
         bracket_depth += line.count("[") - line.count("]")
         paren_depth += line.count("(") - line.count(")")
 
@@ -290,7 +205,6 @@ def generate_class_source(
     cls: Type,
     exclude: list[str] | None = None,
     include_methods: bool = False,
-    method_filter: list[str] | None = None
 ) -> str:
     """
     Generate a clean source definition for a class, handling both dataclasses and Enums.
@@ -322,7 +236,7 @@ def generate_class_source(
         raise RuntimeError(f"Cannot parse source file {filepath}: {e}")
 
     # Find the target class and node
-    class_map: Dict[str, ast.ClassDef] = {
+    class_map: dict[str, ast.ClassDef] = {
         node.name: node for node in tree.body if isinstance(node, ast.ClassDef)
     }
     class_name = cls.__name__
@@ -330,7 +244,7 @@ def generate_class_source(
         raise ValueError(f"Class '{class_name}' not found in source file.")
     class_node = class_map[class_name]
 
-    # --- Detect if this is an Enum class ---
+    # Detect if this is an Enum class
     is_enum = any(
         (
             isinstance(base, ast.Name) and base.id == "Enum"
@@ -396,28 +310,7 @@ def generate_class_source(
             ):
                 continue
 
-
-            # Apply method filter if specified
-            if method_filter is not None:
-                # Check if method should be included
-                should_include = False
-                for pattern in method_filter:
-                    if pattern.endswith('*'):
-                        # Prefix match
-                        if method_name.startswith(pattern[:-1]):
-                            should_include = True
-                            break
-                    elif method_name == pattern:
-                        should_include = True
-                        break
-
-                if not should_include:
-                    continue
-
-            # Get the method source (with proper indentation)
-            method_source = ast.unparse(stmt)
-            # Add indentation
-            method_lines = method_source.split('\n')
+            method_lines = ast.unparse(stmt).split('\n')
             indented_method = (
                 '\n'.join(f"    {line}" if line else line for line in method_lines)
             )
@@ -449,14 +342,15 @@ def generate_class_source(
 
 def main():
     imports = """from __future__ import annotations
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Literal, Set, TypeAlias
 """
 
-    sources: List[str] = []
+    sources: list[str] = []
 
-    # --- Aliases ---
+    # Aliases
     seen_aliases = set()
     simple_aliases = []
     class_aliases = []
@@ -471,7 +365,10 @@ from typing import Literal, Set, TypeAlias
         seen_aliases.add(alias_src)
 
         # If alias references one of the class names, postpone it
-        if any(cls_name in alias_src for cls_name in class_names):
+        if any(
+            re.search(rf"\b{re.escape(cls_name)}\b", alias_src)
+            for cls_name in class_names
+        ):
             class_aliases.append(alias_src)
         else:
             simple_aliases.append(alias_src)
@@ -479,7 +376,7 @@ from typing import Literal, Set, TypeAlias
     # Add simple aliases first
     sources.extend(simple_aliases)
 
-    # --- Classes ---
+    # Classes
     for cls, keep_methods in TARGET_CLASSES:
         sources.append(
             generate_class_source(
@@ -492,12 +389,8 @@ from typing import Literal, Set, TypeAlias
     # Add class-dependent aliases last
     sources.extend(class_aliases)
 
-
-    # --- Generate API content ---
+    # Write API file
     api_content = imports + "\n\n" + "\n\n".join(sources) + "\n"
-
-
-    # --- Write API file ---
     api_file_path = absolute_path(
         os.path.join(__file__, os.pardir, os.pardir, "ui", "pynnlib_api.py")
     )
@@ -505,6 +398,7 @@ from typing import Literal, Set, TypeAlias
         f.write(api_content)
 
     print(f"API file '{api_file_path}' created successfully!")
+
 
 if __name__ == "__main__":
     main()
