@@ -1,9 +1,10 @@
+from collections.abc import Set
 import inspect
 import os
 from pathlib import Path
 import re
 from typing import List, Type
-from hutils import absolute_path
+from hutils import absolute_path, red
 import pynnlib
 import ast
 import importlib
@@ -24,6 +25,7 @@ from pynnlib.architecture import (
     NnPytorchArchitecture,
     NnOnnxArchitecture,
     NnTensorrtArchitecture,
+    NnGenericArchitecture,
 )
 
 
@@ -42,26 +44,26 @@ from pynnlib.architecture import (
 )
 
 
-TARGET_CLASSES: tuple[Type] = (
-    SizeConstraint,
-    ShapeStrategy,
-    NnFrameworkType,
-    OnnxConv,
+TARGET_CLASSES: tuple[tuple[Type, bool]] = (
+    (NnFrameworkType, False),
+    (SizeConstraint, True),
+    (ShapeStrategy, True),
+
+    (OnnxConv, False),
+    (TensorRTConv, False),
+
+    (NnPytorchArchitecture, False),
+    (NnOnnxArchitecture, False),
+    (NnTensorrtArchitecture, False),
+    (NnGenericArchitecture, True),
 )
 
-TARGET_CLASSES_2: tuple[Type] = (
-    NnPytorchArchitecture,
-    NnOnnxArchitecture,
-    NnTensorrtArchitecture,
-    TensorRTConv,
-
-)
 TYPE_ALIASES = (
     "ShapeStrategyType",
     "Idtype",
     "NnModelDtype",
-    "NnArchitecture",
     "NnArchitectureType",
+    "NnArchitecture",
 )
 
 EXCLUDE_FIELDS = (
@@ -80,6 +82,7 @@ EXCLUDE_FIELDS = (
     "parse",
     "detect",
     "create_session",
+    "_locked",
 )
 
 
@@ -131,60 +134,97 @@ def find_class_source_path(cls):
 
 
 
-
-
-def find_literal_alias_file(alias_name: str, base_path=None):
-    """Scan pynnlib source files for the alias definition (Literal or TypeAlias)."""
-    if base_path is None:
-        base_path = Path(pynnlib.__file__).parent
-
+def get_alias_source(name: str) -> str:
+    """Extract the full definition of a type alias, including multi-line Literals."""
+    # --- Find the file if not provided ---
+    base_path = Path(pynnlib.__file__).parent
     for py_file in base_path.rglob("*.py"):
         with open(py_file, "r") as f:
-            for line in f:
-                stripped = line.strip()
-                if not stripped.startswith(alias_name):
-                    continue
-                if stripped.startswith("#") or stripped.startswith("from ") or stripped.startswith("import "):
-                    continue
-                if any(tok in stripped for tok in ("TypeAlias", "Literal", "=")):
-                    return py_file
-    return None
+            content = f.read()
+            # Look for "Name" appearing before an equals sign (possibly across lines)
+            if re.search(rf"^\s*{re.escape(name)}\s*(?::[^\n]*)?=", content, re.MULTILINE):
+                file_path = py_file
+                break
+    if not file_path:
+        raise FileNotFoundError(f"Alias {name} not found in pynnlib sources")
 
 
-
-def get_alias_source(name: str, file_path: str) -> str:
-    """Extract the full definition of a type alias, including multi-line Literals."""
-    path = Path(file_path)
-    if not path.exists():
-        raise FileNotFoundError(f"File for alias {name} not found: {file_path}")
-
-    with path.open("r") as f:
+    with file_path.open("r") as f:
         lines = f.readlines()
 
-    start = None
-    for i, line in enumerate(lines):
-        if line.strip().startswith(name):
-            start = i
-            break
-    if start is None:
-        raise RuntimeError(f"Alias {name} not found in {file_path}")
+    print(lightgreen(f"{name}: "))
+    print(f"look in {file_path}")
 
-    line = lines[start]
 
-    # One-line alias
-    if "[" not in line and "]" not in line:
-        return line.strip()
 
-    # Multi-line Literal
-    alias_lines = []
-    bracket_depth = 0
+    if False:
+        start = None
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            if stripped.startswith(name):
+                print(f" stripped: [{stripped}]")
+                # Match various formats:
+                # 1. Name = Type
+                # 2. Name: TypeAlias = Type
+                # 3. Name: type[...] = Type
+                patterns = [
+                    rf"^{re.escape(name)}\s*=",  # Simple assignment
+                    rf"^{re.escape(name)}\s*:\s*TypeAlias\s*=",  # TypeAlias annotation
+                    rf"^{re.escape(name)}\s*:\s*type\[.*?\]\s*=",  # type[...] annotation
+                ]
+
+                if any(re.match(pattern, stripped) for pattern in patterns):
+                    print("matched")
+                    start = i
+                    break
+
+
+                # for i, line in enumerate(lines):
+                #     stripped = line.strip()
+                #     # Match line starting with alias name, allowing optional ":" or spaces, and containing "="
+                #     if re.match(rf"^{re.escape(name)}\s*(?::\s*\w+)?\s*=", stripped):
+                #         start = i
+                #         break
+
+        print(f"   {start}")
+
+        if start is None:
+            raise RuntimeError(f"Alias {name} not found in {file_path}")
+    else:
+
+        # --- Find alias start line ---
+        start = None
+        pattern = re.compile(
+            rf"^\s*{re.escape(name)}\s*(?::\s*\w+\s*)?="  # supports both 'Name =' and 'Name: TypeAlias ='
+        )
+        for i, line in enumerate(lines):
+            if pattern.match(line):
+                start = i
+                break
+
+        if start is None:
+            raise RuntimeError(f"Alias {name} not found in {file_path}")
+
+    # --- Collect full alias definition ---
+    collected = []
+    depth_paren = depth_bracket = 0
+    seen_eq = False
+
     for line in lines[start:]:
-        alias_lines.append(line)
-        bracket_depth += line.count("[")
-        bracket_depth -= line.count("]")
-        if bracket_depth == 0 and alias_lines:
+        code = line.split("#", 1)[0].rstrip()
+        if not code:
+            continue
+
+        collected.append(code + "\n")
+        if "=" in code:
+            seen_eq = True
+        depth_paren += code.count("(") - code.count(")")
+        depth_bracket += code.count("[") - code.count("]")
+
+        if seen_eq and depth_paren <= 0 and depth_bracket <= 0:
             break
-    return "".join(alias_lines).rstrip()
+
+    return "".join(collected).rstrip()
 
 
 
@@ -246,71 +286,164 @@ def get_class_source(cls: Type, exclude: list[str] | None = None) -> str:
 
 
 
-def parse_classes(source: str) -> Dict[str, ast.ClassDef]:
-    """Return a mapping of all class names to their AST definitions."""
-    tree = ast.parse(source)
-    classes = {}
-    for node in tree.body:
-        if isinstance(node, ast.ClassDef):
-            classes[node.name] = node
-    return classes
+def generate_class_source(
+    cls: Type,
+    exclude: list[str] | None = None,
+    include_methods: bool = False,
+    method_filter: list[str] | None = None
+) -> str:
+    """
+    Generate a clean source definition for a class, handling both dataclasses and Enums.
 
+    - If the class is an Enum, preserve it as Enum.
+    - If not, generate as @dataclass.
+    - Excludes fields and Callables, and optionally includes methods.
+    """
+    exclude_set: Set[str] = set(exclude or [])
+    class_name = cls.__name__
 
-def extract_field_defs(class_node: ast.ClassDef) -> List[str]:
-    """Return a list of dataclass field definitions from a class AST node."""
+    # Get the source file path
+    try:
+        filepath = inspect.getfile(cls)
+    except (TypeError, OSError) as e:
+        raise RuntimeError(f"Cannot find source file for class {class_name}: {e}")
+
+    # Read and parse the source file
+    try:
+        with open(filepath, "r") as f:
+            source = f.read()
+    except IOError as e:
+        raise RuntimeError(f"Cannot read source file {filepath}: {e}")
+
+    # Parse all classes in the file
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as e:
+        raise RuntimeError(f"Cannot parse source file {filepath}: {e}")
+
+    # Find the target class and node
+    class_map: Dict[str, ast.ClassDef] = {
+        node.name: node for node in tree.body if isinstance(node, ast.ClassDef)
+    }
+    class_name = cls.__name__
+    if class_name not in class_map:
+        raise ValueError(f"Class '{class_name}' not found in source file.")
+    class_node = class_map[class_name]
+
+    # --- Detect if this is an Enum class ---
+    is_enum = any(
+        (
+            isinstance(base, ast.Name) and base.id == "Enum"
+        )
+        or (
+            isinstance(base, ast.Attribute)
+            and base.attr == "Enum"
+        )
+        for base in class_node.bases
+    )
+
+    # Extract field definitions
     fields = []
+    methods = []
     for stmt in class_node.body:
         if isinstance(stmt, ast.AnnAssign):
-            # annotated assignment: e.g., x: int = 0
+            # Annotated assignment: e.g., x: int = 0
             target = stmt.target.id if isinstance(stmt.target, ast.Name) else None
-            if target:
-                ann = ast.unparse(stmt.annotation).strip()
-                if stmt.value:
-                    val = ast.unparse(stmt.value).strip()
-                    fields.append(f"    {target}: {ann} = {val}")
-                else:
-                    fields.append(f"    {target}: {ann}")
+            if not target:
+                continue
+
+            # Check if field should be excluded
+            if target in exclude_set:
+                continue
+
+            # Get annotation
+            ann = ast.unparse(stmt.annotation).strip()
+
+            # Skip Callable fields
+            if re.search(r'Callable\s*\[', ann):
+                continue
+
+            # Build field definition
+            if stmt.value:
+                val = ast.unparse(stmt.value).strip()
+                fields.append(f"    {target}: {ann} = {val}")
+            else:
+                fields.append(f"    {target}: {ann}")
+
         elif isinstance(stmt, ast.Assign):
-            # plain assignment: e.g., x = 0
+            # Plain assignment: e.g., x = 0
             targets = [t.id for t in stmt.targets if isinstance(t, ast.Name)]
             if not targets:
                 continue
+
             val = ast.unparse(stmt.value).strip() if stmt.value else "None"
-            for t in targets:
-                fields.append(f"    {t}: Any = {val}")
-    return fields
+
+            for target in targets:
+                # Check if field should be excluded
+                if target in exclude_set:
+                    continue
+
+                fields.append(f"    {target} = {val}")
+
+        elif isinstance(stmt, ast.FunctionDef) and include_methods:
+            # Handle methods
+            method_name = stmt.name
+            if method_name in (
+                '__str__',
+                'update',
+                '__setattr__',
+                'lock',
+            ):
+                continue
 
 
-def generate_clean_class(source: str, class_name: str, exclude=None) -> str:
-    """Generate a clean dataclass definition including inherited fields."""
-    exclude = set(exclude or [])
-    class_map = parse_classes(source)
-    if class_name not in class_map:
-        raise ValueError(f"Class '{class_name}' not found in source file.")
+            # Apply method filter if specified
+            if method_filter is not None:
+                # Check if method should be included
+                should_include = False
+                for pattern in method_filter:
+                    if pattern.endswith('*'):
+                        # Prefix match
+                        if method_name.startswith(pattern[:-1]):
+                            should_include = True
+                            break
+                    elif method_name == pattern:
+                        should_include = True
+                        break
 
+                if not should_include:
+                    continue
 
-    # Extract only *this* class's own fields (no recursion)
-    node = class_map[class_name]
-    class_fields = extract_field_defs(node)
-
-    # inherance
-    # class_fields = resolve_inheritance(class_name, class_map)
-
-    filtered_fields = [
-        line for line in class_fields
-        if not any(line.strip().startswith(f"{name}:") for name in exclude)
-    ]
+            # Get the method source (with proper indentation)
+            method_source = ast.unparse(stmt)
+            # Add indentation
+            method_lines = method_source.split('\n')
+            indented_method = (
+                '\n'.join(f"    {line}" if line else line for line in method_lines)
+            )
+            methods.append(indented_method)
 
     lines = []
-    lines.append(f"@dataclass")
-    lines.append(f"class {class_name}:")
-    if filtered_fields:
-        lines.extend(filtered_fields)
+
+    if is_enum:
+        lines.append(f"class {class_name}(Enum):")
     else:
+        lines.append("@dataclass")
+        lines.append(f"class {class_name}:")
+
+    if fields:
+        lines.extend(fields)
+        if methods:
+            lines.append("")
+    elif methods:
+        lines.append("")
+
+    if methods:
+        lines.extend(methods)
+    elif not fields:
         lines.append("    pass")
 
-    return "\n".join(lines) + "\n\n"
-
+    return "\n".join(lines) + "\n"
 
 
 
@@ -323,38 +456,41 @@ from typing import Literal, Set, TypeAlias
 
     sources: List[str] = []
 
-    # --- Extract type aliases ---
+    # --- Aliases ---
     seen_aliases = set()
+    simple_aliases = []
+    class_aliases = []
+
+    # Collect class names to detect dependency
+    class_names = {cls.__name__ for cls, _ in TARGET_CLASSES}
+
     for name in TYPE_ALIASES:
-        file_path = find_literal_alias_file(name)
-        if not file_path:
-            print(f"[W] Alias {name} not found.")
+        alias_src = get_alias_source(name).strip()
+        if alias_src in seen_aliases:
             continue
+        seen_aliases.add(alias_src)
 
-        alias_src = get_alias_source(name, file_path).strip()
-        if alias_src not in seen_aliases:
-            sources.append(alias_src)
-            seen_aliases.add(alias_src)
+        # If alias references one of the class names, postpone it
+        if any(cls_name in alias_src for cls_name in class_names):
+            class_aliases.append(alias_src)
+        else:
+            simple_aliases.append(alias_src)
 
+    # Add simple aliases first
+    sources.extend(simple_aliases)
 
-    # --- Extract classes ---
-    for cls in TARGET_CLASSES:
-        sources.append(get_class_source(cls, exclude=list(EXCLUDE_FIELDS)))
-
-
-    for cls in TARGET_CLASSES_2:
-        filepath = find_class_source_path(cls)
-        print(f" Get filepath for {cls}: {filepath}")
-
-        with open(filepath, "r") as f:
-            source = f.read()
+    # --- Classes ---
+    for cls, keep_methods in TARGET_CLASSES:
         sources.append(
-            generate_clean_class(
-                source,
-                class_name=cls.__name__,
-                exclude=list(EXCLUDE_FIELDS)
+            generate_class_source(
+                cls,
+                exclude=list(EXCLUDE_FIELDS),
+                include_methods=keep_methods,
             )
         )
+
+    # Add class-dependent aliases last
+    sources.extend(class_aliases)
 
 
     # --- Generate API content ---
