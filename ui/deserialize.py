@@ -2,21 +2,24 @@ import json
 from pprint import pprint
 from types import SimpleNamespace
 
-from .pynnlib_api import (
-    SizeConstraint,
-    NnFrameworkType,
-    TensorRTConv,
-    PyTorchModel,
-)
+from .pynnlib_api import *
 
 
 
 # Mapping of JSON "class" field to actual Python classes
 CLASS_MAP = {
-    "SizeConstraint": SizeConstraint,
     "NnFrameworkType": NnFrameworkType,
+    "NnFramework": NnFramework,
+
+    "SizeConstraint": SizeConstraint,
+    "ShapeStrategy": ShapeStrategy,
+    "OnnxConv": OnnxConv,
     "TensorRTConv": TensorRTConv,
+
     "PyTorchModel": PyTorchModel,
+    "OnnxModel": OnnxModel,
+    "TrtModel": TrtModel,
+    "NnModel": NnModel,
 }
 
 

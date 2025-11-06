@@ -3,9 +3,9 @@ from pprint import pprint
 from typing import Type
 from hutils import red, lightcyan
 from hwidgets import HStyle
-from pynnlib_api import (
-    # NnModel,
-    # NnPytorchArchitecture,
+from .pynnlib_api import (
+    NnModel,
+    NnPytorchArchitecture,
     NnFrameworkType,
     SizeConstraint,
 )
@@ -22,7 +22,6 @@ from PySide6.QtCore import (
 )
 from PySide6.QtWidgets import (
     QWidget,
-    QAbstractSpinBox,
     QComboBox,
     QCheckBox,
     QRadioButton,

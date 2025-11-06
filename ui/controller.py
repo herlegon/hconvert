@@ -4,13 +4,10 @@ import asyncio
 from copy import deepcopy
 from ui.deserialize import deserialize_model
 import json
-from pathlib import Path
 import subprocess
 import sys
-from threading import Event, Thread
 import threading
 from hutils import (
-    absolute_path,
     path_basename,
     get_extension,
     lightcyan,
@@ -21,22 +18,17 @@ from hutils import (
 import os
 from pprint import pprint
 import time
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 from PySide6.QtCore import (
     QObject,
     Signal,
-    QTimer,
     Slot,
 )
-# from pynnlib import (
-#     generate_out_model_fp,
-#     get_supported_model_extensions,
-#     NnModel,
-#     nnlib,
-#     save_as,
-# )
+
+from .pynnlib_helpers import get_supported_model_extensions
 from .pynnlib_api import (
     NnFrameworkType,
+    NnModel,
     ShapeStrategy,
     Idtype,
 )

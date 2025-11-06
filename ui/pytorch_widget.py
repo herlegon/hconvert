@@ -3,8 +3,13 @@ from hutils import get_extension
 from hwidgets import (
     HStyle,
 )
-from pynnlib_api import (
-    # NnModel,
+from .pynnlib_api import (
+    NnFrameworkType,
+    NnModel,
+)
+from .pynnlib_helpers import (
+    get_arch_name,
+    get_size_constraint,
 )
 
 from PySide6.QtCore import (
@@ -15,14 +20,6 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QWidget,
-)
-
-from .pynnlib_api import (
-    NnFrameworkType,
-)
-from .pynnlib_helpers import (
-    get_arch_name,
-    get_size_constraint,
 )
 
 from .common import load_png_scaled

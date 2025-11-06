@@ -5,8 +5,9 @@ import os
 from pprint import pprint
 from typing import Any, Literal, Type
 from hwidgets import HStyle
-from pynnlib_api import (
+from .pynnlib_api import (
     NnFrameworkType,
+    NnModel,
 )
 from hutils import (
     absolute_path,

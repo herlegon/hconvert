@@ -9,10 +9,10 @@ from hutils import (
     yellow,
 )
 from hwidgets import HStyle
-from pynnlib_api import (
-    # NnModel,
+from .pynnlib_api import (
+    NnModel,
     NnFrameworkType,
-    # NnPytorchArchitecture,
+    NnPytorchArchitecture,
 )
 from PySide6.QtCore import (
     Qt,

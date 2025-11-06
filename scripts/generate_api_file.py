@@ -30,7 +30,6 @@ from pynnlib.architecture import (
     NnGenericArchitecture,
 )
 from pynnlib.architecture import (
-    NnArchitectureType,
     OnnxConv,
     TensorRTConv,
 )
@@ -46,10 +45,10 @@ TARGET_CLASSES: tuple[tuple[Type, bool]] = (
     (OnnxConv, False),
     (TensorRTConv, False),
 
+    (NnGenericArchitecture, True),
     (NnPytorchArchitecture, False),
     (NnOnnxArchitecture, False),
     (NnTensorrtArchitecture, False),
-    (NnGenericArchitecture, True),
 
     (GenericModel, False),
     (OnnxModel, False),
@@ -64,6 +63,7 @@ TYPE_ALIASES = (
     "NnModelDtype",
     "NnArchitectureType",
     "NnArchitecture",
+    "NnModel",
 )
 
 
@@ -87,6 +87,7 @@ EXCLUDE_FIELDS = (
     "executor",
     "detect_arch",
     "Session",
+    "module_class",
 )
 
 
@@ -279,10 +280,28 @@ def generate_class_source(
 
             # Build field definition
             if stmt.value:
+                if isinstance(stmt.value, ast.Call) and getattr(stmt.value.func, 'id', '') == 'field':
+                    # detect init=False
+                    kwargs = {
+                        kw.arg: ast.unparse(kw.value).strip()
+                        for kw in stmt.value.keywords
+                    }
+
+                    # If init=False and no default_factory/default, replace with None
+                    if (
+                        kwargs.get('init', 'True') == 'False'
+                        # and 'default' not in kwargs
+                        and 'default_factory' not in kwargs
+                    ):
+                        fields.append(f"    {target}: {ann} = None")
+                        continue
+
                 val = ast.unparse(stmt.value).strip()
                 fields.append(f"    {target}: {ann} = {val}")
             else:
-                fields.append(f"    {target}: {ann}")
+                # Automatically add a default value
+                default_val = "None"
+                fields.append(f"    {target}: {ann} = {default_val}")
 
         elif isinstance(stmt, ast.Assign):
             # Plain assignment: e.g., x = 0
@@ -321,8 +340,17 @@ def generate_class_source(
     if is_enum:
         lines.append(f"class {class_name}(Enum):")
     else:
+        # Build base class list
+        bases = []
+        for base in class_node.bases:
+            try:
+                base_str = ast.unparse(base).strip()
+                bases.append(base_str)
+            except Exception:
+                continue
+        base_clause = f"({', '.join(bases)})" if bases else ""
         lines.append("@dataclass")
-        lines.append(f"class {class_name}:")
+        lines.append(f"class {class_name}{base_clause}:")
 
     if fields:
         lines.extend(fields)

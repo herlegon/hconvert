@@ -25,8 +25,8 @@ class NnFrameworkType(Enum):
 
 @dataclass
 class NnFramework:
-    type: NnFrameworkType
-    architectures: OrderedDict[str, NnArchitecture]
+    type: NnFrameworkType = None
+    architectures: OrderedDict[str, NnArchitecture] = None
 
 
 @dataclass
@@ -96,23 +96,6 @@ class TensorRTConv:
 
 
 @dataclass
-class NnPytorchArchitecture:
-    to_onnx: OnnxConv = None
-    to_tensorrt: TensorRTConv = None
-
-
-@dataclass
-class NnOnnxArchitecture:
-    scale: int | None = None
-    to_tensorrt: TensorRTConv = None
-
-
-@dataclass
-class NnTensorrtArchitecture:
-    version: str = ''
-
-
-@dataclass
 class NnGenericArchitecture:
     name: str = 'unknown'
     type: NnArchitectureType = NnArchitectureType()
@@ -122,9 +105,26 @@ class NnGenericArchitecture:
 
 
 @dataclass
+class NnPytorchArchitecture(NnGenericArchitecture):
+    to_onnx: OnnxConv = None
+    to_tensorrt: TensorRTConv = None
+
+
+@dataclass
+class NnOnnxArchitecture(NnGenericArchitecture):
+    scale: int | None = None
+    to_tensorrt: TensorRTConv = None
+
+
+@dataclass
+class NnTensorrtArchitecture(NnGenericArchitecture):
+    version: str = ''
+
+
+@dataclass
 class GenericModel:
-    framework: NnFramework
-    arch: NnArchitecture
+    framework: NnFramework = None
+    arch: NnArchitecture = None
     alt_arch_name: str = ''
     scale: int = 0
     in_nc: int = 0
@@ -136,12 +136,12 @@ class GenericModel:
     force_weak_typing: bool = False
     metadata: dict[str, str] = field(default_factory=dict)
     shape_strategy: ShapeStrategy = field(default_factory=ShapeStrategy)
-    _arch_name: str = field(default='', init=False, repr=False)
-    _size_constraint: SizeConstraint | None = field(default=None, init=False, repr=False)
+    _arch_name: str = None
+    _size_constraint: SizeConstraint | None = None
 
 
 @dataclass
-class OnnxModel:
+class OnnxModel(GenericModel):
     opset: int = 21
     alt_arch_name: str = ''
     in_shape_order: str = 'NCHW'
@@ -149,13 +149,13 @@ class OnnxModel:
 
 
 @dataclass
-class PyTorchModel:
+class PyTorchModel(GenericModel):
     num_feat: int = 0
     num_conv: int = 0
 
 
 @dataclass
-class TrtModel:
+class TrtModel(GenericModel):
     engine_version: int = 0
     opset: int = 21
     device: str = ''
@@ -169,3 +169,5 @@ NnArchitecture = (
     | NnPytorchArchitecture
     | NnTensorrtArchitecture
 )
+
+NnModel = OnnxModel | PyTorchModel | TrtModel

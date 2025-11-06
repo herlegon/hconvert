@@ -2,10 +2,6 @@ from hutils import lightgreen, red, yellow
 import json
 import os
 from pprint import pprint
-from pynnlib import (
-    nnlib,
-    NnModel
-)
 import sys
 
 if not os.path.exists("ui"):
@@ -15,11 +11,13 @@ if not os.path.exists("ui"):
 
 from backend.serialize import serialize_model
 from ui.deserialize import deserialize_model
-from pynnlib import (
+from ui.pynnlib_api import (
     SizeConstraint,
     NnFrameworkType,
+    NnModel,
 )
 
+from pynnlib import nnlib
 
 
 def main():
@@ -49,7 +47,7 @@ def main():
     model_obj = deserialize_model(dto_json)
 
     # Access attributes dynamically
-    print(model_obj._class)            # "PyTorchModel"
+    # print(model_obj._class)            # "PyTorchModel"
     print(model_obj.arch.name)        # "RealESRGAN (Compact)"
     print(model_obj.shape_strategy.min_size)  # [0, 0]
 

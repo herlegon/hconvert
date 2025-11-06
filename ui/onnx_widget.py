@@ -5,8 +5,8 @@ from hutils import (
 )
 from .logger import alog
 from hwidgets import HStyle
-from pynnlib_api import (
-    # NnModel,
+from .pynnlib_api import (
+    NnModel,
     NnFrameworkType,
 )
 from .common import (

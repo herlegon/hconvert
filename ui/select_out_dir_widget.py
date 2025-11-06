@@ -9,8 +9,8 @@ from hutils import (
     path_split,
 )
 from hwidgets import HStyle
-from pynnlib_api import (
-    # NnModel,
+from .pynnlib_api import (
+    NnModel,
     NnFrameworkType,
 )
 

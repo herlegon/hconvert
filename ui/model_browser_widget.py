@@ -1,33 +1,12 @@
 from __future__ import annotations
 import os
 from pathlib import Path
-from pprint import pprint
-import sys
 from typing import TYPE_CHECKING, Type
 from hutils import (
     absolute_path,
     get_extension,
     parent_directory,
 )
-from PySide6.QtCore import (
-    QObject,
-    QEvent,
-    QSize,
-    Qt,
-    Signal,
-)
-from PySide6.QtGui import (
-    QKeySequence,
-)
-from PySide6.QtWidgets import (
-    QWidget,
-    QComboBox,
-    QFileDialog,
-    QLineEdit,
-    QSizePolicy,
-    QLayout,
-)
-
 from hwidgets import HStyle
 
 from .common import SUPPORTED_MODEL_EXTENSIONS
@@ -36,6 +15,17 @@ from .logger import alog
 if TYPE_CHECKING:
     from .main_window import MainWindow
 
+from PySide6.QtCore import (
+    QObject,
+    QEvent,
+    Qt,
+    Signal,
+)
+from PySide6.QtWidgets import (
+    QWidget,
+    QComboBox,
+    QFileDialog,
+)
 
 
 class ModelBrowserWidget(QWidget, Ui_ModelBrowserWidget):

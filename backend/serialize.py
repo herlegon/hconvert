@@ -2,20 +2,34 @@
 from dataclasses import is_dataclass, fields
 from enum import Enum
 from pprint import pprint
+from typing import Callable
+from hutils import red
 from pynnlib import (
     NnModel,
 )
 
 
 EXCLUDED_KEYS: tuple[str] = (
-    "state_dict",
-    "engine",
-    "model_proto",
-    "executor",
     "module_class",
     "architectures",
+    "_caller_dir",
     "detection_keys",
+    "fct",
+    "build_fn",
+    "convert_fn",
+    "state_dict",
+    "model_proto",
+    "engine",
+    "ModuleClass",
+    "executor",
     "module",
+    "infer_type",
+    "parse",
+    "detect",
+    "create_session",
+    "_locked",
+    "detect_arch",
+    "Session",
 )
 
 
@@ -66,10 +80,18 @@ def to_serializable(value, _visited=None):
         for f in fields(value):
             if f.name in EXCLUDED_KEYS:
                 continue
+
+            # Skip callables by annotation or actual value
+            # field_type = f.type
             v = getattr(value, f.name)
+            # origin = getattr(field_type, "__origin__", None)
+            # if origin is Callable or str(field_type).startswith("typing.Callable"):
+            #     continue
             if callable(v):
                 continue
+
             data[f.name] = to_serializable(v, _visited)
+
         return data
 
     # --- Generic objects ---
@@ -101,4 +123,3 @@ def serialize_model(nn_model: NnModel) -> dict:
 
 
     return base
-

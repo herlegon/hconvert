@@ -5,8 +5,12 @@ from hutils import (
     parent_directory,
     yellow,
 )
-from pprint import pprint
+from hwidgets import HStyle
 from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from .main_window import MainWindow
+from .logger import alog
 
 from PySide6.QtCore import (
     QTimer,
@@ -17,12 +21,8 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
 )
-
-from hwidgets import HStyle
 from .designer.ui_progress_widget import Ui_ProgressWidget
-if TYPE_CHECKING:
-    from .main_window import MainWindow
-from .logger import alog
+
 
 
 class ProgressWidget(QWidget, Ui_ProgressWidget):

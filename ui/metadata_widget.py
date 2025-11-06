@@ -15,9 +15,9 @@ from PySide6.QtWidgets import (
     QSizePolicy,
 )
 from .designer.ui_metadata_widget import Ui_MetadataWidget
-# from pynnlib import (
-#     NnModel,
-# )
+from .pynnlib_api import (
+    NnModel,
+)
 
 class MetadataWidget(QWidget, Ui_MetadataWidget):
     signal_inject_metadata = Signal(dict)

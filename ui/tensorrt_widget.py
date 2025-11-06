@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from hwidgets import HStyle
-from pynnlib_api import (
-    # NnModel,
+from .pynnlib_api import (
+    NnModel,
     NnFrameworkType,
 )
 
