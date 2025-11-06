@@ -177,25 +177,20 @@ def generate_clean_class(source: str, class_name: str, exclude_fields=None) -> s
     if class_name not in class_map:
         raise ValueError(f"Class '{class_name}' not found in source file.")
 
-    # imports = extract_imports(source)
-    all_fields = resolve_inheritance(class_name, class_map)
 
-    # Filter out excluded fields
+    # Extract only *this* class's own fields (no recursion)
+    node = class_map[class_name]
+    class_fields = extract_field_defs(node)
+
+    # inherance
+    # class_fields = resolve_inheritance(class_name, class_map)
+
     filtered_fields = [
-        line for line in all_fields
+        line for line in class_fields
         if not any(line.strip().startswith(f"{name}:") for name in exclude_fields)
     ]
 
     lines = []
-    # if imports:
-    #     lines.extend(imports)
-    #     lines.append("")
-
-    lines.append("from dataclasses import dataclass, field\n")
-    lines.append("from .pynnlib_api import *\n")
-
-
-
     lines.append(f"@dataclass")
     lines.append(f"class {class_name}:")
     if filtered_fields:
@@ -203,7 +198,7 @@ def generate_clean_class(source: str, class_name: str, exclude_fields=None) -> s
     else:
         lines.append("    pass")
 
-    return "\n".join(lines)
+    return "\n".join(lines) + "\n\n"
 
 
 def find_literal_alias_file(alias_name: str, base_path=None):
@@ -240,9 +235,8 @@ def main():
 
     TARGET_CLASSES: tuple[Type] = (
         NnPytorchArchitecture,
-        # NnArchitecture,
-        # NnFramework,
-        # PyTorchModel,
+        NnOnnxArchitecture,
+        NnTensorrtArchitecture,
     )
 
     api_classes_file_path = absolute_path(
@@ -250,13 +244,19 @@ def main():
     )
     print(api_classes_file_path)
 
-    api_contents: list[str] = []
+    api_contents: list[str] = [
+        "from dataclasses import dataclass, field",
+        "from .pynnlib_api import *\n\n"
+    ]
+
     for cls in TARGET_CLASSES:
         filepath = find_class_source(cls)
 
         with open(filepath, "r") as f:
             source = f.read()
-        api_contents.append(generate_clean_class(source, cls.__name__, exclude_fields))
+        api_contents.append(
+            generate_clean_class(source, cls.__name__, exclude_fields)
+        )
 
     with open(api_classes_file_path, "w") as f:
         f.write("\n".join(api_contents))
