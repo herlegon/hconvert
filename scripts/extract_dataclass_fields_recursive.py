@@ -8,8 +8,88 @@ Example:
 """
 
 import ast
+import importlib
+import inspect
+import os
+from pathlib import Path
+import pkgutil
 import sys
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Type
+
+from hutils import absolute_path, lightgreen
+from pynnlib import (
+    PyTorchModel,
+)
+import pynnlib
+from pynnlib.framework import NnFramework
+from pynnlib.architecture import (
+    NnPytorchArchitecture,
+    NnOnnxArchitecture,
+    NnTensorrtArchitecture,
+)
+
+
+def find_class_source(cls):
+    """Import a class from pynnlib and return its file path."""
+    if isinstance(cls, str):
+        class_name = cls
+        try:
+            import pynnlib
+        except ImportError as e:
+            sys.exit(f"❌ Could not import pynnlib package. Make sure it's in PYTHONPATH.\nError: {e}")
+
+        print(f"🔍 Searching for class '{class_name}' in pynnlib...")
+        print(f"📦 Package path: {pynnlib.__path__}")
+
+        # First, try to get it directly from pynnlib (if it's in __init__.py or __all__)
+        try:
+            cls = getattr(pynnlib, class_name, None)
+            if cls and inspect.isclass(cls):
+                filepath = inspect.getfile(cls)
+                print(f"✅ Found '{class_name}' directly in pynnlib")
+                return filepath
+        except Exception as e:
+            print(f"⚠️  Could not check pynnlib directly: {e}")
+
+        # Recursively search all submodules
+        for importer, modname, ispkg in pkgutil.walk_packages(
+            pynnlib.__path__,
+            pynnlib.__name__ + "."
+        ):
+            print(f"  Checking module: {modname}")
+            try:
+                mod = importlib.import_module(modname)
+                cls = getattr(mod, class_name, None)
+
+                if cls and inspect.isclass(cls):
+                    filepath = inspect.getfile(cls)
+                    print(f"✅ Found '{class_name}' in {modname}")
+                    return filepath
+
+            except ImportError as e:
+                print(f"  ⚠️  Could not import {modname}: {e}")
+                continue
+            except Exception as e:
+                print(f"  ⚠️  Error checking {modname}: {e}")
+                continue
+
+        sys.exit(f"❌ Could not find class '{class_name}' in the pynnlib package (searched recursively).")
+
+    # If it's already a class object, just get its file directly
+    else:
+        if not inspect.isclass(cls):
+            raise TypeError(f"Expected a class or string, got {type(cls)}")
+        return inspect.getfile(cls)
+
+
+# --- Helper functions ---
+def get_class_source(cls: Type) -> str:
+    """Return the source code for a class/dataclass."""
+    try:
+        return inspect.getsource(cls)
+    except OSError:
+        raise RuntimeError(f"Cannot extract source for class {cls.__name__}")
+
 
 
 def parse_classes(source: str) -> Dict[str, ast.ClassDef]:
@@ -112,6 +192,10 @@ def generate_clean_class(source: str, class_name: str, exclude_fields=None) -> s
     #     lines.append("")
 
     lines.append("from dataclasses import dataclass, field\n")
+    lines.append("from .pynnlib_api import *\n")
+
+
+
     lines.append(f"@dataclass")
     lines.append(f"class {class_name}:")
     if filtered_fields:
@@ -122,13 +206,25 @@ def generate_clean_class(source: str, class_name: str, exclude_fields=None) -> s
     return "\n".join(lines)
 
 
-def main():
-    if len(sys.argv) < 3:
-        print("Usage: extract_dataclass_fields_recursive.py <source.py> <ClassName>")
-        sys.exit(1)
+def find_literal_alias_file(alias_name: str, base_path=None):
+    """Scan pynnlib source files for the alias definition."""
+    if base_path is None:
+        base_path = Path(pynnlib.__file__).parent
 
-    path = sys.argv[1]
-    class_name = sys.argv[2]
+    for py_file in base_path.rglob("*.py"):
+        with open(py_file, "r") as f:
+            for line in f:
+                if line.strip().startswith(alias_name):
+                    return py_file
+    return None
+
+def main():
+    # if len(sys.argv) < 3:
+    #     print("Usage: extract_dataclass_fields_recursive.py <source.py> <ClassName>")
+    #     sys.exit(1)
+
+    # path = sys.argv[1]
+    # class_name = sys.argv[2]
     exclude_fields = (
         'state_dict',
         'model_proto',
@@ -136,12 +232,38 @@ def main():
         'ModuleClass',
         'executor',
         'module',
+        'infer_type',
+        'parse',
+        'detect',
+        'create_session',
     )
 
-    with open(path, "r") as f:
-        source = f.read()
+    TARGET_CLASSES: tuple[Type] = (
+        NnPytorchArchitecture,
+        # NnArchitecture,
+        # NnFramework,
+        # PyTorchModel,
+    )
 
-    print(generate_clean_class(source, class_name, exclude_fields))
+    api_classes_file_path = absolute_path(
+        os.path.join(__file__, os.pardir, os.pardir, "ui", "pynnlib_classes.py")
+    )
+    print(api_classes_file_path)
+
+    api_contents: list[str] = []
+    for cls in TARGET_CLASSES:
+        filepath = find_class_source(cls)
+
+        with open(filepath, "r") as f:
+            source = f.read()
+        api_contents.append(generate_clean_class(source, cls.__name__, exclude_fields))
+
+    with open(api_classes_file_path, "w") as f:
+        f.write("\n".join(api_contents))
+
+    print(f"API file '{api_classes_file_path}' created successfully!")
+
+
 
 
 if __name__ == "__main__":

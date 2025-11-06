@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Literal, Set
+from typing import Literal, Set, TypeAlias
 
 
 ShapeStrategyType = Literal[
@@ -18,9 +18,11 @@ ShapeStrategyType = Literal[
     'dynamic'
 ]
 
-
 Idtype = Literal['fp32', 'fp16', 'bf16', 'int8']
 
+NnModelDtype = Literal['fp32', 'fp16', 'bf16', 'int8']
+
+NnArchitectureType: TypeAlias = str
 
 @dataclass(slots=True)
 class SizeConstraint:
@@ -48,7 +50,6 @@ class SizeConstraint:
             if w > self.max[0] or h > self.max[1]:
                 return False
         return True
-
 
 @dataclass
 class ShapeStrategy:
@@ -96,12 +97,10 @@ class ShapeStrategy:
         class_str += f"{indent}{'}'}\n"
         return class_str
 
-
 class NnFrameworkType(Enum):
     ONNX = 'ONNX'
     PYTORCH = 'PyTorch'
     TENSORRT = 'TensorRT'
-
 
 @dataclass(slots=True)
 class TensorRTConv:
@@ -115,4 +114,15 @@ class TensorRTConv:
     shape_strategy_types: Set[ShapeStrategyType] = field(
         default_factory=lambda: {'dynamic', 'fixed', 'static'}
         # default_factory=set
+    )
+
+@dataclass(slots=True)
+class OnnxConv:
+    dtypes: Set[Idtype] = field(
+        # default_factory=lambda: {'fp32', 'fp16', 'bf16'}
+        default_factory=set
+    )
+    shape_strategy_types: Set[ShapeStrategyType] = field(
+        # default_factory=lambda: {'dynamic', 'static'}
+        default_factory=set
     )
