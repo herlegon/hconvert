@@ -81,7 +81,6 @@ async def handle_client(ws: ServerConnection):
                 continue
 
             cmd = data.get("cmd")
-            print(lightgreen(cmd))
 
             if cmd == "heartbeat":
                 await send_json(ws, {"type": "pong"})
@@ -97,6 +96,7 @@ async def handle_client(ws: ServerConnection):
             #     await send_json(ws, {"type": "result", "data": result})
 
             elif cmd == "shutdown":
+                print(lightcyan(cmd))
                 slog.info("Shutdown command received from client")
                 shutdown_event.set()
                 break
