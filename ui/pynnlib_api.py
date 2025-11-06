@@ -103,20 +103,6 @@ class NnFrameworkType(Enum):
     TENSORRT = 'TensorRT'
 
 @dataclass(slots=True)
-class TensorRTConv:
-    # Some archs don't support strong typing,
-    #   caution: conversion might fail or slower inference
-    dtypes: Set[Idtype] = field(
-        # default_factory=lambda: {'fp32', 'fp16', 'bf16'}
-        default_factory=set
-    )
-    weak_typing: bool = False
-    shape_strategy_types: Set[ShapeStrategyType] = field(
-        default_factory=lambda: {'dynamic', 'fixed', 'static'}
-        # default_factory=set
-    )
-
-@dataclass(slots=True)
 class OnnxConv:
     dtypes: Set[Idtype] = field(
         # default_factory=lambda: {'fp32', 'fp16', 'bf16'}
@@ -126,3 +112,31 @@ class OnnxConv:
         # default_factory=lambda: {'dynamic', 'static'}
         default_factory=set
     )
+
+@dataclass
+class NnPytorchArchitecture:
+    to_onnx: OnnxConv = None
+    to_tensorrt: TensorRTConv = None
+
+
+
+@dataclass
+class NnOnnxArchitecture:
+    scale: int | None = None
+    to_tensorrt: TensorRTConv = None
+
+
+
+@dataclass
+class NnTensorrtArchitecture:
+    version: str = ''
+
+
+
+@dataclass
+class TensorRTConv:
+    dtypes: Set[Idtype] = field(default_factory=set)
+    weak_typing: bool = False
+    shape_strategy_types: Set[ShapeStrategyType] = field(default_factory=lambda: {'dynamic', 'fixed', 'static'})
+
+
