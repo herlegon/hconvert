@@ -303,38 +303,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.widget_pytorch_model.hide()
             self.widget_onnx_model.hide()
             self.widget_tensorrt_model.hide()
+
+        elif model.framework.type == NnFrameworkType.PYTORCH:
+            self.widget_pytorch_model.show()
+            self.widget_onnx_model.hide()
+            self.widget_tensorrt_model.hide()
+
+        elif model.framework.type == NnFrameworkType.ONNX:
+            self.widget_pytorch_model.show()
+            self.widget_onnx_model.show()
+            self.widget_tensorrt_model.hide()
+
+        elif model.framework.type == NnFrameworkType.TENSORRT:
+            self.widget_pytorch_model.show()
+            self.widget_onnx_model.hide()
+            self.widget_tensorrt_model.show()
+
         else:
-            fwk_type = model.framework.type
-
-            # print(fwk_type)  # returned NnFrameworkType.PYTORCH
-            # print(fwk_type.value)  # return PyTorch as expected
-
-            # fwk_type = NnFrameworkType(model.framework.type.value)
-
-            if fwk_type == NnFrameworkType.PYTORCH:
-                print(red("TOOOOOOOOOOOOOOOOOOOOOOOOOORCH"))
-                self.widget_pytorch_model.show()
-                self.widget_onnx_model.hide()
-                self.widget_tensorrt_model.hide()
-
-            elif fwk_type == NnFrameworkType.ONNX:
-                print(red("ep,dksjinbujkds,chvgnkdc,nhbvgndc,sfnvgnkc,vgbk"))
-                self.widget_pytorch_model.show()
-                self.widget_onnx_model.show()
-                self.widget_tensorrt_model.hide()
-
-            elif fwk_type == NnFrameworkType.TENSORRT:
-                self.widget_pytorch_model.show()
-                self.widget_onnx_model.hide()
-                self.widget_tensorrt_model.show()
-
-            else:
-                print(red("ERRROROORR"))
-                print(type(model.framework.type))
-                print(model.framework.type)
-                print(type(NnFrameworkType.PYTORCH))
-                print(NnFrameworkType.PYTORCH)
-
+            alog.error(f"{model.framework.type} is not a supported framework")
+            model = None
+            self.widget_pytorch_model.hide()
+            self.widget_onnx_model.hide()
+            self.widget_tensorrt_model.hide()
 
         self.widget_pytorch_model.refresh_model_info(model)
         self.widget_onnx_model.refresh_model_info(model)

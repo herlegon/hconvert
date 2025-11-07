@@ -54,7 +54,6 @@ def from_serializable(obj):
                     for k, v in obj.items()
                     if k != '_class'
                 }
-                pprint(kwargs)
                 return cls(**kwargs)
 
         else:

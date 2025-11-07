@@ -1,6 +1,7 @@
 import asyncio
 from asyncio import log
 import json
+import logging
 import multiprocessing
 import os
 import signal
@@ -13,7 +14,7 @@ from client import handle_client
 from hutils import red, yellow
 from utils import send_json
 from telemetry import telemetry_loop
-from messages import WorkerCommand, WorkerEvent
+from messages import WorkerCommand, WorkerResponse
 from websockets import (
     ServerConnection,
     connect,
@@ -25,8 +26,9 @@ from logger import slog
 from client import client_ws, shutdown_event
 import multiprocessing as mp
 from worker import nn_cmd_queue, nn_worker
+from logger import slog
 
-
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 
 
 

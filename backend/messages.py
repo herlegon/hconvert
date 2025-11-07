@@ -7,6 +7,6 @@ class WorkerCommand:
     payload: Optional[dict] = None
 
 @dataclass
-class WorkerEvent:
+class WorkerResponse:
     type: str                # "progress", "log", "result", "error", "status"
-    data: Any = None
+    payload: Any = None

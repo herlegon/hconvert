@@ -8,6 +8,7 @@ import subprocess
 import sys
 import threading
 from hutils import (
+    lightgreen,
     path_basename,
     get_extension,
     lightcyan,
@@ -61,6 +62,7 @@ class Controller(QObject):
     signal_task_ended: Signal = Signal(str)
 
     signal_model_parsing_started: Signal = Signal(str)
+    signal_model_injection_started: Signal = Signal(str)
 
     # Signals to update GUI
     signal_log = Signal(str)
@@ -86,8 +88,6 @@ class Controller(QObject):
 
         self.view: MainWindow = view
         self.in_model: NnModel = None
-
-        self.separate_backend: bool = True
 
         # Websocket
         self._uri: str = uri
@@ -430,11 +430,16 @@ class Controller(QObject):
     async def _handle_message(self, data: dict):
         """Handle incoming messages from the backend."""
         msg_type = data.get("type")
-        payload = data.get("data", {})
+        payload = data.get("payload", {})
+        alog.debug(lightcyan(f"<<< {msg_type}"))
 
         if msg_type == "pong":
             # alog.debug(f"<<< {msg_type}")
             self._last_pong = time.time()
+
+        elif msg_type == "error":
+            print(red("DO IT RIGHT NOW"))
+
 
         elif msg_type == "parsed":
             print(yellow(f"<<< {msg_type}"))
@@ -448,27 +453,22 @@ class Controller(QObject):
             self.emit_ended_signal()
             self.signal_model_parsed.emit(self.in_model.filepath)
 
-
-            # if success:
-            #     model_fp = payload.get("path", "")
-            #     self.signal_log.emit(f"Model parsed successfully: {model_fp}")
-            # self.signal_model_parsed.emit(model_fp)
-            # else:
-            #     error = payload.get("error", "Unknown error")
-            #     self.signal_log.emit(f"Model parsing failed: {error}")
-
         elif msg_type == "progress":
-            # Progress update
+            if payload['state'] == 'started':
+                self.emit_start_signal(False, payload['model_fp'])
+
             self.signal_progress.emit(payload)
 
-        elif msg_type == "result":
-            # Conversion result
-            self.signal_result.emit(payload)
 
-        elif msg_type == "task_ended":
+        elif msg_type == "injected":
             # Task completed
-            task_name = payload.get("task", "")
-            self.signal_task_ended.emit(task_name)
+            # task_name = payload.get("type", "")
+            print(yellow(f"<<< {msg_type}"))
+            model_json = payload.get("model")
+            self.in_model = deserialize_model(model_json)
+            self.emit_ended_signal()
+            self.signal_model_parsed.emit(self.in_model.filepath)
+
 
         elif msg_type == "log":
             # Log message from backend
@@ -517,7 +517,7 @@ class Controller(QObject):
     @Slot(dict)
     def send_command(self, data: dict):
         if self._loop:
-            alog.debug(f">>> data: {data}")
+            alog.debug(lightgreen(f">>> data: {data}"))
             asyncio.run_coroutine_threadsafe(self.send(data), self._loop)
 
 
@@ -534,29 +534,17 @@ class Controller(QObject):
         trt_extensions: tuple[int] = get_supported_model_extensions(NnFrameworkType.TENSORRT)
         device = 'cuda' if ext in trt_extensions else 'cpu'
 
-        if self.separate_backend:
-            self.send_command({"cmd": "parse", "payload": {"path": model_fp}})
+        self.send_command(
+            {
+                "cmd": "parse",
+                "payload": {
+                    "path": model_fp
+                }
+            }
+        )
 
-            # Emit that parsing has started
-            self.signal_model_parsing_started.emit(model_fp)
-
-        else:
-            start_time = time.time()
-            self.in_model = None
-            try:
-                self.in_model: NnModel = nnlib.open(model_fp, device=device)
-            except Exception as e:
-                exception = str(e)
-                print(exception)
-                raise ValueError(str(e))
-
-            elapsed = time.time() - start_time
-
-            alog.debug(f"parsed in {1000*elapsed:.03f}ms")
-            self.emit_ended_signal()
-
-            # Send a null signal because the object cannot be sent via a signal
-            self.signal_model_parsed.emit(model_fp)
+        # Emit that parsing has started
+        self.signal_model_parsing_started.emit(model_fp)
 
 
     def get_in_model_info(self) -> NnModel:
@@ -567,14 +555,21 @@ class Controller(QObject):
     def event_inject_metadata(self, action: dict[str, str | dict[str, str]]) -> None:
         self.in_model.metadata = action['metadata'].copy()
         model_fp: str = action['filepath']
-        # try:
-        save_as(model_fp=model_fp, model=self.in_model, autonaming=False)
-        # except Exception as e:
-        #     self.signal_task_ended.emit(str(e))
-        #     return
+        alog.debug(f"inject metadata: {model_fp}")
 
-        self.parse_model(model_fp)
-        self.signal_task_ended.emit("")
+        self.send_command(
+            {
+                "cmd": "inject",
+                "payload": {
+                    "in_model_fp": self.in_model.filepath,
+                    "out_model_fp": model_fp,
+                    "metadata": self.in_model.metadata,
+                }
+            }
+        )
+
+        # Emit that injection has started
+        self.signal_model_injection_started.emit(model_fp)
 
 
     def emit_start_signal(self, cancellable: bool, out_model_fp: str) -> None:
@@ -633,62 +628,36 @@ class Controller(QObject):
         self.in_model.metadata = settings['metadata']
         exception: str = ""
         to: str = settings['to']
-
-        self.send_command({"cmd": "convert", "payload": settings})
+        out_model_fp: str = ""
 
         if to == 'safetensors':
             out_model_fp: str = os.path.join(
                 settings['out_dir'], f"{path_basename(self.in_model.filepath)}.safetensors"
             )
-            self.emit_start_signal(False, out_model_fp)
-            try:
-                os.makedirs(settings['out_dir'], exist_ok=True)
-                save_as(model_fp=out_model_fp, model=self.in_model)
-            except Exception as e:
-                exception = str(e)
 
-        elif to == 'onnx':
-            # use the first gpu that supports fp16. Requires sysinfo
-            args = settings['values']
-            device: str = 'cpu'
-            if args['dtype'] != 'fp32':
-                device = 'cuda:0'
+        self.send_command(
+            {
+                "cmd": "convert",
+                "payload": {
+                    'in_model_fp': self.in_model.filepath,
+                    'out_model_fp': out_model_fp,
+                    'settings': settings,
+                }
 
-            common_kwargs = dict(
-                model=self.in_model,
-                opset=args['opset'],
-                dtype=args['dtype'],
-                device=device,
-                shape_strategy=ShapeStrategy(
-                    type=args['shape_strategy'],
-                    opt_size=args['shape']
-                ),
-                out_dir=settings['out_dir'],
-            )
+            }
+        )
 
-            out_model_fp = generate_out_model_fp(to=NnFrameworkType.ONNX, **common_kwargs)
-            self.emit_start_signal(False, out_model_fp)
-            alog.debug(f"out model: {out_model_fp}")
+        self.emit_start_signal(False, out_model_fp)
 
-            try:
-                nnlib.convert_to_onnx(**common_kwargs)
-            except Exception as e:
-                exception = str(e)
 
-        elif to == 'tensorrt':
-            exception = self.convert_to_tensorrt(settings)
+        # self.signal_task_ended.emit(exception)
+        # if exception:
+        #     alog.error(exception)
+        #     self.emit_cancelled_signal()
+        # else:
+        #     self.emit_ended_signal()
 
-        else:
-            exception = f"NotImplementedError: conversion to {to}"
-
-        self.signal_task_ended.emit(exception)
-        if exception:
-            alog.error(exception)
-            self.emit_cancelled_signal()
-        else:
-            self.emit_ended_signal()
-
-        self.in_model.metadata = saved_metadata
+        # self.in_model.metadata = saved_metadata
 
 
     def convert_to_tensorrt(self, settings: dict[str, str | dict[str, Any]]) -> str:

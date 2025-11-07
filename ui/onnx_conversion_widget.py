@@ -158,7 +158,6 @@ class OnnxConversionWidget(QWidget, Ui_OnnxConversionWidget):
 
     def set_shape_size_enabled(self, strategy: ShapeStrategyName) -> None:
         # Signals must be blocked before calling
-        print(lightcyan(f"set_shape_size_enabled: {strategy}"))
         if strategy == 'static':
             self.spinbox_w.setEnabled(True)
             self.spinbox_h.setEnabled(True)

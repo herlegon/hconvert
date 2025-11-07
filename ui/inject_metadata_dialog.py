@@ -52,21 +52,21 @@ def inject_metadata_dialog(parent: QWidget, model_fp: str) -> str | None:
                                 f"The directory '{directory}' is not writable.")
             return None
 
-        if os.path.exists(selected_path):
-            if not os.access(selected_path, os.W_OK):
-                QMessageBox.warning(parent, "Permission Error",
-                                    f"The file '{filename}' is not writable.")
-                return None
+        # if os.path.exists(selected_path):
+        #     if not os.access(selected_path, os.W_OK):
+        #         QMessageBox.warning(parent, "Permission Error",
+        #                             f"The file '{filename}' is not writable.")
+        #         return None
 
-            reply = QMessageBox.question(
-                parent,
-                "Overwrite File?",
-                f"The file '{filename}' already exists.\nDo you want to overwrite it?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No
-            )
-            if reply != QMessageBox.StandardButton.Yes:
-                return None
+        #     reply = QMessageBox.question(
+        #         parent,
+        #         "Overwrite File?",
+        #         f"The file '{filename}' already exists.\nDo you want to overwrite it?",
+        #         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        #         QMessageBox.StandardButton.No
+        #     )
+        #     if reply != QMessageBox.StandardButton.Yes:
+        #         return None
 
         return selected_path
 

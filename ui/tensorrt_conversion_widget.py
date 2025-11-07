@@ -469,7 +469,6 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
     def shape_strategy_changed(self, key: Literal['fixed', 'static', 'dynamic']) -> None:
         """User action to set from/to dynamic, fixed/static
         """
-        print(f"\nBUtton state changed: {key}")
         were_blocked = self.signals_blocked()
         if not were_blocked:
             self.block_signals(True)
@@ -478,8 +477,8 @@ class TensorRTConversionWidget(QWidget, Ui_TensorRTConversionWidget):
         to_fixed: bool = bool(key == 'fixed')
         to_static: bool = bool(key == 'static')
 
-        print(purple(f"shape_strategy_changed:"))
-        print(f"{previous_strategy} -> {'fixed' if to_fixed else ''}{'static' if to_static else ''}{'dynamic' if to_dynamic else ''}")
+        alog.debug(purple(f"shape_strategy_changed:"))
+        alog.debug(f"{previous_strategy} -> {'fixed' if to_fixed else ''}{'static' if to_static else ''}{'dynamic' if to_dynamic else ''}")
 
         if previous_strategy in ('', 'dynamic') and (to_fixed or to_static):
             # dynamic -> fixed

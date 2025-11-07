@@ -10,7 +10,7 @@ import websockets
 from hutils import lightcyan, lightgreen, yellow
 from utils import send_json
 from telemetry import telemetry_loop
-from messages import WorkerCommand, WorkerEvent
+from messages import WorkerCommand, WorkerResponse
 from websockets import (
     ServerConnection,
     connect,
@@ -29,28 +29,35 @@ shutdown_event = asyncio.Event()
 
 
 
-async def forward_events(ws: ServerConnection, event_queue: multiprocessing.Queue):
+async def forward_events(
+    ws: ServerConnection,
+    event_queue: multiprocessing.Queue
+):
     """Forward WorkerEvent objects to frontend as JSON."""
     try:
         while True:
             try:
-                event: WorkerEvent = event_queue.get_nowait()
+                event: WorkerResponse = event_queue.get_nowait()
             except Exception:
                 await asyncio.sleep(0.1)
+                continue
+
+            if event is None:
                 continue
 
             try:
                 msg: dict = {
                     "type": event.type,
-                    "data": event.data
+                    "payload": event.payload
                 }
-                print(lightcyan(f"send:"), msg)
+                slog.debug(f"{lightcyan(f"send:")} {event.type}")
                 await send_json(ws, msg)
             except websockets.ConnectionClosed:
                 # Client disconnected, exit loop
                 break
             except Exception as e:
                 slog.warning(f"Failed to forward event: {e}")
+
     except asyncio.CancelledError:
         # Task was cancelled (on client disconnect)
         pass
@@ -85,24 +92,18 @@ async def handle_client(ws: ServerConnection):
             if cmd == "heartbeat":
                 await send_json(ws, {"type": "pong"})
 
-            elif cmd == "short_task":
-                # Example of a small task (<5s)
-                result = {"type": "result", "data": {"value": "ok"}}
-                await send_json(ws, result)
-
             # elif cmd == "long_task":
             #     # Here dispatch to worker process
             #     result = await run_long_task_async(data.get("params", {}))
             #     await send_json(ws, {"type": "result", "data": result})
 
             elif cmd == "shutdown":
-                print(lightcyan(cmd))
-                slog.info("Shutdown command received from client")
+                slog.info(lightcyan("Shutdown command received from client"))
                 shutdown_event.set()
                 break
 
             elif cmd == "parse":
-                slog.info(f"parse model: {data}")
+                slog.info(lightcyan(f"parse model: {data}"))
                 nn_cmd_queue.put(
                     WorkerCommand(
                         cmd=cmd,
@@ -110,6 +111,24 @@ async def handle_client(ws: ServerConnection):
                     )
                 )
 
+            elif cmd == "inject":
+                slog.info(lightcyan(f"inject metadata: {data}"))
+                nn_cmd_queue.put(
+                    WorkerCommand(
+                        cmd=cmd,
+                        payload=data.get('payload', {})
+                    )
+                )
+
+
+            elif cmd == "convert":
+                slog.info(lightcyan(f"convert model: {data}"))
+                nn_cmd_queue.put(
+                    WorkerCommand(
+                        cmd=cmd,
+                        payload=data.get('payload', {})
+                    )
+                )
 
             else:
                 slog.warning(f"Unknown command: {cmd}")
