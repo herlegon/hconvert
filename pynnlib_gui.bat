@@ -60,7 +60,7 @@ echo Launching PyNNLib GUI..
 @REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact.safetensors
 @REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact_cc8.9_op20_fp16_fixed_720x540_weak_10.13.3.9.trtzip
 
-python pynnlib_gui.py --model A:\ml_models\fastDAT\2x_animefilm_light_161k_op21_fp16_static_720x540.onnx
+python pynnlib_gui.py --dev --model A:\ml_models\fastDAT\2x_animefilm_light_161k_op21_fp16_static_720x540.onnx
 
 
 

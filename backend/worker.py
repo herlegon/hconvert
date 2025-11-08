@@ -1,11 +1,10 @@
-
-import multiprocessing
-import os
-from typing import Any
-from hutils import yellow
-from messages import WorkerCommand, WorkerResponse
-import multiprocessing
+from pprint import pprint
+from hutils import red, yellow
 from logger import slog
+from messages import WorkerCommand, WorkerResponse
+import multiprocessing as mp
+import os
+from typing import Any, Literal
 
 from pynnlib import (
     NnModel,
@@ -20,131 +19,169 @@ from nnlib_helpers import (
 )
 
 
-nn_cmd_queue = multiprocessing.Queue()
-nn_event_queue = multiprocessing.Queue()
+WorkerTask = Literal[
+    'shutdown',
+    'parse',
+    'inject',
+    'convert',
+]
+worker_task_list = list(WorkerTask.__args__)
+
+class Worker(mp.Process):
+    """Worker process that executes long-running tasks"""
+    def __init__(
+        self,
+        task_queue: mp.Queue,
+        result_queue: mp.Queue,
+        stop_event: mp.Event
+    ):
+        super().__init__()
+        self.task_queue = task_queue
+        self.result_queue = result_queue
+        self.stop_event = stop_event
+
+        self.model: NnModel = None
 
 
-def nnlib_worker(
-    cmd_queue: multiprocessing.Queue,
-    event_queue: multiprocessing.Queue
-):
-    """
-    Persistent worker for short tasks (<5s).
-    """
-    in_model: NnModel = None
+    def run(self):
+        print("Worker process started", flush = True)
+        slog.info("Worker process started")
 
-    while True:
-        if True:
-        # try:
-            cmd: WorkerCommand = cmd_queue.get()
-            payload: dict | None = cmd.payload
+        while True:
+            try:
+                msg: dict = self.task_queue.get()
+                print(f"received: {msg}")
+                task_name: WorkerTask = msg['cmd']
+                payload: dict | None = msg.get('payload', {})
 
-            if cmd.cmd == "shutdown":
-                break
+                # Route to appropriate task handler
+                if task_name == 'shutdown':
+                    print(yellow("received shutdown"))
+                    break
 
+                elif task_name == 'parse':
+                    self.handle_parse(payload)
 
-            elif cmd.cmd == "parse":
-                response, in_model = parse_model(payload=payload)
-                print(yellow("add to queue:"), response)
-                event_queue.put(response)
+                elif task_name == 'inject':
+                    self.handle_inject(payload)
 
+                elif task_name == 'convert':
+                    self.handle_convert(payload)
 
-            elif cmd.cmd == "inject":
-                # Load the model if not the current one
-                in_model_fp = payload.get("in_model_fp")
-                if in_model is None or in_model_fp != in_model.filepath:
-                    slog.warning("reopen:")
-                    device = payload.get("device", "cpu")
-                    in_model: NnModel = nnlib.open(
-                        in_model_fp,
-                        device=device
+                else:
+                    self.send_result(
+                        WorkerResponse(
+                            type="error",
+                            payload=f"Unknown task: {task_name}"
+                        )
                     )
 
-                # Inject metadata, get the updated model
-                response, in_model = inject_metadata(
-                    payload=payload, model=in_model
-                )
-                event_queue.put(response)
+            except Exception as e:
+                print(red(f"nnlib_worker: uncaught exception: {str(e)}"))
+                # WorkerResponse(
+                #     type="error",
+                #     payload=f"system: {str(e)}"
+                # )
+
+        print(yellow(f"Terminated nnlib_worker"))
 
 
-            elif cmd.cmd == "convert":
-                settings: dict[str, str | dict[str, Any]] = cmd.payload.get("settings")
 
-                # Load the model if not the current one
-                in_model_fp = payload.get("in_model_fp")
-                if in_model is None or in_model_fp != in_model.filepath:
-                    slog.warning("reopen:")
-                    in_model: NnModel = nnlib.open(
-                        in_model_fp,
-                        device=settings.get('device')
-                    )
-
-                # Generate a dict used as arguments for the generation of the filepath
-                # and the conversion
-                common_kwargs = get_kwargs(model=in_model, settings=settings)
-
-                # Generate the filepath of the converted model
-                out_model_fp, exception = get_out_model_fp(payload, model=in_model)
-                if exception:
-                    event_queue.put(
-                        WorkerResponse(type="error", payload=exception)
-                    )
-                    continue
-
-                event_queue.put(
-                    WorkerResponse(
-                        type="progress",
-                        payload={
-                            'state': "started",
-                            'model_fp': out_model_fp
-                        }
-                    )
-                )
-
-                to: str = settings['to']
-                try:
-                    if to == 'safetensors':
-                        os.makedirs(settings['out_dir'], exist_ok=True)
-                        save_as(model_fp=out_model_fp, model=in_model)
-
-                    elif to == 'onnx':
-                        nnlib.convert_to_onnx(**common_kwargs)
-
-                    elif to == 'tensorrt':
-                        nnlib.convert_to_tensorrt(**common_kwargs)
-
-                except Exception as e:
-                    exception = str(e)
-                    slog.error(exception)
-                    response = WorkerResponse(type="error", payload=exception)
-                    continue
+    def send_result(self, response: WorkerResponse):
+        """Send result back to server"""
+        print("worker: send result:", type(response))
+        self.result_queue.put(response)
 
 
-                event_queue.put(
-                    WorkerResponse(
-                        type="progress",
-                        payload={
-                            'state': "ended",
-                            'model_fp': out_model_fp
-                        }
-                    )
-                )
+    def should_stop(self) -> bool:
+        """Check if task should stop"""
+        return self.stop_event.is_set()
 
 
-        # except Exception as e:
-        #     print(f"nnlib_worker: uncaught exception: {str(e)}")
-        #     WorkerResponse(
-        #         type="error",
-        #         payload=f"system: {str(e)}"
-        #     )
-
-    print(yellow(f"Terminated nnlib_worker"))
+    def handle_parse(self, payload: dict) -> None:
+        response, model = parse_model(payload=payload)
+        self.model = model
+        print(yellow("add to queue:"), response)
+        self.send_result(response)
 
 
-nn_worker = multiprocessing.Process(
-    target=nnlib_worker,
-    name="nnlib_worker",
-    args=(nn_cmd_queue, nn_event_queue),
-)
-nn_worker.start()
+    def handle_inject(self, payload: dict) -> None:
+        # Load the model if not the current one
+        in_model_fp = payload.get("in_model_fp")
+        if self.model is None or in_model_fp != self.model.filepath:
+            slog.warning("reopen:")
+            device = payload.get("device", "cpu")
+            self.model: NnModel = nnlib.open(
+                in_model_fp,
+                device=device
+            )
+
+        # Inject metadata, get the updated model
+        response, self.model = inject_metadata(
+            payload=payload, model=self.model
+        )
+        self.send_result(response)
+
+
+    def handle_convert(self, payload: dict) -> None:
+        settings: dict[str, str | dict[str, Any]] = payload.get("settings")
+
+        # Load the model if not the current one
+        in_model_fp = payload.get("in_model_fp")
+        if self.model is None or in_model_fp != self.model.filepath:
+            slog.warning("reopen:")
+            self.model: NnModel = nnlib.open(
+                in_model_fp,
+                device=settings.get('device')
+            )
+
+        # Generate a dict used as arguments for the generation of the filepath
+        # and the conversion
+        common_kwargs = get_kwargs(model=self.model, settings=settings)
+
+        # Generate the filepath of the converted model
+        out_model_fp, exception = get_out_model_fp(payload, model=self.model)
+        if exception:
+            self.send_result(
+                WorkerResponse(type="error", payload=exception)
+            )
+            return
+
+        self.send_result(
+            WorkerResponse(
+                type="progress",
+                payload={
+                    'state': "started",
+                    'model_fp': out_model_fp
+                }
+            )
+        )
+
+        to: str = settings['to']
+        try:
+            if to == 'safetensors':
+                os.makedirs(settings['out_dir'], exist_ok=True)
+                save_as(model_fp=out_model_fp, model=self.model)
+
+            elif to == 'onnx':
+                nnlib.convert_to_onnx(**common_kwargs)
+
+            elif to == 'tensorrt':
+                nnlib.convert_to_tensorrt(**common_kwargs)
+
+        except Exception as e:
+            exception = str(e)
+            slog.error(exception)
+            self.send_result(WorkerResponse(type="error", payload=exception))
+            return
+
+        self.send_result(
+            WorkerResponse(
+                type="progress",
+                payload={
+                    'state': "ended",
+                    'model_fp': out_model_fp
+                }
+            )
+        )
 

@@ -240,7 +240,9 @@ class Controller(QObject):
     def _loop_runner(self):
         try:
             asyncio.set_event_loop(self._loop)
-            self._loop.run_until_complete(self._main())
+            result = self._loop.run_until_complete(self._main())
+            if result is not None:
+                alog.info(f"Controller _main result: {result}")
 
         except Exception as e:
             self.signal_log.emit(f"Controller loop crashed: {e}")
@@ -290,6 +292,7 @@ class Controller(QObject):
 
         # Send a shutdown command to the backend (if needed)
         if self._ws:
+            print(yellow(f"{__class__.__name__} shutdown"))
             try:
                 shutdown_command = {"cmd": "shutdown"}  # Example shutdown command
                 asyncio.run_coroutine_threadsafe(self.send(shutdown_command), self._loop)
@@ -374,13 +377,14 @@ class Controller(QObject):
 
             except Exception as e:
                 retries += 1
-                await asyncio.sleep(3)
+                # await asyncio.sleep(3)
                 alog.error(f"Connection error ({retries}): {e}")
                 self.signal_log.emit(f"Connection error ({retries}): {e}")
 
                 # Stop controller loop until GUI decides
                 self._running = False
                 self._ws = None
+                await asyncio.sleep(3)
 
             finally:
                 try:
@@ -439,6 +443,7 @@ class Controller(QObject):
 
         elif msg_type == "error":
             print(red("DO IT RIGHT NOW"))
+            print(payload)
 
 
         elif msg_type == "parsed":
