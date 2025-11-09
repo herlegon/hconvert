@@ -1,4 +1,6 @@
 from pprint import pprint
+import queue
+import signal
 from hutils import red, yellow
 from logger import slog
 from messages import WorkerCommand, WorkerResponse
@@ -44,12 +46,15 @@ class Worker(mp.Process):
 
 
     def run(self):
+        # Ignore KeyboardInterrupt inside the worker
+        # signal.signal(signal.SIGINT, signal.SIG_IGN)
+
         print("Worker process started", flush = True)
         slog.info("Worker process started")
 
-        while True:
+        while not self.stop_event.is_set():
             try:
-                msg: dict = self.task_queue.get()
+                msg: dict = self.task_queue.get(timeout=1)
                 print(f"received: {msg}")
                 task_name: WorkerTask = msg['cmd']
                 payload: dict | None = msg.get('payload', {})
@@ -75,6 +80,9 @@ class Worker(mp.Process):
                             payload=f"Unknown task: {task_name}"
                         )
                     )
+
+            except queue.Empty:
+                continue
 
             except Exception as e:
                 print(red(f"nnlib_worker: uncaught exception: {str(e)}"))
