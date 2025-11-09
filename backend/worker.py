@@ -1,7 +1,7 @@
 from pprint import pprint
 import queue
 import signal
-from hutils import red, yellow
+from hutils import purple, red, yellow
 from logger import slog
 from messages import WorkerCommand, WorkerResponse
 import multiprocessing as mp
@@ -38,30 +38,28 @@ class Worker(mp.Process):
         stop_event: mp.Event
     ):
         super().__init__()
-        self.task_queue = task_queue
-        self.result_queue = result_queue
-        self.stop_event = stop_event
+        self.task_queue: mp.Queue = task_queue
+        self.result_queue: mp.Queue = result_queue
+        self.stop_event: mp.Event = stop_event
 
         self.model: NnModel = None
 
 
     def run(self):
         # Ignore KeyboardInterrupt inside the worker
-        # signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-        print("Worker process started", flush = True)
-        slog.info("Worker process started")
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        slog.info(purple(f"[{self.pid}] ℹ️  worker process started"))
 
         while not self.stop_event.is_set():
             try:
-                msg: dict = self.task_queue.get(timeout=1)
-                print(f"received: {msg}")
+                msg: dict = self.task_queue.get(timeout=0.2)
+                print(purple(f"worker, received: {msg}"))
                 task_name: WorkerTask = msg['cmd']
                 payload: dict | None = msg.get('payload', {})
 
                 # Route to appropriate task handler
                 if task_name == 'shutdown':
-                    print(yellow("received shutdown"))
+                    slog.info(purple(f"[{self.pid}] ℹ️  received shutdown"))
                     break
 
                 elif task_name == 'parse':
@@ -85,14 +83,19 @@ class Worker(mp.Process):
                 continue
 
             except Exception as e:
-                print(red(f"nnlib_worker: uncaught exception: {str(e)}"))
+                print(purple(f"[{self.pid}] ❌ uncaught exception: {str(e)}"))
                 # WorkerResponse(
                 #     type="error",
                 #     payload=f"system: {str(e)}"
                 # )
 
-        print(yellow(f"Terminated nnlib_worker"))
+        slog.info(purple(f"[{self.pid}] ℹ️ terminated"))
 
+
+
+    def do_stop(self) -> bool:
+        """Check if task should stop"""
+        return self.stop_event.is_set()
 
 
     def send_result(self, response: WorkerResponse):
@@ -101,15 +104,9 @@ class Worker(mp.Process):
         self.result_queue.put(response)
 
 
-    def should_stop(self) -> bool:
-        """Check if task should stop"""
-        return self.stop_event.is_set()
-
-
     def handle_parse(self, payload: dict) -> None:
         response, model = parse_model(payload=payload)
         self.model = model
-        print(yellow("add to queue:"), response)
         self.send_result(response)
 
 
@@ -117,7 +114,7 @@ class Worker(mp.Process):
         # Load the model if not the current one
         in_model_fp = payload.get("in_model_fp")
         if self.model is None or in_model_fp != self.model.filepath:
-            slog.warning("reopen:")
+            slog.info(f"[{self.pid}] ℹ️ reopen {in_model_fp}")
             device = payload.get("device", "cpu")
             self.model: NnModel = nnlib.open(
                 in_model_fp,
@@ -137,7 +134,7 @@ class Worker(mp.Process):
         # Load the model if not the current one
         in_model_fp = payload.get("in_model_fp")
         if self.model is None or in_model_fp != self.model.filepath:
-            slog.warning("reopen:")
+            slog.info(f"[{self.pid}] ℹ️ reopen {in_model_fp}")
             self.model: NnModel = nnlib.open(
                 in_model_fp,
                 device=settings.get('device')
@@ -179,7 +176,7 @@ class Worker(mp.Process):
 
         except Exception as e:
             exception = str(e)
-            slog.error(exception)
+            slog.error(purple(f"❌ [{exception}"))
             self.send_result(WorkerResponse(type="error", payload=exception))
             return
 

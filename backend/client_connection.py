@@ -5,13 +5,14 @@ import json
 import multiprocessing as mp
 import os
 from pprint import pprint
+import queue
 import websockets
 from messages import WorkerResponse
 from worker import (
     Worker,
     worker_task_list,
 )
-from hutils import lightcyan, red, yellow
+from hutils import lightblue, lightcyan, purple, red, yellow
 from websockets import (
     ServerConnection,
     connect,
@@ -46,7 +47,7 @@ class ClientConnectionHandler:
 
         # websocket
         self.server_connection = server_connection
-        self.client_id = client_id
+        self.client_id = f"{client_id[:7]}"
         self.server = server
 
         # Async queues for websocket I/O
@@ -69,24 +70,24 @@ class ClientConnectionHandler:
         try:
             msg = json.loads(msg)
         except json.JSONDecodeError:
-            slog.warning(f"Received invalid JSON: {msg}")
+            slog.warning(f"⚠️ Received invalid JSON: {msg}")
             return
 
         cmd: str = msg.get("cmd", "")
-        print(lightcyan(f"<<< {cmd}"))
+        print(lightblue(f"<<< {cmd}"))
 
         if cmd == "heartbeat":
             await self.to_client.put(WorkerResponse(type="pong"))
 
         elif cmd == "shutdown":
-            print(lightcyan("shutdown"))
+            print(purple("shutdown"))
             await self.stop()
 
         elif cmd in worker_task_list:
             self.submit_task_to_worker(self.worker_name, msg)
 
         else:
-            slog.warning(f"[Handler {self.client_id}] Unknown message type: {cmd}")
+            slog.warning(lightblue(f"[{self.client_id}] ⚠️ Unknown message type: {cmd}"))
 
 
     async def reception_task(self):
@@ -98,20 +99,20 @@ class ClientConnectionHandler:
                 await self.route_message(msg)
 
         except asyncio.CancelledError:
-            slog.debug(f"[Handler {self.client_id}] Reception task cancelled")
+            slog.debug(f"[{self.client_id}] Reception task cancelled")
             raise
 
         except websockets.ConnectionClosedOK:
-            slog.info(f"[Handler {self.client_id}] connection closed")
+            slog.info(lightblue(f"[{self.client_id}] connection closed"))
 
         except websockets.ConnectionClosedError as e:
-            slog.warning(f"[Handler {self.client_id}] disconnected with error {e}")
+            slog.warning(lightblue(f"[{self.client_id}] ⚠️  disconnected with error {e}"))
 
         except Exception as e:
-            slog.warning(f"[Handler {self.client_id}] exception while running reception handler {e}")
+            slog.warning(lightblue(f"[{self.client_id}] ⚠️  exception while running reception handler {e}"))
 
         finally:
-            slog.info(f"[Handler {self.client_id}] Reception task ended")
+            slog.info(lightblue(f"[{self.client_id}] ℹ️  Reception task ended"))
 
 
     async def send_task(self):
@@ -128,21 +129,21 @@ class ClientConnectionHandler:
                 await self.server_connection.send(json.dumps(msg))
 
             except asyncio.TimeoutError:
+                # No message in queue, check closing and continue
                 continue
 
             except asyncio.CancelledError:
-                slog.debug(f"[Handler {self.client_id}] Sending task cancelled")
-                raise
+                slog.debug(lightblue(f"[{self.client_id}] Sending task cancelled"))
+                break
 
             except websockets.ConnectionClosed:
-                slog.info(f"[Handler {self.client_id}] Connection closed while sending")
-                self.running = False
+                slog.info(lightblue(f"[{self.client_id}] Connection closed while sending"))
                 break
 
             except Exception as e:
-                slog.error(f"[Handler {self.client_id}] Failed to send message: {e}")
+                slog.error(lightblue(f"❌  [{self.client_id}] Failed to send message: {e}"))
 
-        slog.info(f"[Handler {self.client_id}] Send task ended")
+        slog.info(lightblue(f"[{self.client_id}] ℹ️  Send task ended"))
 
 
     async def handle(self):
@@ -150,8 +151,7 @@ class ClientConnectionHandler:
         Start the send/recv loops for this client.
         Returns when the client disconnects or stop() is called.
         """
-        self.running = True
-        slog.info(f"[Handler {self.client_id}] Handler started")
+        slog.info(lightblue(f"[{self.client_id}] ℹ️  handler started"))
 
         # Start websocket loops
         reception_task = asyncio.create_task(self.reception_task())
@@ -160,9 +160,9 @@ class ClientConnectionHandler:
         self.tasks = [reception_task, send_task]
 
         # Start worker result loop(s)
-        for name in self.workers.keys():
-            worker_task = asyncio.create_task(self.worker_result_loop(name))
-            self.tasks.append(worker_task)
+        # for name in self.workers.keys():
+        #     worker_task = asyncio.create_task(self.worker_result_loop(name))
+        #     self.tasks.append(worker_task)
 
         try:
             # Wait for any task to complete (likely due to disconnect or error)
@@ -171,28 +171,27 @@ class ClientConnectionHandler:
                 return_when=asyncio.FIRST_COMPLETED
             )
 
-            slog.info(f"[Handler {self.client_id}] First task completed, stopping others")
+            slog.info(lightblue(f"[{self.client_id}] First task completed, stopping others"))
 
         except asyncio.CancelledError:
-            slog.info(f"[Handler {self.client_id}] Handler tasks cancelled")
+            slog.info(lightblue(f"[{self.client_id}] Handler tasks cancelled"))
 
         except Exception as e:
-            slog.error(f"[Handler {self.client_id}] Exception in handler: {e}")
+            slog.error(lightblue(f"❌  [{self.client_id}] Exception in handler: {e}"))
 
         finally:
-            await self.close()
+            if not self.closing:
+                await self.close()
 
-        slog.info(f"[Handler {self.client_id}] Handler ended")
+        slog.info(lightblue(f"[{self.client_id}] ℹ️  handler ended"))
 
 
 
     async def shutdown_websocket(self):
         """Stop all tasks and workers for this client."""
         if self.closing:
-            slog.info(f"[Handler {self.client_id}] Already closing")
+            slog.info(lightblue(f"[{self.client_id}] ⚠️ Already closing"))
             return
-
-        self.closing = True
 
         # Optional: notify client of shutdown
         # try:
@@ -207,11 +206,11 @@ class ClientConnectionHandler:
         #         })),
         #         timeout=1.0
         #     )
-        #     slog.info(f"[Handler {self.client_id}] Sent shutdown notification to client")
+        #     slog.info(f"[{self.client_id}] Sent shutdown notification to client")
         # except (websockets.ConnectionClosed, asyncio.TimeoutError):
-        #     slog.info(f"[Handler {self.client_id}] Client already disconnected")
+        #     slog.info(f"[{self.client_id}] Client already disconnected")
         # except Exception as e:
-        #     slog.warning(f"[Handler {self.client_id}] Failed to send shutdown message: {e}")
+        #     slog.warning(f"[{self.client_id}] Failed to send shutdown message: {e}")
 
         # Close the websocket connection
         try:
@@ -219,13 +218,13 @@ class ClientConnectionHandler:
                 self.server_connection.close(code=1000, reason="Server shutting down"),
                 timeout=1.0
             )
-            slog.info(f"[Handler {self.client_id}] WebSocket closed")
+            slog.info(lightblue(f"[{self.client_id}] ⚠️ shutdown_websocket: WebSocket closed"))
 
         except asyncio.TimeoutError:
-            slog.warning(f"[Handler {self.client_id}] WebSocket close timed out")
+            slog.warning(lightblue(f"[{self.client_id}] ⚠️ shutdown_websocket: WebSocket close timed out"))
 
         except Exception as e:
-            slog.warning(f"[Handler {self.client_id}] Error closing WebSocket: {e}")
+            slog.error(lightblue(f"[{self.client_id}] ❌  shutdown_websocket: Error closing WebSocket: {e}"))
 
         await asyncio.sleep(0.05)
 
@@ -245,7 +244,7 @@ class ClientConnectionHandler:
                     task.cancel()
                     cancelled_tasks.append(task)
                 except Exception as e:
-                    slog.warning(f"[Handler {self.client_id}] Error cancelling task {i}: {e}")
+                    slog.warning(f"[{self.client_id}] ⚠️ Error cancelling task {i}: {e}")
 
         # Wait for cancelled tasks with timeout
         if cancelled_tasks:
@@ -255,18 +254,13 @@ class ClientConnectionHandler:
                     timeout=1.0
                 )
             except asyncio.TimeoutError:
-                slog.warning(f"[Handler {self.client_id}] Task cancellation timed out")
+                slog.warning(f"[{self.client_id}] ⚠️ Task cancellation timed out")
             except Exception as e:
-                slog.warning(f"[Handler {self.client_id}] Error gathering tasks: {e}")
+                slog.warning(f"[{self.client_id}] ⚠️ Error gathering tasks: {e}")
 
-            slog.info(f"[Handler {self.client_id}] All async tasks stopped")
+            slog.info(lightblue(f"[{self.client_id}] ℹ️  All async tasks stopped"))
 
-
-        # Step 5: Stop all workers gracefully
-        await self.stop_workers()
-
-        slog.info(f"[Handler {self.client_id}] Stop sequence complete")
-
+        slog.info(lightblue(f"[{self.client_id}] ℹ️  Stop sequence complete"))
 
 
     def start_worker(self, name: str):
@@ -274,70 +268,31 @@ class ClientConnectionHandler:
         Create and start a worker process.
         """
         if name in self.workers and self.workers[name]['worker'].is_alive():
-            print(f"Worker {name} already running")
+            slog.warning(lightblue(f"[{self.client_id}] ⚠️ Worker {name} already running"))
             return
 
         task_queue = mp.Queue()
-        result_queues = mp.Queue()
+        result_queue = mp.Queue()
         try:
             worker = Worker(
                 task_queue=task_queue,
-                result_queue=result_queues,
+                result_queue=result_queue,
                 stop_event=self.stop_event
             )
             worker.start()
         except Exception as e:
-            slog.error(f"Failed to start worker \'{name}\'")
+            slog.error(f"[{self.client_id}] ❌  Failed to start worker \'{name}\'")
             return
 
         self.workers[name] = {
             'worker': worker,
             'task_queue': task_queue,
-            'result_queues': result_queues,
+            'result_queue': result_queue,
         }
 
         # Start async loop to forward results from this worker
         self.tasks.append(asyncio.create_task(self.worker_result_loop(name)))
-        print(f"[Handler {self.client_id}] Worker {name} started")
-
-
-    async def worker_result_loop(self, name: str):
-        """
-        Async loop to forward worker results to the to_client queue.
-        """
-        loop = asyncio.get_running_loop()
-        result_queue = self.result_queues.get(name)
-
-        if not result_queue:
-            slog.error(f"[Handler {self.client_id}] No result queue for worker {name}")
-            return
-
-        while self.running:
-            try:
-                # Use a short timeout to allow checking self.running
-                result = await asyncio.wait_for(
-                    loop.run_in_executor(None, result_queue.get, True, 0.5),
-                    timeout=1.0
-                )
-
-                if self.running:
-                    await self.to_client.put(result)
-
-            except asyncio.TimeoutError:
-                # Normal timeout, continue loop
-                continue
-
-            except asyncio.CancelledError:
-                slog.info(f"[Handler {self.client_id}] Worker result loop cancelled for {name}")
-                break
-
-            except Exception as e:
-                if self.running:
-                    slog.error(f"[Handler {self.client_id}] Error in worker result loop: {e}")
-                break
-
-        slog.info(f"[Handler {self.client_id}] Worker result loop for {name} ended")
-
+        slog.info(lightblue(f"[{self.client_id}] ℹ️  Worker {name} started: {worker.pid}"))
 
 
     def submit_task_to_worker(self, name: str, task):
@@ -346,18 +301,66 @@ class ClientConnectionHandler:
         """
         if not name:
             # Get the first key from the dictionary if 'name' is not provided
-            name = next(iter(self.task_queues), "")
+            name = next(iter(self.workers), "")
 
         if (
             name
-            and name in self.task_queues
+            and name in self.workers
             and task is not None
         ):
             try:
-                self.task_queues[name].put(task, block=False)
-            except Exception as e:
-                slog.error(f"[Handler {self.client_id}] Failed to submit task to worker {name}: {e}")
+                task_queue: mp.Queue = self.workers[name]['task_queue']
+                task_queue.put(task, block=False)
 
+            except Exception as e:
+                slog.error(lightblue(
+                    f"[{self.client_id}] ❌  failed to submit task to worker {name}: {str(e)}"
+                ))
+
+
+    async def worker_result_loop(self, name: str):
+        """
+        Async loop to forward worker results to the to_client queue.
+        """
+        slog.info(lightblue(f"[{self.client_id}] ℹ️  start a worker result loop"))
+
+        loop = asyncio.get_running_loop()
+        result_queue: mp.Queue = self.workers[name]['result_queue']
+
+        if not result_queue:
+            slog.error(lightblue(f"[{self.client_id}] ❌  No result queue for worker {name}"))
+            return
+
+        while not self.closing:
+            try:
+                # Use a short timeout to allow checking self.running
+                # Run blocking get() in a thread, with short timeout
+                result = await loop.run_in_executor(None, result_queue.get, True, 0.5)
+
+                if self.closing:
+                    break
+
+                await self.to_client.put(result)
+
+            except queue.Empty:
+                # Normal, no message to process
+                continue
+
+            except asyncio.TimeoutError:
+                # Normal timeout, continue loop
+                print("timeout, continue")
+                continue
+
+            except asyncio.CancelledError:
+                slog.warning(lightblue(f"[{self.client_id}] ⚠️  worker result loop cancelled for {name}"))
+                break
+
+            except Exception as e:
+                if not self.closing:
+                    slog.error(lightblue(f"❌  [{self.client_id}] Error in worker result loop: {str(e)}"))
+                break
+
+        slog.info(lightblue(f"[{self.client_id}] ℹ️  worker result loop for {name} ended"))
 
 
     def stop_worker(self, name: str, timeout: float = 2.0):
@@ -376,13 +379,13 @@ class ClientConnectionHandler:
 
         # If it's still alive, kill it hard
         if worker.is_alive():
-            slog.warning(f"Force killing worker {name}")
+            slog.warning(lightblue(f"[{self.client_id}] ⚠️ Force killing worker {name}"))
             worker.terminate()
             worker.join(timeout=timeout + 1)
 
             if worker.is_alive():
                 import signal
-                slog.warning(f"SIGKILLing stubborn worker {name}")
+                slog.warning(lightblue(f"[{self.client_id}] ⚠️ SIGKILLing stubborn worker {name}"))
                 os.kill(worker.pid, signal.SIGKILL)
 
         del self.workers[name]
@@ -396,10 +399,11 @@ class ClientConnectionHandler:
 
     async def stop_workers(self):
         """Stop all worker processes gracefully"""
-        if self.closing or not self.workers:
+        if not self.workers:
+            slog.info(lightblue(f"[{self.client_id}] No worker"))
             return
 
-        slog.info(f"[Handler {self.client_id}] Stopping {len(self.workers)} worker(s)")
+        slog.info(lightblue(f"[{self.client_id}] Stopping {len(self.workers)} worker(s)"))
         # Immediately set the shared event
         self.stop_event.set()
 
@@ -411,9 +415,9 @@ class ClientConnectionHandler:
                 pass
 
         # Stop each worker in parallel (force kill if needed)
-        timeout: float = 1.
+        timeout: float = 3.
         loop = asyncio.get_running_loop()
-        worker_names = list(self.workers.items())
+        worker_names = list(self.workers.keys())
         tasks = [
             loop.run_in_executor(None, self.stop_worker, name, timeout)
             for name in worker_names
@@ -423,23 +427,25 @@ class ClientConnectionHandler:
 
         for res in results:
             if isinstance(res, Exception):
-                print(f"Worker stop error: {res}")
+                print(lightblue(f"[{self.client_id}] ❌  worker stop error: {res}"))
             else:
-                print(res)
+                print(lightblue(f"[{self.client_id}] {res}"))
 
-        print("All workers stopped.")
+        slog.info(lightblue(f"[{self.client_id}] ℹ️  all workers stopped."))
 
 
     async def close(self):
         # Run websocket shutdown and worker stop in parallel
-        print(yellow(f"Close handler: {self.client_id}"))
-        await asyncio.gather(
-            self.shutdown_websocket(),
-            self.stop_workers(),
-            return_exceptions=True
-        )
+        if not self.closing:
+            self.closing = True
+            slog.info(lightblue(f"[{self.client_id}] ℹ️  close handler"))
+            await asyncio.gather(
+                self.shutdown_websocket(),
+                self.stop_workers(),
+                return_exceptions=True
+            )
 
-        slog.info(f"[Handler {self.client_id}] Handler fully closed")
+            slog.info(lightblue(f"[{self.client_id}] ℹ️  handler fully closed"))
 
 
 
