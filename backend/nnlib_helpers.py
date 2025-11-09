@@ -80,7 +80,7 @@ def inject_metadata(
             out_model_fp = payload.get("out_model_fp")
             device = payload.get("device")
 
-            slog.warning(f"save as: {out_model_fp}")
+            slog.info(f"save as: {out_model_fp}")
             model.metadata = metadata
             save_as(
                 model_fp=out_model_fp,
@@ -91,6 +91,7 @@ def inject_metadata(
             # Reload model
             slog.warning(f"parse generated model: {out_model_fp}")
             out_model: NnModel = nnlib.open(out_model_fp, device=device)
+
             model_dto = serialize_model(nn_model=out_model)
             dto_json = json.dumps(
                 model_dto,
