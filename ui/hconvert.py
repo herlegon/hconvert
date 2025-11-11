@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QApplication
 if sys.platform == "win32":
     import ctypes
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-        "pynnlib.gui"
+        "herlegon_convert.gui"
     )
 
 
@@ -38,7 +38,7 @@ def main():
     application = QApplication(sys.argv)
     QApplication.setStyle("Fusion")
 
-    from ui.main_window import MainWindow
+    from .main_window import MainWindow
     main_window = MainWindow(args=args)
     main_window.show()
 

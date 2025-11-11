@@ -15,7 +15,7 @@ from pynnlib import (
     ShapeStrategy,
     ShapeStrategyType,
     NnFrameworkType,
-    Idtype,
+    Hdtype,
     OnnxModel,
     PyTorchModel,
     TrtModel,
@@ -59,8 +59,8 @@ TARGET_CLASSES: tuple[tuple[Type, bool]] = (
 
 TYPE_ALIASES = (
     "ShapeStrategyType",
-    "Idtype",
-    "NnModelDtype",
+    "Hdtype",
+    "Hdtype",
     "NnArchitectureType",
     "NnArchitecture",
     "NnModel",

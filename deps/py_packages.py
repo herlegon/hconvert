@@ -20,7 +20,7 @@ from urllib.parse import unquote
 
 from .ext_packages import ExtPackage, download_package
 from utils.logger import logger
-from hutils import (
+from hytils import (
     get_app_tempdir,
     lightgrey,
 )

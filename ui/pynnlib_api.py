@@ -11,9 +11,9 @@ ShapeStrategyType = Literal[
     'dynamic'
 ]
 
-Idtype = Literal['fp32', 'fp16', 'bf16', 'int8']
+Hdtype = Literal['fp32', 'fp16', 'bf16', 'int8']
 
-NnModelDtype = Literal['fp32', 'fp16', 'bf16', 'int8']
+Hdtype = Literal['fp32', 'fp16', 'bf16', 'int8']
 
 NnArchitectureType: TypeAlias = str
 
@@ -84,13 +84,13 @@ class ShapeStrategy:
 
 @dataclass
 class OnnxConv:
-    dtypes: Set[Idtype] = field(default_factory=set)
+    dtypes: Set[Hdtype] = field(default_factory=set)
     shape_strategy_types: Set[ShapeStrategyType] = field(default_factory=set)
 
 
 @dataclass
 class TensorRTConv:
-    dtypes: Set[Idtype] = field(default_factory=set)
+    dtypes: Set[Hdtype] = field(default_factory=set)
     weak_typing: bool = False
     shape_strategy_types: Set[ShapeStrategyType] = field(default_factory=lambda: {'dynamic', 'fixed', 'static'})
 
@@ -100,7 +100,7 @@ class NnGenericArchitecture:
     name: str = 'unknown'
     type: NnArchitectureType = NnArchitectureType()
     category: str = 'unknown'
-    dtypes: list[Idtype] = field(default_factory=list)
+    dtypes: list[Hdtype] = field(default_factory=list)
     size_constraint: SizeConstraint = None
 
 
@@ -129,10 +129,10 @@ class GenericModel:
     scale: int = 0
     in_nc: int = 0
     out_nc: int = 0
-    io_dtypes: dict[Literal['input', 'output'], NnModelDtype] = field(default_factory=dict)
+    io_dtypes: dict[Literal['input', 'output'], Hdtype] = field(default_factory=dict)
     filepath: str = None
     device: str = 'cpu'
-    dtypes: list[NnModelDtype] = field(default_factory=list)
+    dtypes: list[Hdtype] = field(default_factory=list)
     force_weak_typing: bool = False
     metadata: dict[str, str] = field(default_factory=dict)
     shape_strategy: ShapeStrategy = field(default_factory=ShapeStrategy)

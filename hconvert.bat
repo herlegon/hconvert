@@ -48,19 +48,19 @@ if "%~1"=="--skip" (
 :: === MAIN EXECUTION ===
 echo Launching PyNNLib GUI..
 
-@REM python pynnlib_gui.py --model A:\ml_models\1x_Anime1080Fixer_SuperUltraCompact.pth
-@REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact.pth
-@REM python pynnlib_gui.py --model A:\ml_models\1x_Dehalo_Neutral_rplksrs_79k.pth
+@REM python .\ui\hconvert.py --model A:\ml_models\1x_Anime1080Fixer_SuperUltraCompact.pth
+@REM python .\ui\hconvert.py --model A:\ml_models\LDVDeNoise_35mm_Compact.pth
+@REM python .\ui\hconvert.py --model A:\ml_models\1x_Dehalo_Neutral_rplksrs_79k.pth
 
-@REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact_op20_fp16_static_640x480.onnx
-@REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact_cc8.9_op20_fp16_static_640x480_10.13.3.9.trtzip
-@REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact_op20_fp16.onnx
+@REM python .\ui\hconvert.py --model A:\ml_models\LDVDeNoise_35mm_Compact_op20_fp16_static_640x480.onnx
+@REM python .\ui\hconvert.py --model A:\ml_models\LDVDeNoise_35mm_Compact_cc8.9_op20_fp16_static_640x480_10.13.3.9.trtzip
+@REM python .\ui\hconvert.py --model A:\ml_models\LDVDeNoise_35mm_Compact_op20_fp16.onnx
 
-@REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact_cc8.9_op20_fp16_64x64_768x576_1920x1080_10.13.3.9.trtzip
-@REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact.safetensors
-@REM python pynnlib_gui.py --model A:\ml_models\LDVDeNoise_35mm_Compact_cc8.9_op20_fp16_fixed_720x540_weak_10.13.3.9.trtzip
+@REM python .\ui\hconvert.py --model A:\ml_models\LDVDeNoise_35mm_Compact_cc8.9_op20_fp16_64x64_768x576_1920x1080_10.13.3.9.trtzip
+@REM python .\ui\hconvert.py --model A:\ml_models\LDVDeNoise_35mm_Compact.safetensors
+@REM python .\ui\hconvert.py --model A:\ml_models\LDVDeNoise_35mm_Compact_cc8.9_op20_fp16_fixed_720x540_weak_10.13.3.9.trtzip
 
-python pynnlib_gui.py --dev --model A:\ml_models\fastDAT\2x_animefilm_light_161k_op21_fp16_static_720x540.onnx
+python .\ui\hconvert.py --dev --model A:\ml_models\fastDAT\2x_animefilm_light_161k_op21_fp16_static_720x540.onnx
 
 
 

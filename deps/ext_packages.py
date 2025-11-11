@@ -14,8 +14,8 @@ from rich.progress import (
     TransferSpeedColumn,
 )
 
-from hutils import *
-from hutils import get_app_tempdir, get_extension
+from hytils import *
+from hytils import get_app_tempdir, get_extension
 from tools import external_dir
 # from time_conversions import reformat_datetime
 from .logger import logger

@@ -10,7 +10,7 @@ from logger import slog
 from pynnlib import (
     generate_out_model_fp,
     get_supported_model_extensions,
-    Idtype,
+    Hdtype,
     NnModel,
     nnlib,
     NnFrameworkType,
@@ -155,7 +155,7 @@ def get_kwargs(
 
         device = args['gpu']
         device = device if device else "cuda"
-        dtype: Idtype = 'fp32'
+        dtype: Hdtype = 'fp32'
         if 'fp16' in args['dtypes']:
             dtype = 'fp16'
         elif 'bf16' in args['dtypes']:

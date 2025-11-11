@@ -1,4 +1,5 @@
 -e ../hytils
--e ../hsys
+-e ../hwidgets
 PySide6-Essentials
-
+requests
+websockets

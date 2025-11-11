@@ -56,10 +56,10 @@ else
 fi
 
 export QT_QPA_PLATFORM=xcb
-# python pynnlib_gui.py --model /opt/ml_models/z-personnel/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.pth
-# python pynnlib_gui.py --model /opt/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.pth
-python pynnlib_gui.py --dev --model /opt/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.pth
+# python ./hconvert.py --model /opt/ml_models/z-personnel/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.pth
+# python ./hconvert.py --model /opt/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.pth
+python ./hconvert.py --dev --model /opt/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.pth
 #
-# python pynnlib_gui.py --model /opt/ml_models/z-personnel/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.safetensors
+# python ./hconvert.py --model /opt/ml_models/z-personnel/ml_models/1x-HurrDeblur-SuperUltraCompact_metadata.safetensors
 
-# python pynnlib_gui.py
+# python ./hconvert.py

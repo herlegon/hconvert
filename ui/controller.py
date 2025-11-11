@@ -31,7 +31,7 @@ from .pynnlib_api import (
     NnFrameworkType,
     NnModel,
     ShapeStrategy,
-    Idtype,
+    Hdtype,
 )
 
 if TYPE_CHECKING:

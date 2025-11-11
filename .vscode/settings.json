@@ -31,7 +31,7 @@
     },
     "python.analysis.extraPaths": [
         "../pynnlib",
-        "../hutils",
+        "../hytils",
         "../hwidgets",
     ],
     "python.analysis.typeCheckingMode": "basic",
