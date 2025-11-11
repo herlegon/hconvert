@@ -1,6 +1,6 @@
 from typing import Type
 
-from hutils import swap_keys_values
+from hytils import swap_keys_values
 from .pynnlib_api import (
     NnFrameworkType,
     SizeConstraint,

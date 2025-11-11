@@ -7,7 +7,7 @@ import pynnlib
 import ast
 from typing import Type
 
-from hutils import absolute_path, lightgreen
+from hytils import absolute_path, lightgreen
 
 import pynnlib
 from pynnlib import (

@@ -1,5 +1,5 @@
 import os
-from hutils import parent_directory, absolute_path
+from hytils import parent_directory, absolute_path
 from typing import Literal
 
 from PySide6.QtCore import (

@@ -16,7 +16,7 @@ import pkgutil
 import sys
 from typing import Optional, Dict, List, Type
 
-from hutils import absolute_path, lightgreen
+from hytils import absolute_path, lightgreen
 from pynnlib import (
     PyTorchModel,
 )

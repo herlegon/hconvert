@@ -2,7 +2,7 @@ from __future__ import annotations
 from functools import partial
 from pprint import pprint
 from typing import Any, Literal, TYPE_CHECKING, Type
-from hutils import (
+from hytils import (
     get_extension,
     lightcyan,
 )

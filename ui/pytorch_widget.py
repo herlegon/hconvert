@@ -1,5 +1,5 @@
 from __future__ import annotations
-from hutils import get_extension
+from hytils import get_extension
 from hwidgets import (
     HStyle,
 )

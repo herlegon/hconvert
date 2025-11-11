@@ -9,7 +9,7 @@ from .pynnlib_api import (
     NnFrameworkType,
     NnModel,
 )
-from hutils import (
+from hytils import (
     absolute_path,
     get_extension,
     red,

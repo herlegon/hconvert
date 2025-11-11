@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-from hutils import darkgrey, green, yellow, red, white
+from hytils import darkgrey, green, yellow, red, white
 
 class ColorFormatter(logging.Formatter):
     COLORS = {

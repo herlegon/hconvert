@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pprint import pprint
 from typing import Type
-from hutils import red, lightcyan
+from hytils import red, lightcyan
 from hwidgets import HStyle
 from .pynnlib_api import (
     NnModel,

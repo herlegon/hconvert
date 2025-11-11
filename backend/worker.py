@@ -1,7 +1,7 @@
 from pprint import pprint
 import queue
 import signal
-from hutils import purple, red, yellow
+from hytils import purple, red, yellow
 from logger import slog
 from messages import WorkerCommand, WorkerResponse
 import multiprocessing as mp

@@ -3,7 +3,7 @@ from pathlib import (
     Path,
 )
 from typing import Type
-from hutils import (
+from hytils import (
     absolute_path,
     is_access_granted,
     path_split,

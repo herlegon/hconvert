@@ -3,7 +3,7 @@ from dataclasses import is_dataclass, fields
 from enum import Enum
 from pprint import pprint
 from typing import Callable
-from hutils import red
+from hytils import red
 from pynnlib import (
     NnModel,
 )

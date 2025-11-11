@@ -7,7 +7,7 @@ import json
 import subprocess
 import sys
 import threading
-from hutils import (
+from hytils import (
     lightgreen,
     path_basename,
     get_extension,
@@ -443,7 +443,10 @@ class Controller(QObject):
 
         elif msg_type == "error":
             print(red("DO IT RIGHT NOW"))
-            print(payload)
+            self.signal_task_ended.emit(payload)
+            self.emit_cancelled_signal()
+
+            # self.emit_ended_signal()
 
 
         elif msg_type == "parsed":
@@ -664,48 +667,6 @@ class Controller(QObject):
 
         # self.in_model.metadata = saved_metadata
 
-
-    def convert_to_tensorrt(self, settings: dict[str, str | dict[str, Any]]) -> str:
-        exception: str = ""
-        args: dict[str, str | dict[str, Any]]
-        args = settings['values']
-
-        shape_strategy: ShapeStrategy = ShapeStrategy(
-            type=args['shape_strategy'],
-            min_size=args['shape_min'],
-            opt_size=args['shape_min'],
-            max_size=args['shape_min'],
-        )
-
-        device = args['gpu']
-        device = device if device else "cuda"
-        dtype: Idtype = 'fp32'
-        if 'fp16' in args['dtypes']:
-            dtype = 'fp16'
-        elif 'bf16' in args['dtypes']:
-            dtype = 'bf16'
-
-        common_kwargs = dict(
-            model=self.in_model,
-            shape_strategy=shape_strategy,
-            dtype=dtype,
-            force_weak_typing=bool(args['typing'] == 'weak'),
-            # optimization_level=,
-            opset=args['opset'],
-            device=device,
-            out_dir=settings['out_dir'],
-        )
-
-        out_model_fp = generate_out_model_fp(to=NnFrameworkType.TENSORRT, **common_kwargs)
-        self.emit_start_signal(False, out_model_fp)
-
-        # try:
-        #     nnlib.convert_to_tensorrt(**common_kwargs)
-        # except Exception as e:
-        #     exception = str(e)
-        nnlib.convert_to_tensorrt(**common_kwargs)
-
-        return exception
 
 # import asyncio
 # from PySide6.QtCore import QObject, Signal
