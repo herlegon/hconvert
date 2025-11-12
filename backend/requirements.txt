@@ -1,9 +1,11 @@
 -e ../../hytils
 -e ../../hsys
+opencv-python
 numpy
 timm
 websockets
 
+onnx
 onnxruntime
 onnxruntime-directml
 safetensors

@@ -1,3 +1,10 @@
+import os
+import signal
+import sys
+ui_path: str = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "pynnlib")
+)
+sys.path.append(ui_path)
 
 import logging
 from websockets import (
@@ -17,9 +24,6 @@ from client_connection import ClientConnectionHandler
 from hytils import red, yellow
 from logger import slog
 import multiprocessing as mp
-import os
-import signal
-import sys
 import uuid
 
 
