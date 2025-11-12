@@ -1,9 +1,13 @@
 from argparse import ArgumentParser
+import os
 import signal
 import sys
 
 from PySide6.QtWidgets import QApplication
 
+ui_path: str = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "ui"))
+print(ui_path)
+sys.path.append(ui_path)
 
 if sys.platform == "win32":
     import ctypes

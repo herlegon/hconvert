@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>333</width>
-    <height>296</height>
+    <width>344</width>
+    <height>318</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -47,6 +47,47 @@
        </property>
        <property name="text">
         <string>Metadata</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="h_button_edit">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../icons/edit_22dp_000000_FILL0_wght400_GRAD0_opsz24.png</normaloff>../icons/edit_22dp_000000_FILL0_wght400_GRAD0_opsz24.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
@@ -175,54 +216,44 @@
      <property name="sizeConstraint">
       <enum>QLayout::SizeConstraint::SetMinimumSize</enum>
      </property>
+     <property name="leftMargin">
+      <number>24</number>
+     </property>
      <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Orientation::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="h_button_undo">
+      <widget class="QPushButton" name="h_button_cancel">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="minimumSize">
         <size>
-         <width>24</width>
+         <width>90</width>
          <height>24</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>24</width>
+         <width>90</width>
          <height>24</height>
         </size>
        </property>
        <property name="text">
-        <string/>
+        <string>Cancel</string>
        </property>
        <property name="icon">
         <iconset>
-         <normaloff>../icons/undo_24dp_000000_FILL0_wght400_GRAD0_opsz24.png</normaloff>../icons/undo_24dp_000000_FILL0_wght400_GRAD0_opsz24.png</iconset>
+         <normaloff>../icons/cancel_20dp_000000_FILL0_wght400_GRAD0_opsz24.png</normaloff>../icons/cancel_20dp_000000_FILL0_wght400_GRAD0_opsz24.png</iconset>
        </property>
        <property name="iconSize">
         <size>
-         <width>24</width>
-         <height>24</height>
+         <width>22</width>
+         <height>22</height>
         </size>
        </property>
        <property name="flat">
-        <bool>true</bool>
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -236,18 +267,18 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>24</width>
+         <width>90</width>
          <height>24</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>24</width>
+         <width>90</width>
          <height>24</height>
         </size>
        </property>
        <property name="text">
-        <string/>
+        <string>Save</string>
        </property>
        <property name="icon">
         <iconset>
@@ -255,14 +286,30 @@
        </property>
        <property name="iconSize">
         <size>
-         <width>24</width>
-         <height>24</height>
+         <width>22</width>
+         <height>22</height>
         </size>
        </property>
+       <property name="shortcut">
+        <string>Ctrl+S</string>
+       </property>
        <property name="flat">
-        <bool>true</bool>
+        <bool>false</bool>
        </property>
       </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
      </item>
     </layout>
    </item>

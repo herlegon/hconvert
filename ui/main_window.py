@@ -235,7 +235,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.action_undo_metadata = QAction("Undo Metadata", self)
         self.action_undo_metadata.setShortcut(QKeySequence("Ctrl+z"))
-        self.action_undo_metadata.triggered.connect(self.widget_metadata.button_undo.click)
+        self.action_undo_metadata.triggered.connect(self.widget_metadata.button_cancel.click)
         self.addAction(self.action_undo_metadata)
 
         self.shortcut_safetensors = QShortcut(QKeySequence("S"), self)

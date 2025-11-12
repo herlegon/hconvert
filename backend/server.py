@@ -187,7 +187,12 @@ class BackendServer:
         slog.info("[S] Shutdown complete")
 
 
-def setup_signal_handlers(shutdown_event: asyncio.Event, force_kill_after=5):
+
+def setup_signal_handlers(
+    shutdown_event: asyncio.Event,
+    force_kill_after: int = 5,
+    loop: asyncio.AbstractEventLoop | None = None,
+):
     signal_count = 0
 
     def handler(signum, frame):
@@ -214,11 +219,15 @@ def setup_signal_handlers(shutdown_event: asyncio.Event, force_kill_after=5):
                 os.kill(os.getpid(), signal.SIGKILL)
 
     # Register signals depending on platform
-    signal.signal(signal.SIGINT, handler)
     if sys.platform == "win32":
+        signal.signal(signal.SIGINT, handler)
         signal.signal(signal.SIGBREAK, handler)
-    else:
-        signal.signal(signal.SIGTERM, handler)
+
+    elif sys.platform == 'linux':
+        if loop is None:
+            raise ValueError("loop must be the AbstractEventLoop")
+        loop.add_signal_handler(signal.SIGINT, handler, signal.SIGINT, None)
+        loop.add_signal_handler(signal.SIGTERM, handler, signal.SIGTERM, None)
 
 
 
@@ -229,8 +238,12 @@ async def main():
     server = BackendServer(host=host, port=port)
     shutdown_event = asyncio.Event()
 
-    # Setup signal handlers
-    setup_signal_handlers(shutdown_event, force_kill_after=5)
+    loop: asyncio.AbstractEventLoop | None = None
+    if sys.platform == 'linux':
+        loop = asyncio.get_event_loop()
+
+    setup_signal_handlers(shutdown_event, force_kill_after=5, loop=loop)
+
 
     # Start server in background
     server_task = asyncio.create_task(server.run())
@@ -269,6 +282,7 @@ async def main():
 
 
 if __name__ == "__main__":
+    mp.set_start_method('spawn')
     try:
         asyncio.run(main())
     except Exception as e:

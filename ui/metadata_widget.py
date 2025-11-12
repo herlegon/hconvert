@@ -27,20 +27,24 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
         hrl_style = HStyle()
         self.setupUi(self, hrl_style)
-        self.button_undo = self.h_button_undo
+        self.button_cancel = self.h_button_cancel
         self.button_save_as = self.h_button_save_as
+        self.button_edit = self.h_button_edit
 
 
-        self.button_undo.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.button_undo.setToolTip("Undo modifications (Ctrl+U)")
+        self.button_cancel.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.button_cancel.setToolTip("Discard modifications (Ctrl+U)")
         self.button_save_as.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.button_save_as.setToolTip("Save or overwrite(Ctrl+S)")
-        # self.button_undo.setIcon(load)
+        self.button_save_as.setToolTip("Save(Ctrl+S)")
+
+        self.button_edit.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.button_edit.setToolTip("Modify the model's info")
 
 
         self.setEnabled(False)
-        self.button_undo.setEnabled(False)
+        self.button_cancel.setEnabled(False)
         self.button_save_as.setEnabled(False)
+        self.button_edit.setEnabled(False)
 
         self.initial_metadata: dict[str, str] | None = None
         self.current_widget: QWidget | None = None
@@ -59,17 +63,19 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         for w in self.text_widgets:
             w: QLineEdit | QTextEdit
             w.setAcceptDrops(False)
-            w.textChanged.connect(self.event_edition_started)
+            # w.textChanged.connect(self.event_edition_started)
         self.textedit_purpose.textChanged.connect(self.event_edition_started)
-        self.button_undo.released.connect(self.event_undo)
+        self.button_cancel.released.connect(self.event_cancel)
         self.button_save_as.released.connect(self.event_save_as)
+        self.button_edit.toggled.connect(self.event_edition_started)
 
 
     def block_signals(self, b: bool) -> None:
         for w in (
             *self.text_widgets,
             self.button_save_as,
-            self.button_undo,
+            self.button_cancel,
+            self.button_edit,
         ):
             w.blockSignals(b)
 
@@ -88,8 +94,9 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
 
     def set_enabled(self, b: bool) -> None:
-        self.button_undo.setEnabled(b)
+        self.button_cancel.setEnabled(b)
         self.button_save_as.setEnabled(b)
+        self.button_edit.setEnabled(b)
 
 
     def fill_fields(self, metadata: dict[str, str]) -> None:
@@ -99,6 +106,11 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
             self.lineedit_author.setText(metadata.get("author", ""))
             self.lineedit_license.setText(metadata.get("license", ""))
             self.textedit_purpose.setPlainText(metadata.get("purpose", ""))
+
+        self.button_edit.setChecked(False)
+        for w in self.text_widgets:
+            w.setReadOnly(False)
+
         self.block_signals(False)
 
 
@@ -114,7 +126,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
     def refresh_model_info(self, model: NnModel | None) -> None:
         self.clear()
         self.button_save_as.setEnabled(False)
-        self.button_undo.setEnabled(False)
+        self.button_cancel.setEnabled(False)
 
         if model is None:
             self.setVisible(False)
@@ -123,13 +135,17 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
         self.initial_metadata = deepcopy(model.metadata)
         self.fill_fields(self.initial_metadata)
+        self.button_edit.setEnabled(True)
+        self.button_edit.setChecked(False)
+        self.event_edition_started()
         self.setEnabled(True)
 
 
-    def event_undo(self) -> None:
+    def event_cancel(self) -> None:
         self.clear()
         self.button_save_as.setEnabled(False)
-        self.button_undo.setEnabled(False)
+        self.button_cancel.setEnabled(False)
+        self.button_edit.setChecked(False)
         self.fill_fields(self.initial_metadata)
         if (
             self.current_widget is not None
@@ -139,19 +155,28 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
 
     def event_save_as(self) -> None:
+        self.block_signals(True)
         self.button_save_as.setEnabled(False)
-        self.button_undo.setEnabled(False)
+        self.button_cancel.setEnabled(False)
+        self.button_edit.setChecked(False)
         if (
             self.current_widget is not None
             and self.current_widget in self.text_widgets
         ):
             self.current_widget.setFocus()
+        self.block_signals(False)
         self.signal_inject_metadata.emit(self.values())
 
 
     def event_edition_started(self) -> None:
-        self.button_save_as.setEnabled(True)
-        self.button_undo.setEnabled(True)
+        edit: bool = self.button_edit.isChecked()
+        self.button_save_as.setEnabled(edit)
+        self.button_cancel.setEnabled(edit)
+        for w in self.text_widgets:
+            w.setReadOnly(not edit)
+        if not edit:
+            for w in self.text_widgets:
+                w.clearFocus()
         self.current_widget = QApplication.focusWidget()
 
 
@@ -161,3 +186,5 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
             and self.current_widget in self.text_widgets
         ):
             self.current_widget.setFocus()
+
+

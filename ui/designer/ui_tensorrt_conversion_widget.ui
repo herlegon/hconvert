@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>473</width>
-    <height>290</height>
+    <width>479</width>
+    <height>316</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -218,6 +218,12 @@
      </item>
      <item row="5" column="1">
       <widget class="QFrame" name="frame_min">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="frameShape">
         <enum>QFrame::Shape::NoFrame</enum>
        </property>
@@ -323,24 +329,17 @@
           </item>
          </widget>
         </item>
-        <item>
-         <spacer name="horizontalSpacer_min">
-          <property name="orientation">
-           <enum>Qt::Orientation::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>47</width>
-            <height>21</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
        </layout>
       </widget>
      </item>
      <item row="6" column="1">
       <widget class="QFrame" name="frame_opt">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="frameShape">
         <enum>QFrame::Shape::StyledPanel</enum>
        </property>
@@ -446,24 +445,17 @@
           </item>
          </widget>
         </item>
-        <item>
-         <spacer name="horizontalSpacer_opt">
-          <property name="orientation">
-           <enum>Qt::Orientation::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>0</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
        </layout>
       </widget>
      </item>
      <item row="7" column="1">
       <widget class="QFrame" name="frame_max">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="frameShape">
         <enum>QFrame::Shape::StyledPanel</enum>
        </property>
@@ -568,19 +560,6 @@
            </property>
           </item>
          </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_max">
-          <property name="orientation">
-           <enum>Qt::Orientation::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>48</width>
-            <height>21</height>
-           </size>
-          </property>
-         </spacer>
         </item>
        </layout>
       </widget>
