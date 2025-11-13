@@ -5,6 +5,7 @@ from hwidgets import HStyle
 from PySide6.QtCore import (
     Qt,
     Signal,
+    QObject,
 )
 from PySide6.QtWidgets import (
     QApplication,
@@ -14,10 +15,26 @@ from PySide6.QtWidgets import (
     QWidget,
     QSizePolicy,
 )
+
+from .logger import ColorFormatter, SimpleFormatter, setup_alog
 from .designer.ui_log_widget import Ui_LogWidget
 from .pynnlib_api import (
     NnModel,
 )
+import logging
+
+
+class QtLogHandler(QObject, logging.Handler):
+    new_log = Signal(str)
+
+    def __init__(self):
+        QObject.__init__(self)
+        logging.Handler.__init__(self)
+
+    def emit(self, record: logging.LogRecord):
+        msg = self.format(record)
+        self.new_log.emit(msg)
+
 
 class LogWidget(QWidget, Ui_LogWidget):
     signal_inject_metadata = Signal(dict)
@@ -31,6 +48,9 @@ class LogWidget(QWidget, Ui_LogWidget):
             *self.findChildren(QLineEdit),
             *self.findChildren(QTextEdit),
         ]
+
+        self.gui_handler = QtLogHandler()
+        self.gui_handler.new_log.connect(self.h_textedit_log.appendPlainText)
 
 
     def block_signals(self, b: bool) -> None:

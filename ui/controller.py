@@ -226,7 +226,7 @@ class Controller(QObject):
     def start(self):
         """Start the asyncio loop
         """
-        print("controller: start")
+        alog.debug("controller: start")
         if self._running:
             alog.info("The asyncio loop is already running. Ignore.")
             return
@@ -450,7 +450,7 @@ class Controller(QObject):
 
 
         elif msg_type == "parsed":
-            print(yellow(f"<<< {msg_type}"))
+            alog.debug(yellow(f"<<< {msg_type}"))
             model_json = payload.get("model")
 
             # Deserialize JSON back into Python object
@@ -471,7 +471,7 @@ class Controller(QObject):
         elif msg_type == "injected":
             # Task completed
             # task_name = payload.get("type", "")
-            print(yellow(f"<<< {msg_type}"))
+            alog.debug(yellow(f"<<< {msg_type}"))
             model_json = payload.get("model")
             self.in_model = deserialize_model(model_json)
             self.emit_ended_signal()

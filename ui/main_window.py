@@ -20,7 +20,6 @@ from .common import SUPPORTED_MODEL_EXTENSIONS
 from .user_settings import UserSettings
 from .widget_monitor import WidgetMonitor
 from .inject_metadata_dialog import inject_metadata_dialog
-from .designer.ui_main_window import Ui_MainWindow
 from .controller import Controller
 from PySide6.QtCore import (
     Qt,
@@ -50,7 +49,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QSizePolicy
 )
-from .logger import alog
+from .logger import ColorFormatter, SimpleFormatter, alog, setup_alog
 
 from ui.header_widget import HeaderWidget
 from ui.log_widget import LogWidget
@@ -75,8 +74,12 @@ class MainWindow(QMainWindow):
 
     def __init__(self, args: Namespace):
         super().__init__()
+        self.dev_mode: bool = False
+        if args.dev:
+            self.dev_mode = True
+
         hrl_style = HStyle()
-        self.setupUi(hrl_style)
+        self.setup_ui(hrl_style)
 
         self.setStyleSheet(f"""
             background-color: {hrl_style.window_bgd};
@@ -99,9 +102,7 @@ class MainWindow(QMainWindow):
         self._is_loading: bool = False
         self.is_closing: bool = False
 
-        self.dev_mode: bool = False
-        if args.dev:
-            self.dev_mode = True
+
 
         self.initial_model: str = ""
         if args.model:
@@ -171,7 +172,7 @@ class MainWindow(QMainWindow):
 
 
 
-    def setupUi(self, hstyle: HStyle) -> None:
+    def setup_ui(self, hstyle: HStyle) -> None:
 
         self.FIXED_LOG_WIDTH = 500
 
@@ -183,6 +184,8 @@ class MainWindow(QMainWindow):
         self.main_layout.setSpacing(24)
         self.main_layout.setContentsMargins(12, 12, 12, 12)
 
+        self.widget_log = LogWidget(main_widget)
+        self.setup_logger(self.dev_mode)
 
         self.widget_header = HeaderWidget(main_widget)
         self.widget_header.setObjectName("widget_header")
@@ -214,7 +217,6 @@ class MainWindow(QMainWindow):
             QSizePolicy.Policy.Preferred,
         )
 
-        self.widget_log = LogWidget(main_widget)
         self.widget_progress = None
         # self.widget_progress = ProgressWidget(main_widget)
 
@@ -300,6 +302,25 @@ class MainWindow(QMainWindow):
         self.widget_log.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
         self.main_layout.addWidget(self.h_vertical_divider_log)
         self.main_layout.addWidget(self.widget_log)
+
+
+    def setup_logger(self, dev_mode: bool) -> None:
+
+        class PlainTextFormatter(SimpleFormatter):
+            def format(self, record):
+                return f"[{record.levelname}] {record.getMessage()}"
+
+        gui_formatter = PlainTextFormatter()
+
+        # Configure logger with different formatters
+        setup_alog(
+            log_file="herlegon.log",
+            to_stdout=dev_mode,
+            to_gui=self.widget_log.gui_handler,
+            stdout_formatter=ColorFormatter(),
+            gui_formatter=gui_formatter,
+        )
+
 
 
     def save_user_settings(self) -> None:
