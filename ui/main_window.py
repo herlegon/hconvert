@@ -154,6 +154,8 @@ class MainWindow(QMainWindow):
         self.controller.signal_progress.connect(self.event_progress)
         self.controller.signal_backend_status.connect(self.on_backend_status)
 
+        self.controller.signal_backend_exception.connect(self.on_exception_received)
+
         # Connect signals
         # controller.signal_progress.connect(update_progress_bar)
         # controller.signal_system_usage.connect(update_telemetry)
@@ -174,7 +176,11 @@ class MainWindow(QMainWindow):
 
     def setup_ui(self, hstyle: HStyle) -> None:
 
-        self.FIXED_LOG_WIDTH = 500
+        primary_screen = QApplication.screens()[0]
+        screen_width = primary_screen.size().width()
+        self.FIXED_LOG_WIDTH = (
+            500 if screen_width <= 1920 else 700
+        )
 
         # Main widget and layout
         main_widget = QWidget()
@@ -591,7 +597,7 @@ class MainWindow(QMainWindow):
         self.widget_conversion.refresh_conversion_selection(model=model)
         if self.widget_progress:
             self.widget_progress.setVisible(bool(model is not None))
-        # self.h_vertical_divider.setVisible(bool(model is not None))
+        self.h_vertical_divider.setVisible(bool(model is not None))
 
 
     def event_model_selected(self, model_fp: str) -> None:
@@ -784,3 +790,12 @@ class MainWindow(QMainWindow):
 
         else:
             alog.error(f"unknow backend status: \'{status}\'")
+
+
+    def on_exception_received(self, text: str) -> None:
+        QMessageBox.critical(
+            self,
+            "Exception",
+            f"{text}",
+            QMessageBox.StandardButton.Ok
+        )

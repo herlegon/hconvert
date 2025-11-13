@@ -74,14 +74,14 @@ class ClientConnectionHandler:
             return
 
         cmd: str = msg.get("cmd", "")
-        print(lightblue(f"<<< {cmd}"))
+        # print(lightblue(f"<<< {cmd}"))
 
         if cmd == "heartbeat":
             await self.to_client.put(WorkerResponse(type="pong"))
 
         elif cmd == "shutdown":
-            print(purple("shutdown"))
-            await self.stop()
+            slog.debug("route shutdown message")
+            await self.close()
 
         elif cmd in worker_task_list:
             self.submit_task_to_worker(self.worker_name, msg)
@@ -106,10 +106,10 @@ class ClientConnectionHandler:
             slog.info(lightblue(f"[{self.client_id}] connection closed"))
 
         except websockets.ConnectionClosedError as e:
-            slog.warning(lightblue(f"[{self.client_id}] ⚠️  disconnected with error {e}"))
+            slog.warning(lightblue(f"[{self.client_id}] ⚠️  disconnected with error: {e}"))
 
         except Exception as e:
-            slog.warning(lightblue(f"[{self.client_id}] ⚠️  exception while running reception handler {e}"))
+            slog.warning(lightblue(f"[{self.client_id}] ⚠️  exception while running reception handler: {e}"))
 
         finally:
             slog.info(lightblue(f"[{self.client_id}] ℹ️  Reception task ended"))

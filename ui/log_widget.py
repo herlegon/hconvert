@@ -75,8 +75,8 @@ class LogWidget(QWidget, Ui_LogWidget):
         existing_style = self.h_textedit_log.styleSheet()
         terminal_styles = """
             QPlainTextEdit {
-                font-family: "Courier New", "Monospace", "Consolas";
-                font-size: 10pt;
+                font-family: "Consolas", "Courier New", "Monospace", ;
+                font-size: 11pt;
                 background-color: #1e1e1e;    /* dark terminal background */
                 color: #d4d4d4;               /* default text color */
                 padding: 4px;
@@ -91,7 +91,7 @@ class LogWidget(QWidget, Ui_LogWidget):
         self.h_textedit_log.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
     _COLOR_MAP = {
-        logging.DEBUG: QColor("#999999"),   # gray
+        logging.DEBUG: QColor("#efefef"),   # gray
         logging.INFO: QColor("#55aa55"),    # green
         logging.WARNING: QColor("#ffaa00"), # orange
         logging.ERROR: QColor("#ff5555"),   # red
@@ -127,6 +127,14 @@ class LogWidget(QWidget, Ui_LogWidget):
         logging.CRITICAL: "‼",
     }
 
+    _LEVEL_PREFIX = {
+        logging.DEBUG: "[D]",
+        5: "[V]",               # example VERBOSE custom level if used
+        logging.INFO: "[I]",
+        logging.WARNING: "[W]",
+        logging.ERROR: "[E]",
+        logging.CRITICAL: "[C]",
+    }
 
     def append_colored_log(self, msg: str, levelno: int):
         """Append a log message with ANSI and log-level colors."""
@@ -139,13 +147,21 @@ class LogWidget(QWidget, Ui_LogWidget):
         fmt = QTextCharFormat()
         fmt.setForeground(default_color)
 
-        # Create format for the symbol
-        sym_fmt = QTextCharFormat()
-        sym_fmt.setForeground(default_color)
+        if False:
+            # Create format for the symbol
+            # Insert symbol
+            sym_fmt = QTextCharFormat()
+            sym_fmt.setForeground(default_color)
+            symbol = self._LEVEL_SYMBOLS.get(levelno, ">")
+            cursor.insertText(symbol + " ", sym_fmt)
 
-        # Insert symbol
-        symbol = self._LEVEL_SYMBOLS.get(levelno, ">")
-        cursor.insertText(symbol + " ", sym_fmt)
+        else:
+            prefix = self._LEVEL_PREFIX.get(levelno, "[?]") + " "
+
+            # Insert the prefix
+            prefix_fmt = QTextCharFormat()
+            prefix_fmt.setForeground(default_color)
+            cursor.insertText(prefix, prefix_fmt)
 
         # Split text by ANSI color codes
         parts = self._ansi_pattern.split(msg)
@@ -158,7 +174,8 @@ class LogWidget(QWidget, Ui_LogWidget):
             if part.isdigit() and part in self._ANSI_COLOR_MAP:
                 current_color = self._ANSI_COLOR_MAP[part]
                 fmt.setForeground(current_color)
-            elif part == "00":  # reset code
+            elif part == "00":
+                # reset code
                 fmt.setForeground(default_color)
                 current_color = default_color
             else:

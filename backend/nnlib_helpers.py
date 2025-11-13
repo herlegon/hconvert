@@ -21,7 +21,7 @@ from pynnlib import (
 
 def parse_model(
     payload: dict[str, str],
-) -> tuple[WorkerResponse, NnModel]:
+) -> tuple[WorkerResponse, NnModel | None]:
     try:
         model_fp = payload.get("path")
         ext = get_extension(model_fp)
@@ -35,11 +35,11 @@ def parse_model(
             model: NnModel = nnlib.open(model_fp, device=device)
             elapsed = time.time() - start_time
             slog.debug(lightgreen(f"parsed in {1000*elapsed:.03f}ms"))
+
         except Exception as e:
             exception = str(e)
-            print(exception)
             slog.exception(exception)
-            response = WorkerResponse(type="error", payload=exception)
+            return (WorkerResponse(type="exception", payload=exception), None)
 
         model_dto = serialize_model(nn_model=model)
         dto_json = json.dumps(
@@ -57,7 +57,7 @@ def parse_model(
         )
 
     except Exception as e:
-        print(red(f"Eception: {str(e)}"))
+        slog.exception(exception)
         response = WorkerResponse(type="error", payload=str(e))
 
     return response, model

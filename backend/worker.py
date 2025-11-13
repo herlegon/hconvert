@@ -53,7 +53,6 @@ class Worker(mp.Process):
         while not self.stop_event.is_set():
             try:
                 msg: dict = self.task_queue.get(timeout=0.2)
-                print(purple(f"worker, received: {msg}"))
                 task_name: WorkerTask = msg['cmd']
                 payload: dict | None = msg.get('payload', {})
 
@@ -63,31 +62,39 @@ class Worker(mp.Process):
                     break
 
                 elif task_name == 'parse':
+                    slog.info(purple(f"[{self.pid}] parse {payload}"))
                     self.handle_parse(payload)
 
+                    # for debug purpose
+                    # return
+
                 elif task_name == 'inject':
+                    slog.info(purple(f"[{self.pid}] inject {payload}"))
                     self.handle_inject(payload)
 
                 elif task_name == 'convert':
+                    slog.info(purple(f"[{self.pid}] conversion"))
                     self.handle_convert(payload)
 
-                else:
-                    self.send_result(
-                        WorkerResponse(
-                            type="error",
-                            payload=f"Unknown task: {task_name}"
-                        )
-                    )
+                # else:
+                #     self.send_result(
+                #         WorkerResponse(
+                #             type="error",
+                #             payload=f"Unknown task: {task_name}"
+                #         )
+                #     )
 
             except queue.Empty:
                 continue
 
             except Exception as e:
                 print(purple(f"[{self.pid}] ❌ uncaught exception: {str(e)}"))
-                # WorkerResponse(
-                #     type="error",
-                #     payload=f"system: {str(e)}"
-                # )
+                self.send_result(
+                    WorkerResponse(
+                        type="exception",
+                        payload=f"exception: {str(e)}"
+                    )
+                )
 
         slog.info(purple(f"[{self.pid}] ℹ️ terminated"))
 
@@ -100,7 +107,6 @@ class Worker(mp.Process):
 
     def send_result(self, response: WorkerResponse):
         """Send result back to server"""
-        print("worker: send result:", type(response))
         self.result_queue.put(response)
 
 

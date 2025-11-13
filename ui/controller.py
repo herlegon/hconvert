@@ -71,6 +71,8 @@ class Controller(QObject):
     # status: 'running', 'stopped'
     signal_backend_status = Signal(str)
 
+    signal_backend_exception = Signal(str)
+
 
     def __init__(
         self,
@@ -487,6 +489,15 @@ class Controller(QObject):
             # System usage statistics
             self.signal_system_usage.emit(payload)
 
+        elif msg_type == "exception":
+            # System usage statistics
+            alog.error(payload)
+            self.signal_backend_exception.emit(payload)
+            self.signal_task_ended.emit(payload)
+            self.emit_cancelled_signal()
+            self.emit_ended_signal()
+            self.signal_model_parsed.emit("")
+
         else:
             alog.warning(f"Unknown message type: {msg_type}")
 
@@ -541,6 +552,7 @@ class Controller(QObject):
         ext = get_extension(model_fp)
         trt_extensions: tuple[int] = get_supported_model_extensions(NnFrameworkType.TENSORRT)
         device = 'cuda' if ext in trt_extensions else 'cpu'
+        self.in_model = None
 
         self.send_command(
             {
