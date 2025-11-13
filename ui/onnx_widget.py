@@ -18,10 +18,14 @@ from .ui_types import (
     ui_dtypes,
     ui_shapes
 )
-
+from hwidgets.hstyle import draw_widget_rect
 from PySide6.QtCore import (
     Qt,
     QTimer,
+)
+from PySide6.QtGui import (
+    QPainter,
+    QPaintEvent,
 )
 from PySide6.QtWidgets import (
     QWidget,
@@ -146,3 +150,12 @@ class OnnxWidget(QWidget, Ui_OnnxWidget):
         ):
             b.setCheckable(False)
             b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+
+
+    # def paintEvent(self, e: QPaintEvent) -> None:
+    #     super().paintEvent(e)
+    #     painter = QPainter(self)
+    #     painter.setRenderHints(QPainter.RenderHint.Antialiasing)
+    #     draw_widget_rect(self, painter)
+    #     painter.end()
+

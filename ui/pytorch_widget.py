@@ -11,12 +11,14 @@ from .pynnlib_helpers import (
     get_arch_name,
     get_size_constraint,
 )
-
+from hwidgets.hstyle import draw_widget_rect
 from PySide6.QtCore import (
     Qt,
 )
 from PySide6.QtGui import (
     QPixmap,
+    QPainter,
+    QPaintEvent,
 )
 from PySide6.QtWidgets import (
     QWidget,
@@ -123,3 +125,10 @@ class PyTorchWidget(QWidget, Ui_PyTorchWidget):
             self.lineedit_size_constraints_min.setText(f"{w} x {h}")
             self.lineedit_size_constraints_modulo.setText(f"{size_constraint.modulo}")
 
+
+    # def paintEvent(self, e: QPaintEvent) -> None:
+    #     super().paintEvent(e)
+    #     painter = QPainter(self)
+    #     painter.setRenderHints(QPainter.RenderHint.Antialiasing)
+    #     draw_widget_rect(self, painter)
+    #     painter.end()

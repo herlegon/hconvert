@@ -18,7 +18,6 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import (
     QPainter,
-    QPainterPath,
     QPaintEvent,
 )
 from PySide6.QtWidgets import (
@@ -67,18 +66,9 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             self.frame_tensorrt.sizeHint().width(),
             self.widget_select_out_dir.sizeHint().width(),
         )
-        # self.setFixedWidth(max_width)
-        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
-        # self.widget_select_out_dir.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMinimumWidth(max_width)
-        self.setFixedWidth(max_width)
+        self.setSizePolicy(self.sizePolicy().horizontalPolicy(), QSizePolicy.Policy.Minimum)
 
-        # self.frame_onnx.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        # self.frame_tensorrt.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        # self.widget_select_out_dir.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        # self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-
-        # self.adjustSize()
         self.selection.signal_selection_changed.connect(self.selection_changed)
         self.widget_onnx_conversion.signal_settings_modified.connect(self.settings_modified)
 
@@ -297,10 +287,10 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
 
         return settings
 
-    def paintEvent(self, e: QPaintEvent) -> None:
-        super().paintEvent(e)
 
-        painter = QPainter(self)
-        painter.setRenderHints(QPainter.RenderHint.Antialiasing)
-        draw_widget_rect(self, painter)
-        painter.end()
+    # def paintEvent(self, e: QPaintEvent) -> None:
+    #     super().paintEvent(e)
+    #     painter = QPainter(self)
+    #     painter.setRenderHints(QPainter.RenderHint.Antialiasing)
+    #     draw_widget_rect(self, painter)
+    #     painter.end()

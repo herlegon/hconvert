@@ -15,9 +15,13 @@ from .ui_types import (
     ui_typing,
     ui_shapes,
 )
-
+from hwidgets.hstyle import draw_widget_rect
 from PySide6.QtCore import (
     Qt,
+)
+from PySide6.QtGui import (
+    QPainter,
+    QPaintEvent,
 )
 from PySide6.QtWidgets import (
     QWidget,
@@ -203,3 +207,11 @@ class TensorRTWidget(QWidget, Ui_TensorRTWidget):
         ):
             b.setCheckable(False)
             b.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+
+
+    # def paintEvent(self, e: QPaintEvent) -> None:
+    #     super().paintEvent(e)
+    #     painter = QPainter(self)
+    #     painter.setRenderHints(QPainter.RenderHint.Antialiasing)
+    #     draw_widget_rect(self, painter)
+    #     painter.end()

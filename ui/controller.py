@@ -435,7 +435,7 @@ class Controller(QObject):
         """Handle incoming messages from the backend."""
         msg_type = data.get("type")
         payload = data.get("payload", {})
-        alog.debug(lightcyan(f"<<< {msg_type}"))
+        # alog.debug(lightcyan(f"<<< {msg_type}"))
 
         if msg_type == "pong":
             # alog.debug(f"<<< {msg_type}")

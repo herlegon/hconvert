@@ -54,7 +54,6 @@ class HeaderWidget(QWidget, Ui_HeaderWidget):
 
 
     def event_change_visibility(self, b: bool) -> None:
-        alog.debug(f"log button clicked")
         self.signal_visibility_changed.emit(
             self.h_button_log.isChecked()
         )
