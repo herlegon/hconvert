@@ -21,6 +21,10 @@ if [ "$SKIP_UI" = false ]; then
     pyside6-uic ./ui/designer/ui_main_window.ui -o ./ui/designer/ui_main_window.py
     python ../hwidgets/scripts/q_to_h.py ./ui/designer/ui_main_window.py
 
+    pyside6-uic ./ui/designer/ui_header_widget.ui -o ./ui/designer/ui_header_widget.py
+    python ./ui/patch_ui.py ./ui/designer/ui_header_widget.py
+    python ../hwidgets/scripts/q_to_h.py ./ui/designer/ui_header_widget.py
+
     pyside6-uic ./ui/designer/ui_model_browser_widget.ui -o ./ui/designer/ui_model_browser_widget.py
     python ../hwidgets/scripts/q_to_h.py ./ui/designer/ui_model_browser_widget.py
 
@@ -51,8 +55,14 @@ if [ "$SKIP_UI" = false ]; then
 
     pyside6-uic ./ui/designer/ui_progress_widget.ui -o ./ui/designer/ui_progress_widget.py
     python ../hwidgets/scripts/q_to_h.py ./ui/designer/ui_progress_widget.py
+
+    pyside6-uic ./ui/designer/ui_log_widget.ui -o ./ui/designer/ui_log_widget.py
+    python ./ui/patch_ui.py ./ui/designer/ui_log_widget.py
+    python ../hwidgets/scripts/q_to_h.py ./ui/designer/ui_log_widget.py
+
 else
     echo "Skipping UI generation (--skip-ui flag detected)"
+
 fi
 
 export QT_QPA_PLATFORM=xcb

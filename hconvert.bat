@@ -12,6 +12,10 @@ if "%~1"=="--skip" (
     python ..\hwidgets\scripts\q_to_h.py ".\ui\designer\ui_main_window.py"
     REM python .\ui\patch_ui.py --file ".\ui\designer\ui_main_window.py"
 
+    pyside6-uic .\ui\designer\ui_header_widget.ui -o .\ui\designer\ui_header_widget.py
+    python .\ui\patch_ui.py .\ui\designer\ui_header_widget.py
+    python ..\hwidgets\scripts\q_to_h.py .\ui\designer\ui_header_widget.py
+
     pyside6-uic ".\ui\designer\ui_model_browser_widget.ui" -o ".\ui\designer\ui_model_browser_widget.py"
     python ..\hwidgets\scripts\q_to_h.py ".\ui\designer\ui_model_browser_widget.py"
 
@@ -43,6 +47,9 @@ if "%~1"=="--skip" (
     pyside6-uic ".\ui\designer\ui_progress_widget.ui" -o ".\ui\designer\ui_progress_widget.py"
     python ..\hwidgets\scripts\q_to_h.py ".\ui\designer\ui_progress_widget.py"
 
+    pyside6-uic .\ui\designer\ui_log_widget.ui -o .\ui\designer\ui_log_widget.py
+    python .\ui\patch_ui.py .\ui\designer\ui_log_widget.py
+    python ..\hwidgets\scripts\q_to_h.py .\ui\designer\ui_log_widget.py
 )
 
 :: === MAIN EXECUTION ===

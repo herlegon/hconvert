@@ -27,6 +27,7 @@ from PySide6.QtCore import (
     QTimer,
     Signal,
     Slot,
+    QRect,
 )
 from PySide6.QtGui import (
     QAction,
@@ -44,6 +45,16 @@ from PySide6.QtWidgets import (
     QWidget
 )
 from .logger import alog
+
+from ui.header_widget import HeaderWidget
+from ui.log_widget import LogWidget
+from ui.model_browser_widget import ModelBrowserWidget
+from ui.conversion_widget import ConversionWidget
+from ui.metadata_widget import MetadataWidget
+from ui.onnx_widget import OnnxWidget
+from ui.progress_widget import ProgressWidget
+from ui.pytorch_widget import PyTorchWidget
+from ui.tensorrt_widget import TensorRTWidget
 
 DEBUG_HEIGHT: bool = False
 
@@ -72,6 +83,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_tensorrt_model.set_main_window(self)
         self.widget_conversion.set_main_window(self)
         self.widget_progress.set_main_window(self)
+        self.event_log_visibility_changed(False)
+
         self.setAcceptDrops(True)
 
         self.user_settings: UserSettings = UserSettings()
@@ -87,8 +100,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if args.model:
             self.initial_model = args.model
 
-        self.apply_user_settings()
-        # set_stylesheet(self)
 
         monitored_widgets: list[Type[QWidget]] = [
             widget
@@ -109,6 +120,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.widget_conversion.signal_settings_modified.connect(
             self.event_conversion_settings_modified
+        )
+
+        self.widget_header.signal_visibility_changed.connect(
+            self.event_log_visibility_changed
         )
 
         self.action_open: QAction
@@ -142,6 +157,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Start the Thread
         self.controller.start()
 
+        self.apply_user_settings()
+        # set_stylesheet(self)
+
 
     def apply_user_settings(self):
         settings: dict[str, Any] = self.user_settings.settings
@@ -155,6 +173,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.setGeometry(50, 50, screen_width - 200, screen_height - 100)
             self.adjustSize()
 
+        # Hide log
+        self.widget_header.block_signals(True)
+        self.widget_header.h_button_log.setChecked(False)
+        self.widget_header.block_signals(False)
+        self.widget_log.hide()
+        self.h_vertical_divider_log.hide()
+
+        # Send to other widgets
         user_settings = settings.get('user', {})
         for w in (
             self.widget_model_browser,
@@ -184,11 +210,54 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.adjust_height()
 
 
+    def event_log_visibility_changed(self, b: bool) -> None:
+        window_width = self.width()
+        log_width = (
+            self.widget_log.width()
+            + 2 * self.central_layout.spacing()
+            + self.h_vertical_divider_log.width()
+        )
+        was_visible: bool = self.widget_log.isVisible()
+
+        if not was_visible and b:
+            self.widget_log.show()
+            self.h_vertical_divider_log.show()
+            print(red(f"set to visible: {window_width} + {log_width}"))
+            self.resize(window_width + log_width, self.height())
+
+        elif was_visible and not b:
+            print(red(f"set to hide: {window_width} - {log_width}"))
+            self.widget_log.hide()
+            self.h_vertical_divider_log.hide()
+            # self.updateGeometry()
+
+            # # Resize the window and then update the layout
+            # self.resize(window_width - log_width, self.height())
+
+            # # Force layout to update (this could help in some cases)
+            # self.central_layout.update()
+
+            # Defer resizing slightly to let the event loop handle visibility changes
+            QTimer.singleShot(0, lambda: self.resize(window_width - log_width, self.height()))
+            self.updateGeometry()
+
+
     def save_user_settings(self) -> None:
+        window_width = self.width()
+        if self.widget_log.isVisible():
+            log_width = (
+                self.widget_log.width()
+                + 2 * self.central_layout.spacing()
+                + self.h_vertical_divider_log.width()
+            )
+            window_width -= log_width
+
+        x, y, _, h = list(self.geometry().getRect())
+
         user_settings: dict[str, Any] = {
             'window': {
                 'screen': 0,
-                'geometry': list(self.geometry().getRect())
+                'geometry': [x, y, window_width, h]
             },
             'user': {
                 **self.widget_model_browser.get_user_settings(),
