@@ -308,7 +308,8 @@ class MainWindow(QMainWindow):
 
         class PlainTextFormatter(SimpleFormatter):
             def format(self, record):
-                return f"[{record.levelname}] {record.getMessage()}"
+                # remove the [LEVEL] tag entirely for GUI display
+                return record.getMessage()
 
         gui_formatter = PlainTextFormatter()
 
