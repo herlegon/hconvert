@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>392</width>
+    <width>394</width>
     <height>140</height>
    </rect>
   </property>
@@ -71,7 +71,7 @@
      </item>
     </layout>
    </item>
-   <item>
+   <item alignment="Qt::AlignmentFlag::AlignTop">
     <widget class="QFrame" name="frame_onnx">
      <property name="frameShape">
       <enum>QFrame::Shape::NoFrame</enum>
@@ -83,13 +83,13 @@
       <property name="leftMargin">
        <number>24</number>
       </property>
-      <item>
+      <item alignment="Qt::AlignmentFlag::AlignTop">
        <widget class="OnnxConversionWidget" name="widget_onnx_conversion" native="true"/>
       </item>
      </layout>
     </widget>
    </item>
-   <item>
+   <item alignment="Qt::AlignmentFlag::AlignTop">
     <widget class="QFrame" name="frame_tensorrt">
      <property name="frameShape">
       <enum>QFrame::Shape::NoFrame</enum>
@@ -101,21 +101,14 @@
       <property name="leftMargin">
        <number>24</number>
       </property>
-      <item>
+      <item alignment="Qt::AlignmentFlag::AlignTop">
        <widget class="TensorRTConversionWidget" name="widget_tensorrt_conversion" native="true"/>
       </item>
      </layout>
     </widget>
    </item>
-   <item>
-    <widget class="SelectOutDirWidget" name="widget_select_out_dir" native="true">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-    </widget>
+   <item alignment="Qt::AlignmentFlag::AlignTop">
+    <widget class="SelectOutDirWidget" name="widget_select_out_dir" native="true"/>
    </item>
   </layout>
  </widget>

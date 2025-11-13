@@ -7,14 +7,8 @@
     <x>0</x>
     <y>0</y>
     <width>344</width>
-    <height>318</height>
+    <height>298</height>
    </rect>
-  </property>
-  <property name="sizePolicy">
-   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-    <horstretch>0</horstretch>
-    <verstretch>0</verstretch>
-   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -37,8 +31,14 @@
    </property>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
+     <item alignment="Qt::AlignmentFlag::AlignLeft">
       <widget class="QLabel" name="h_title1_metadata">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="font">
         <font>
          <pointsize>11</pointsize>
@@ -129,6 +129,12 @@
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="label_author">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>Author</string>
        </property>
@@ -145,13 +151,13 @@
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>60</height>
+         <height>100</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>16777215</width>
-         <height>120</height>
+         <height>100</height>
         </size>
        </property>
        <property name="horizontalScrollBarPolicy">
@@ -164,6 +170,12 @@
      </item>
      <item row="3" column="0" alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
       <widget class="QLabel" name="label_purpose">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>Purpose</string>
        </property>
@@ -174,6 +186,12 @@
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="label_license">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>License</string>
        </property>
@@ -201,6 +219,12 @@
      </item>
      <item row="0" column="0">
       <widget class="QLabel" name="label_name">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>Name</string>
        </property>

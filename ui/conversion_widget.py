@@ -7,6 +7,7 @@ from hytils import (
     lightcyan,
 )
 from hwidgets import HStyle
+from hwidgets.hstyle import draw_widget_rect
 from .pynnlib_api import (
     NnModel,
     NnFrameworkType,
@@ -15,12 +16,18 @@ from PySide6.QtCore import (
     QTimer,
     Signal,
 )
+from PySide6.QtGui import (
+    QPainter,
+    QPainterPath,
+    QPaintEvent,
+)
 from PySide6.QtWidgets import (
     QWidget,
     QMainWindow,
     QSizePolicy,
     QRadioButton,
     QToolButton,
+    QApplication,
 )
 from .designer.ui_conversion_widget import Ui_ConversionWidget
 from .logger import alog
@@ -53,12 +60,25 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
         self.selection.set_buttons(self.selections)
         self.selection.set_current_button(0)
 
-        self.frame_onnx.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.frame_tensorrt.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.widget_select_out_dir.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        self.adjustSize()
+        QApplication.processEvents()
+        max_width = max(
+            self.frame_onnx.sizeHint().width(),
+            self.frame_tensorrt.sizeHint().width(),
+            self.widget_select_out_dir.sizeHint().width(),
+        )
+        # self.setFixedWidth(max_width)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        # self.widget_select_out_dir.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setMinimumWidth(max_width)
+        self.setFixedWidth(max_width)
+
+        # self.frame_onnx.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        # self.frame_tensorrt.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        # self.widget_select_out_dir.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        # self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        # self.adjustSize()
         self.selection.signal_selection_changed.connect(self.selection_changed)
         self.widget_onnx_conversion.signal_settings_modified.connect(self.settings_modified)
 
@@ -276,3 +296,11 @@ class ConversionWidget(QWidget, Ui_ConversionWidget):
             settings['values'] = self.widget_tensorrt_conversion.values()
 
         return settings
+
+    def paintEvent(self, e: QPaintEvent) -> None:
+        super().paintEvent(e)
+
+        painter = QPainter(self)
+        painter.setRenderHints(QPainter.RenderHint.Antialiasing)
+        draw_widget_rect(self, painter)
+        painter.end()

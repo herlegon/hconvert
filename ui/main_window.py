@@ -12,6 +12,7 @@ from .pynnlib_api import (
 from hytils import (
     absolute_path,
     get_extension,
+    lightcyan,
     red,
 )
 
@@ -59,7 +60,22 @@ from ui.tensorrt_widget import TensorRTWidget
 DEBUG_HEIGHT: bool = False
 
 
-class MainWindow(QMainWindow, Ui_MainWindow):
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QFrame, QGridLayout, QHBoxLayout,
+    QLayout, QMainWindow, QSizePolicy, QSpacerItem,
+    QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QSplitter, QVBoxLayout, QHBoxLayout, QPushButton
+)
+
+
+class MainWindow(QMainWindow):
     signal_preview_modified = Signal(dict)
     signal_convert_action = Signal(dict)
     signal_stop_action = Signal()
@@ -70,7 +86,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, args: Namespace):
         super().__init__()
         hrl_style = HStyle()
-        self.setupUi(self, hrl_style)
+        self.setupUi(hrl_style)
 
         self.setStyleSheet(f"""
             background-color: {hrl_style.window_bgd};
@@ -82,7 +98,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_model_browser.set_main_window(self)
         self.widget_tensorrt_model.set_main_window(self)
         self.widget_conversion.set_main_window(self)
-        self.widget_progress.set_main_window(self)
+        if self.widget_progress:
+            self.widget_progress.set_main_window(self)
         self.event_log_visibility_changed(False)
 
         self.setAcceptDrops(True)
@@ -110,13 +127,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             )
             for widget in w.editable_widgets()
         ]
-        self.widget_monitor = WidgetMonitor(
-            monitored_widgets, self.widget_progress.hide_progress
-        )
+        if self.widget_progress:
+            self.widget_monitor = WidgetMonitor(
+                monitored_widgets, self.widget_progress.hide_progress
+            )
 
         self.widget_model_browser.signal_model_selected.connect(self.event_model_selected)
         self.widget_metadata.signal_inject_metadata.connect(self.event_inject_metadata)
-        self.widget_progress.signal_start_stop_clicked.connect(self.event_convert)
+        if self.widget_progress:
+            self.widget_progress.signal_start_stop_clicked.connect(self.event_convert)
 
         self.widget_conversion.signal_settings_modified.connect(
             self.event_conversion_settings_modified
@@ -161,11 +180,134 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # set_stylesheet(self)
 
 
+
+    def setupUi(self, hstyle: HStyle) -> None:
+
+        self.FIXED_LOG_WIDTH = 500
+
+        # Main widget and layout
+        main_widget = QWidget()
+        main_widget.setObjectName("main_widget")
+        self.setCentralWidget(main_widget)
+        self.main_layout = QHBoxLayout(main_widget)
+        self.main_layout.setSpacing(24)
+        self.main_layout.setContentsMargins(12, 12, 12, 12)
+
+
+        self.widget_header = HeaderWidget(main_widget)
+        self.widget_header.setObjectName("widget_header")
+        self.widget_header.setFixedHeight(32)
+        self.widget_header.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+        self.widget_model_browser = ModelBrowserWidget(main_widget)
+        self.widget_model_browser.setObjectName("widget_model_browser")
+        self.widget_model_browser.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
+        self.widget_pytorch_model = PyTorchWidget(main_widget)
+        self.widget_pytorch_model.setObjectName("widget_pytorch_model")
+        self.widget_pytorch_model.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        self.widget_onnx_model = OnnxWidget(main_widget)
+        self.widget_onnx_model.setObjectName("widget_onnx_model")
+        self.widget_onnx_model.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        self.widget_tensorrt_model = TensorRTWidget(main_widget)
+        self.widget_tensorrt_model.setObjectName("widget_tensorrt_model")
+        self.widget_tensorrt_model.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+
+
+        self.widget_metadata = MetadataWidget(main_widget)
+        self.widget_metadata.setObjectName("widget_metadata")
+        self.widget_metadata.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
+        self.widget_conversion = ConversionWidget(main_widget)
+        self.widget_conversion.setObjectName("widget_conversion")
+        self.widget_conversion.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Preferred,
+        )
+
+        self.widget_log = LogWidget(main_widget)
+        self.widget_progress = None
+        # self.widget_progress = ProgressWidget(main_widget)
+
+
+        # Left section (all widgets except log)
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(12)
+
+        left_layout.addWidget(self.widget_header)
+        left_layout.addWidget(self.widget_model_browser)
+
+
+        # Bottom section with grid layout
+        bottom_widget = QWidget()
+        grid_layout = QGridLayout(bottom_widget)
+        grid_layout.setContentsMargins(0, 0, 0, 0)
+        grid_layout.setSpacing(12)
+
+        # Left column: model widgets (width calculated from content)
+        models_widget = QWidget()
+        models_layout = QVBoxLayout(models_widget)
+        models_layout.setContentsMargins(0, 0, 0, 0)
+        models_layout.setSpacing(12)
+
+        models_layout.addWidget(self.widget_pytorch_model)
+        models_layout.addWidget(self.widget_onnx_model)
+        models_layout.addWidget(self.widget_tensorrt_model)
+        models_layout.addStretch()
+
+        # Calculate maximum width of model widgets
+        QApplication.processEvents()
+        max_width = max(
+            self.widget_pytorch_model.sizeHint().width(),
+            self.widget_onnx_model.sizeHint().width(),
+            self.widget_tensorrt_model.sizeHint().width()
+        )
+        models_widget.setFixedWidth(max_width)
+        grid_layout.addWidget(models_widget, 0, 0, 2, 1)
+
+        grid_layout.addWidget(self.widget_metadata, 0, 1, Qt.AlignmentFlag.AlignTop)
+
+        # Conversion widget (expandable vertically)
+        # self.widget_conversion.setFixedWidth(100)
+
+        self.conversion_container = QWidget()
+        conversion_layout = QVBoxLayout(self.conversion_container)
+        conversion_layout.setContentsMargins(0, 0, 0, 0)
+        conversion_layout.setSpacing(0)
+        conversion_layout.addWidget(self.widget_conversion)
+        conversion_layout.addStretch()
+        # self.conversion_container.setSizePolicy(
+        #     QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum
+        # )
+        # self.conversion_container.setFixedWidth(self.widget_conversion.sizeHint().width())
+        grid_layout.addWidget(self.conversion_container, 1, 1, Qt.AlignmentFlag.AlignTop)
+
+
+        # Set column stretch
+        grid_layout.setColumnStretch(0, 0)  # Fixed width column
+        grid_layout.setColumnStretch(1, 1)  # Expandable column
+        left_layout.addWidget(bottom_widget, 1)
+
+        self.main_layout.addWidget(left_widget, 1)
+
+        self.widget_log.setFixedWidth(self.FIXED_LOG_WIDTH)
+        self.widget_log.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+        self.main_layout.addWidget(self.widget_log)
+
+
+
+
+
+
     def apply_user_settings(self):
         settings: dict[str, Any] = self.user_settings.settings
         try:
             w: list[int] = settings['window']['geometry']
+            w[2] = 300
             self.setGeometry(*w)
+
         except:
             primary_screen = QApplication.screens()[0]
             screen_width = primary_screen.size().width()
@@ -173,12 +315,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.setGeometry(50, 50, screen_width - 200, screen_height - 100)
             self.adjustSize()
 
+        w: list[int] = settings['window']['geometry']
+        w[2] = 800
+        self.setGeometry(*w)
+
         # Hide log
         self.widget_header.block_signals(True)
         self.widget_header.h_button_log.setChecked(False)
         self.widget_header.block_signals(False)
         self.widget_log.hide()
-        self.h_vertical_divider_log.hide()
+        # self.h_vertical_divider_log.hide()
 
         # Send to other widgets
         user_settings = settings.get('user', {})
@@ -189,14 +335,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         ):
             w.apply_user_settings(user_settings)
 
-        self.max_info_widget_width: int = max(
-            self.widget_pytorch_model.geometry().width(),
-            self.widget_onnx_model.geometry().width(),
-            self.widget_tensorrt_model.geometry().width(),
-        )
-        self.widget_pytorch_model.setFixedWidth(self.max_info_widget_width)
-        self.widget_onnx_model.setFixedWidth(self.max_info_widget_width)
-        self.widget_tensorrt_model.setFixedWidth(self.max_info_widget_width)
+        # self.max_info_widget_width: int = max(
+        #     self.widget_pytorch_model.geometry().width(),
+        #     self.widget_onnx_model.geometry().width(),
+        #     self.widget_tensorrt_model.geometry().width(),
+        # )
+        # self.widget_pytorch_model.setFixedWidth(self.max_info_widget_width)
+        # self.widget_onnx_model.setFixedWidth(self.max_info_widget_width)
+        # self.widget_tensorrt_model.setFixedWidth(self.max_info_widget_width)
 
         # Hide all widgets until model loaded
         self.refresh_model_info(model=None)
@@ -206,40 +352,48 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         alog.debug(f"  onnx: {self.widget_onnx_model.geometry().width()}")
         alog.debug(f"  tensorrt: {self.widget_tensorrt_model.geometry().width()}")
         self.show()
-        self.widget_conversion.adjust_height()
+        # self.widget_conversion.adjust_height()
         self.adjust_height()
+
+        self.resize(600, 200)
+        self.adjustSize()
+
 
 
     def event_log_visibility_changed(self, b: bool) -> None:
         window_width = self.width()
         log_width = (
             self.widget_log.width()
-            + 2 * self.central_layout.spacing()
-            + self.h_vertical_divider_log.width()
+            + self.main_layout.spacing()
         )
         was_visible: bool = self.widget_log.isVisible()
 
+        self.blockSignals(True)
         if not was_visible and b:
+            new_width = window_width + log_width
+            print(red(f"show: {new_width}"))
             self.widget_log.show()
-            self.h_vertical_divider_log.show()
-            print(red(f"set to visible: {window_width} + {log_width}"))
-            self.resize(window_width + log_width, self.height())
+            self.resize(new_width, self.height())
 
         elif was_visible and not b:
-            print(red(f"set to hide: {window_width} - {log_width}"))
+            new_width = window_width - log_width
+            print(red(f"hide: {new_width}"))
             self.widget_log.hide()
-            self.h_vertical_divider_log.hide()
-            # self.updateGeometry()
+            self.resize(new_width, self.height())
 
-            # # Resize the window and then update the layout
-            # self.resize(window_width - log_width, self.height())
+            self.setMaximumWidth(window_width - log_width)
+            QTimer.singleShot(0, self.adjust_size_after_log_hide)
 
-            # # Force layout to update (this could help in some cases)
-            # self.central_layout.update()
+        self.blockSignals(False)
 
-            # Defer resizing slightly to let the event loop handle visibility changes
-            QTimer.singleShot(0, lambda: self.resize(window_width - log_width, self.height()))
-            self.updateGeometry()
+
+    def adjust_size_after_log_hide(self):
+        self.main_layout.update()
+        self.adjustSize()
+        self.setMaximumWidth(65535)
+        print(lightcyan(f"Adjusted window width: {self.width()}"))
+
+
 
 
     def save_user_settings(self) -> None:
@@ -247,8 +401,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if self.widget_log.isVisible():
             log_width = (
                 self.widget_log.width()
-                + 2 * self.central_layout.spacing()
-                + self.h_vertical_divider_log.width()
+                + self.main_layout.spacing()
+                # + self.h_vertical_divider_log.width()
             )
             window_width -= log_width
 
@@ -322,15 +476,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             partial(self.widget_conversion.select, 'tensorrt')
         )
 
-        self.shortcut_start_conversion = QShortcut(QKeySequence("F5"), self)
-        self.shortcut_start_conversion.activated.connect(
-            partial(self.widget_progress.event_convert_shortkey, 'start')
-        )
+        if self.widget_progress:
+            self.shortcut_start_conversion = QShortcut(QKeySequence("F5"), self)
+            self.shortcut_start_conversion.activated.connect(
+                partial(self.widget_progress.event_convert_shortkey, 'start')
+            )
 
-        self.shortcut_cancel_conversion = QShortcut(QKeySequence("F6"), self)
-        self.shortcut_cancel_conversion.activated.connect(
-            partial(self.widget_progress.event_convert_shortkey, 'stop')
-        )
+            self.shortcut_cancel_conversion = QShortcut(QKeySequence("F6"), self)
+            self.shortcut_cancel_conversion.activated.connect(
+                partial(self.widget_progress.event_convert_shortkey, 'stop')
+            )
 
 
     def set_min_max_width(self):
@@ -339,6 +494,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def adjust_height(self) -> None:
+        return
         current_width = self.width()
         if DEBUG_HEIGHT:
             alog.debug(f"adjust height; current width = {current_width}")
@@ -355,7 +511,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.resize(current_width, new_height)
 
         # Resize window to minimum height, keeping width unchanged
-        self.layout_conversion.invalidate()
+        # self.layout_conversion.invalidate()
         self.setFixedHeight(new_height)
         self.blockSignals(False)
 
@@ -400,8 +556,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_tensorrt_model.refresh_model_info(model)
         self.widget_metadata.refresh_model_info(model)
         self.widget_conversion.refresh_conversion_selection(model=model)
-        self.widget_progress.setVisible(bool(model is not None))
-        self.h_vertical_divider.setVisible(bool(model is not None))
+        if self.widget_progress:
+            self.widget_progress.setVisible(bool(model is not None))
+        # self.h_vertical_divider.setVisible(bool(model is not None))
 
 
     def event_model_selected(self, model_fp: str) -> None:
@@ -416,7 +573,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.widget_metadata,
         ):
             w.clear()
-        self.widget_progress.set_visible(False)
+        if self.widget_progress:
+            self.widget_progress.set_visible(False)
         self.widget_model_browser.set_filepath(model_fp=model_fp)
         self.signal_model_selected.emit(model_fp)
 
@@ -434,7 +592,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         )
         self.setEnabled(True)
 
-        if model is not None:
+        if model is not None and self.widget_progress:
             if model.framework.type == NnFrameworkType.TENSORRT:
                 self.widget_progress.set_conversion_enabled(False)
             else:
@@ -471,7 +629,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #   'cancelable': bool,
         #   'out_model_fp': str,
         # )
-        self.widget_progress.event_progress(status=status)
+        if self.widget_progress:
+            self.widget_progress.event_progress(status=status)
         if 'state' not in status:
             return
 
@@ -486,17 +645,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.widget_metadata.setEnabled(True)
         self.widget_metadata.injection_done()
 
-        if exception is not None and exception:
-            QMessageBox.critical(
-                self,
-                "Save Failed",
-                f"Failed to save model.\n{exception}",
-                QMessageBox.StandardButton.Ok
-            )
-            self.widget_progress.stop()
-        else:
-            self.widget_progress.ended()
-            self.widget_conversion.widget_select_out_dir.conversion_ended()
+        if self.widget_progress:
+            if exception is not None and exception:
+                QMessageBox.critical(
+                    self,
+                    "Save Failed",
+                    f"Failed to save model.\n{exception}",
+                    QMessageBox.StandardButton.Ok
+                )
+                self.widget_progress.stop()
+            else:
+                self.widget_progress.ended()
+                self.widget_conversion.widget_select_out_dir.conversion_ended()
 
 
     def event_convert(self, state: str) -> None:
@@ -526,9 +686,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def event_conversion_settings_modified(self) -> None:
-        alog.debug("signa received: modified settings")
-        self.widget_progress.ended()
-        self.widget_progress.hide_progress()
+        alog.debug("signal received: modified settings")
+        if self.widget_progress:
+            self.widget_progress.ended()
+            self.widget_progress.hide_progress()
         self.widget_conversion.setEnabled(True)
 
 
