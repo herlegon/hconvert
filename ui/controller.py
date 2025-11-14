@@ -142,7 +142,7 @@ class Controller(QObject):
             self.signal_log.emit(f"Starting backend: {backend_script}")
 
         else:
-            # COnsider that the server is already running
+            # Consider that the server is already running
             self._last_pong = time.time()
             self._is_server_ready = True
             self._server_ready_event.set()
@@ -151,7 +151,7 @@ class Controller(QObject):
 
     def _backend_runner(self, backend_script: str):
         """Run the backend process and forward output to GUI / terminal."""
-        print(f"_backend_runner")
+        alog.info(f"Start the backend server")
         try:
             self._backend_process = subprocess.Popen(
                 [sys.executable, "-u", backend_script],
@@ -167,10 +167,11 @@ class Controller(QObject):
                 sys.stdout.write(line)
                 sys.stdout.flush()
                 if "READY" in line:
-                    print("ready!!!!!")
+                    alog.info("The backend server is ready to work")
                     self._last_pong = time.time()
                     self._is_server_ready = True
-                    self._server_ready_event.set()  # Signal that server is ready
+                      # Signal that server is ready
+                    self._server_ready_event.set()
                     self.signal_log.emit("Backend is ready")
                     break
 
@@ -192,6 +193,7 @@ class Controller(QObject):
                 threading.Thread(target=forward, args=(self._backend_process.stdout, sys.stdout)),
                 threading.Thread(target=forward, args=(self._backend_process.stderr, sys.stderr)),
             ]
+            alog.info(f"Start the backend server")
             for t in threads:
                 t.start()
             for t in threads:
@@ -202,6 +204,7 @@ class Controller(QObject):
 
         finally:
             self._backend_process = None
+        alog.info(f"Backend server stopped")
 
 
     @Slot()
@@ -228,36 +231,43 @@ class Controller(QObject):
     def start(self):
         """Start the asyncio loop
         """
-        alog.debug("controller: start")
+        alog.info("Start the background threading")
         if self._running:
             alog.info("The asyncio loop is already running. Ignore.")
             return
         self._running = True
         alog.info("Start a new asyncio loop")
         self._loop = asyncio.new_event_loop()
-        threading.Thread(target=self._loop_runner, daemon=True).start()
-        alog.info("started")
+        threading.Thread(target=self._asyncio_loop, daemon=True).start()
+        alog.info("Thread used for the asyncio loop is now running")
 
 
-    def _loop_runner(self):
+    def _asyncio_loop(self):
         try:
             asyncio.set_event_loop(self._loop)
             result = self._loop.run_until_complete(self._main())
             if result is not None:
-                alog.info(f"Controller _main result: {result}")
+                alog.warning(f"asyncio loop ended with error: {result}")
+            else:
+                alog.info(f"asyncio loop ended")
+
 
         except Exception as e:
-            self.signal_log.emit(f"Controller loop crashed: {e}")
+            # self.signal_log.emit(f"asyncio loop crashed: {e}")
+            alog.error(f"asyncio loop crashed: {e}")
 
         finally:
-            # Clean shutdown
+            # Shutdown, clean
             if self._loop and not self._loop.is_closed():
                 # Cancel all pending tasks cleanly
+                alog.info(f"asyncio loop: cancel all pending tasks")
                 pending = asyncio.all_tasks(self._loop)
                 for task in pending:
                     task.cancel()
                 try:
-                    self._loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                    self._loop.run_until_complete(
+                        asyncio.gather(*pending, return_exceptions=True)
+                    )
                 except Exception:
                     pass
 
@@ -266,10 +276,11 @@ class Controller(QObject):
                 except Exception:
                     pass
                 self._loop.close()
+                alog.info(f"asyncio loop: closed")
 
         if self._running:
-            self.signal_log.emit("Controller loop stopped")
-        alog.info("The asyncio loop has been stopped")
+            self.signal_log.emit("asyncio loop: ended")
+        alog.info(f"asyncio loop: ended")
 
 
     @Slot()
@@ -340,12 +351,13 @@ class Controller(QObject):
 
     async def _main(self):
         retries = 0
-        delay = 3
+        delay = 0.5
+        exception: str = ""
 
         # Wait for server to be ready before attempting connection
-        self.signal_log.emit("Waiting for backend to be ready...")
+        alog.debug("Waiting for backend to be ready...")
         if not await self._wait_for_server_ready():
-            self.signal_log.emit("Backend failed to start")
+            alog.debug("Backend failed to start")
             self._running = False
             return
 
@@ -358,12 +370,12 @@ class Controller(QObject):
                     uri=self._uri,
                     proxy=None,
                     ping_interval=3,
-                    ping_timeout=2,
+                    ping_timeout=1.5,
                 ) as ws:
                     retries = 0
                     self._ws = ws
-                    self.signal_log.emit("Connected to backend")
-                    self.signal_backend_status.emit('running')
+                    alog.debug("Connected to backend")
+                    self.signal_backend_status.emit('started')
 
                     # Update pong timestamp when we receive a pong
                     ws.pong_handler = lambda _: setattr(self, "_last_pong", time.time())
@@ -380,28 +392,33 @@ class Controller(QObject):
             except Exception as e:
                 retries += 1
                 # await asyncio.sleep(3)
-                alog.error(f"Connection error ({retries}): {e}")
-                self.signal_log.emit(f"Connection error ({retries}): {e}")
+                exception = str(e)
+                # alog.error(f"Connection error ({retries}): {e}")
+                if retries >= 3:
+                    retries = 0
+                    self._running = False
+                    self.signal_backend_status.emit("stopped")
 
                 # Stop controller loop until GUI decides
-                self._running = False
+                # self._running = False
                 self._ws = None
-                await asyncio.sleep(3)
+                await asyncio.sleep(delay)
 
             finally:
-                try:
-                    if not self._is_shutting_down:
-                        self.signal_backend_status.emit("stopped")
-                except:
-                    pass
+                # try:
+                #     if not self._is_shutting_down:
+                #         self.signal_backend_status.emit("stopped")
+                # except:
+                #     pass
                 self._ws = None
 
                 if self._running:
-                    await asyncio.sleep(3)  # small retry delay
+                    await asyncio.sleep(delay)
 
         self._running = False
         self._ws = None
-        alog.info("asyncio loop has been terminated")
+        msg: str = f" with error: {exception}" if exception else ""
+        alog.info(f"asyncio loop has been terminated{msg}")
 
 
     def retry_connect(self):

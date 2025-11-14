@@ -101,6 +101,8 @@ class MainWindow(QMainWindow):
 
         self._is_loading: bool = False
         self.is_closing: bool = False
+        # CLose with error until a first model is sucessfully parsed
+        self._close_with_error: bool = True
 
 
 
@@ -160,6 +162,8 @@ class MainWindow(QMainWindow):
         # controller.signal_progress.connect(update_progress_bar)
         # controller.signal_system_usage.connect(update_telemetry)
         # controller.signal_log.connect(print_log)
+        self.apply_user_settings()
+
 
         self.controller.start_backend(
             absolute_path(os.path.join(__file__, os.pardir, os.pardir, "backend", "server.py")),
@@ -169,7 +173,7 @@ class MainWindow(QMainWindow):
         # Start the Thread
         self.controller.start()
 
-        self.apply_user_settings()
+
         # set_stylesheet(self)
 
 
@@ -398,8 +402,10 @@ class MainWindow(QMainWindow):
         self.adjust_height()
 
 
+
     def closeEvent(self, event: QCloseEvent):
-        self.save_user_settings()
+        if not self._close_with_error:
+            self.save_user_settings()
         if not self.is_closing:
             self.is_closing = True
             self.controller.shutdown()
@@ -599,6 +605,12 @@ class MainWindow(QMainWindow):
             self.widget_progress.setVisible(bool(model is not None))
         self.h_vertical_divider.setVisible(bool(model is not None))
 
+        # If it was the initial model,
+        #  todo select the previous selction
+        if self.initial_model:
+            self.initial_model = ""
+
+
 
     def event_model_selected(self, model_fp: str) -> None:
         alog.debug(f"selected: {model_fp}")
@@ -620,9 +632,15 @@ class MainWindow(QMainWindow):
 
     def event_model_parsed(self, model_fp: str) -> None:
         alog.debug("Model has been parsed")
+
         QApplication.restoreOverrideCursor()
         self._is_loading = False
         model: NnModel = self.controller.get_in_model_info()
+
+        # A model has been succesfully loaded
+        #   close without error to save user settings
+        if model is not None:
+            self._close_with_error = False
 
         self.refresh_model_info(model=model)
         self.widget_model_browser.update_model_fp(
@@ -760,13 +778,15 @@ class MainWindow(QMainWindow):
 
     # @Slot(str)
     def on_backend_status(self, status: Literal['running', 'stopped']) -> None:
-        if status == 'running':
+        if status == 'started':
             if not self.isEnabled():
                 self.setEnabled(True)
 
             if  self.initial_model:
                 self.event_model_selected(self.initial_model)
-                self.initial_model = ""
+
+        elif status == 'running':
+            alog.info("backend server is running")
 
         elif status == 'stopped':
             if self.dev_mode:
@@ -774,7 +794,7 @@ class MainWindow(QMainWindow):
 
             else:
                 msg = QMessageBox(self)
-                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setIcon(QMessageBox.Icon.Critical)
                 msg.setWindowTitle("Backend Offline")
                 msg.setText("The backend is not reachable.")
                 msg.setInformativeText("Do you want to restart it or quit the application?")
@@ -786,6 +806,7 @@ class MainWindow(QMainWindow):
                 if msg.clickedButton() == retry_btn:
                     self.controller.retry_connect()
                 else:
+                    self._close_with_error = True
                     self.close()
 
         else:
