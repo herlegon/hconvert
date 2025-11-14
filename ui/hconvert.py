@@ -37,10 +37,19 @@ def main():
 
     args = parser.parse_args()
 
-    # FileOutputHandler = logging.FileHandler('l
 
     application = QApplication(sys.argv)
     QApplication.setStyle("Fusion")
+
+
+    from install.launcher import run_installer_and_wait
+
+
+    run_installer_and_wait(
+        logo_path="logo.png",
+        local_packages_dir=None,
+    )
+
 
     from .main_window import MainWindow
     main_window = MainWindow(args=args)
