@@ -1,3 +1,14 @@
+[python]
+host = "https://github.com/JepEtau/external_rehost/releases/download/external"
+do_cache = true
+
+[python.win32.python]
+filename = "python-3.12.10-amd64.zip"
+
+[python.linux.python]
+filename = "python-3.12.10-linux.zip"
+
+
 [external]
 host = "https://github.com/JepEtau/external_rehost/releases/download/external"
 do_cache = false
@@ -5,19 +16,19 @@ ffmpeg_name = "FFmpeg"
 vspython_name = "VS python"
 avs_name = "AviSynth+ plugins"
 
-[external.win32]
-do_cache = false
+# [external.win32]
+# do_cache = false
 
 # Windows
 [external.win32.ffmpeg]
 filename = "ffmpeg-release-essentials.zip"
+skip=true
 
 [external.win32.vspython]
 filename = "vspython.zip"
+skip=true
 
 # Linux
 [external.linux.ffmpeg]
 filename = "ffmpeg-2025-11-12-git-6cdd2cbe32-essentials_build_linux.zip"
-skip=false
-
-
+skip=true

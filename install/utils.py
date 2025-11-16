@@ -44,12 +44,12 @@ def get_backend_dirs(
         python_exe = "python"
 
     else:
-        ilog.error()
+        ilog.error(f"Unsupported platform: {sys.platform}")
 
     return BackendDirectories(
         app=base / company / app_name,
         python_exe=base / company / app_name / "python" / python_exe,
-        external=base / company / app_name / "external",
+        external=base / company / app_name,
         cache=cache_dir,
         models=base / company / "models",
     )

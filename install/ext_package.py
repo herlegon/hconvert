@@ -366,33 +366,55 @@ if __name__ == "__main__":
         data: dict[str, Any] = tomllib.load(f)
 
     packages_cfg = load_packages_toml_(data)
+    pprint(packages_cfg)
 
-    print(lightcyan(" ".join (("-" * 40, sys.platform, "-" * 40))))
     external_packages = create_ext_packages(
         packages_cfg, external_dir=g_backend_dirs.external
     )
+    print(lightcyan(" ".join (("-" * 40, sys.platform, "-" * 40))))
     pprint(external_packages)
+    print()
+
+    python_package = create_ext_packages(
+        packages_cfg,
+        external_dir=g_backend_dirs.python_exe.parent.parent,
+        section='python'
+    )
+    print(lightcyan(" ".join (("-" * 40, "python", "-" * 40))))
+    pprint(python_package)
     print()
 
     g_backend_dirs.local_host = get_rehost_dir()
     print(lightcyan(" ".join (("-" * 40, "backend directories", "-" * 40))))
     pprint(g_backend_dirs)
 
-    installed: bool = download_install_ext_packages(
-        packages=external_packages,
-        reinstall=True,
-        threads=1,
-        use_local_host=True
-    )
-    if installed:
-        print(lightgreen("All packages installed"))
-    else:
-        print(red("Error: missing package(s)"))
 
-    # installed: bool = download_install_ext_packages(
-    #     external_packages(), threads=1, reinstall=True,
-    # )
-    # if installed:
-    #     print(lightgreen("All packages installed"))
-    # else:
-    #     print(red("Error: missing package(s)"))
+    if python_package:
+        installed: bool = download_install_ext_packages(
+            packages=python_package,
+            reinstall=True,
+            threads=1,
+            use_local_host=True
+        )
+        if installed:
+            print(lightgreen("All packages installed"))
+        else:
+            print(red("Error: missing package(s)"))
+    else:
+        print(lightgreen("No packages to install"))
+
+
+    if external_packages:
+        installed: bool = download_install_ext_packages(
+            packages=external_packages,
+            reinstall=True,
+            threads=1,
+            use_local_host=True
+        )
+        if installed:
+            print(lightgreen("All packages installed"))
+        else:
+            print(red("Error: missing package(s)"))
+    else:
+        print(lightgreen("No packages to install"))
+

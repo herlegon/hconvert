@@ -72,7 +72,8 @@ def load_packages_toml_(data: dict[str, Any]) -> dict[str, Any]:
 def create_ext_packages(
     packages_cfg: list,
     external_dir: Path,
-    platform: str = None
+    platform: str = None,
+    section: str = 'external',
 ) -> list[ExtPackage]:
     """
     Convert platforms dict to list of ExtPackage for the current platform.
@@ -91,10 +92,11 @@ def create_ext_packages(
         platform = sys.platform
 
     # External packages
-    ext_packages_cfg: dict = packages_cfg['external']
+    packages_cfg: dict = packages_cfg[section]
+    pprint(packages_cfg)
 
     # Get the platform-specific config
-    platform_config: dict[str, Any] = ext_packages_cfg.get(platform, {})
+    platform_config: dict[str, Any] = packages_cfg.get(platform, {})
     default_config: dict[str, Any] = platform_config.get('default', {})
 
     packages: list[ExtPackage] = []
@@ -106,7 +108,7 @@ def create_ext_packages(
         # Check if this looks like a package definition (has filename or is explicitly configured)
         if 'filename' in value:
             skip = value.get('skip', False)
-            # print(red(f"{key}: skip={skip}"))
+            print(red(f"{key}: skip={skip}"))
             if not skip:
                 package_name = value.get('name', default_config.get(f"{key}_name", key))
                 packages.append(
