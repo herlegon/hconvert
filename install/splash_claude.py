@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout,
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QPixmap
 
-from .utils import get_backend_directory
+from .utils import get_backend_dirs
 
 
 
@@ -105,7 +105,7 @@ class InstallationWindow(QWidget):
 def main():
     app = QApplication(sys.argv)
 
-    backend_dirs = get_backend_directory()
+    backend_dirs = get_backend_dirs()
     logo_path = "logo.png"
 
     window = InstallationWindow(

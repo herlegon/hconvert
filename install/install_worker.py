@@ -1,3 +1,4 @@
+from pprint import pprint
 import sys
 import os
 import subprocess
@@ -7,15 +8,15 @@ import shutil
 from pathlib import Path
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
-from PySide6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout,
-QLabel, QProgressBar, QMessageBox, QDialog,
-QPushButton, QHBoxLayout, QCheckBox
-)
-from PySide6.QtCore import Qt, QThread, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import QThread, Signal
 
-from install.utils import get_backend_directory
+from utils import (
+    BackendDirectories,
+    get_python_version,
+)
+
+
+python_version: str = "3.12"
 
 
 class InstallWorker(QThread):
@@ -25,8 +26,9 @@ class InstallWorker(QThread):
 
     def __init__(
         self,
-        backend_dirs,
-        keep_installers=False
+        backend_dirs: BackendDirectories,
+        keep_installers: bool = False,
+        use_local_rehost: bool = False
     ):
         super().__init__()
 
@@ -43,36 +45,96 @@ class InstallWorker(QThread):
 
 
     def run(self):
-        try:
-            # Create cache directory if keeping installers
-            cache_dir: Path = self.backend_dirs['cache']
-            if self.keep_installers and cache_dir:
-                cache_dir.mkdir(parents=True, exist_ok=True)
+        backend_dirs = self.backend_dirs
+        pprint(backend_dirs)
 
-            # Check if we should use local packages
-            local_packages = self.backend_dirs['_local_packages']
-            if local_packages and local_packages.exists():
-                self.progress.emit("Local packages directory found, using local installation...")
-                self.use_local = True
-            else:
-                self.progress.emit("Local packages not found, using internet connection...")
-                self.use_local = False
 
-            # Check if backend already exists
-            self.python_exe = self.backend_dir / "python" / "python.exe"
-            is_update = self.python_exe.exists()
+        # 1. Verify python installation: get version
+        python_dir: Path = backend_dirs.app / "python"
+        if sys.platform == 'win32':
+            python_exe: Path = python_dir / "python.exe"
+        elif sys.platform == 'linux':
+            python_exe: Path = python_dir / "python"
 
-            if is_update:
-                self.progress.emit("Checking for updates...")
-                self._check_updates()
-            else:
-                self.progress.emit("Installing backend...")
-                self._install_backend()
+        print(f"python version: {get_python_version(python_exe)}")
+        if get_python_version(python_exe) != python_version:
+            print("install python")
 
-            self.finished.emit(True, "Installation/Update completed successfully!")
 
-        except Exception as e:
-            self.finished.emit(False, f"Installation failed: {str(e)}")
+
+        # 2. Verify python packages: use a list of PyPackage
+        # @dataclass
+        # class PyPackage:
+        #     pretty_name: str
+        #     name: str
+        #     version: str = ""
+        #     index_url: str = ""
+        #     wheel: str = ""
+        #     url: str = ""
+        #     size: int = 0
+        #     supported: bool = True
+        #     installed: bool = False
+        #     installed_version: str = ""
+        #     uninstall_before: bool = False
+        #     delay_install: bool = False
+
+
+        # 3. List the missing packages or outdated
+
+        # 4. Install all packages except some that are dependent of the system
+
+        # 5. Create an additional list of PyPackage that have to be installed
+        #       torch cuda If a cuda gpu available else cpu
+        #       tensorrt if cuda is available
+
+        # 6. Install
+
+
+
+
+
+
+
+
+
+
+
+
+
+        # try:
+        # Create cache directory if keeping installers
+        cache_dir: Path = backend_dirs.cache
+        if self.keep_installers and cache_dir:
+            cache_dir.mkdir(parents=True, exist_ok=True)
+        print(f"created cache_dir: {cache_dir}")
+
+        # Check if we should use local packages
+        rehost_dir: Path = backend_dirs.rehost
+        if rehost_dir and rehost_dir.exists():
+            self.progress.emit("Local rehost directory found, using local installation...")
+            self.use_local = True
+        else:
+            self.progress.emit("Local rehost not found, using internet connection...")
+            self.use_local = False
+
+        # Check if backend already exists
+        self.python_exe = backend_dirs.app / "python" / "python.exe"
+
+
+
+        is_update = self.python_exe.exists()
+
+        if is_update:
+            self.progress.emit("Checking for updates...")
+            self._check_updates()
+        else:
+            self.progress.emit("Installing backend...")
+            self._install_backend()
+
+        self.finished.emit(True, "Installation/Update completed successfully!")
+
+        # except Exception as e:
+        #     self.finished.emit(False, f"Installation failed: {str(e)}")
 
 
     def _download_with_retry(self, url, desc):
@@ -139,7 +201,7 @@ class InstallWorker(QThread):
 
     def _install_backend(self):
         """Install backend from scratch"""
-        self.backend_dir.mkdir(parents=True, exist_ok=True)
+        self.backend_dirs.mkdir(parents=True, exist_ok=True)
 
         # Download Python embeddable
         python_filename = f"python-{self.python_version}-embed-amd64.zip"

@@ -42,12 +42,12 @@ def main():
     QApplication.setStyle("Fusion")
 
 
-    from install.launcher import run_installer_and_wait
+    from install.splash import run_installer_and_wait
 
 
     run_installer_and_wait(
         logo_path="logo.png",
-        local_packages_dir=None,
+        rehost_dir=None,
     )
 
 

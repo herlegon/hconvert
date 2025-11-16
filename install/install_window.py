@@ -9,22 +9,24 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 
-from .utils import get_backend_directory
 
-from .install_worker import InstallWorker
-
-from .first_time_dialog import FirstTimeSetupDialog
+from utils import BackendDirectories
+from install_worker import InstallWorker
 
 
 
 class InstallationWindow(QWidget):
     """Installation/Update window with logo and progress"""
 
-    def __init__(self, backend_dirs, logo_path=None, keep_installers=False):
+    def __init__(
+        self,
+        backend_dirs: BackendDirectories,
+        logo_path=None,
+        keep_installers: bool = False
+    ):
         super().__init__()
         self.backend_dirs = backend_dirs
         self.logo_path = logo_path
-        self.local_packages_dir = backend_dirs['_local_packages']
         self.keep_installers = keep_installers
         self.init_ui()
 
@@ -99,9 +101,9 @@ class InstallationWindow(QWidget):
             print("launch application")
 
             # Here you can launch your main GUI or backend
-            from main_app import MainWindow
-            self.main_window = MainWindow()
-            self.main_window.show()
+            # from main_app import MainWindow
+            # self.main_window = MainWindow()
+            # self.main_window.show()
 
 
         else:
@@ -112,30 +114,30 @@ class InstallationWindow(QWidget):
 
 
 
-def main():
-    app = QApplication(sys.argv)
+# def main():
+#     app = QApplication(sys.argv)
 
-    # Configure your paths
-    backend_dir = get_backend_directory()
-    logo_path = "logo.png"  # Path to your company logo
+#     # Configure your paths
+#     backend_dir = get_backend_directory()
+#     logo_path = "logo.png"  # Path to your company logo
 
-    # For testing: use local packages directory
-    # Set to None to always use internet
-    local_packages_dir = Path("./local_packages")  # or None
+#     # For testing: use local packages directory
+#     # Set to None to always use internet
+#     local_packages_dir = Path("./local_packages")  # or None
 
-    # Check if first time installation
-    keep_installers = False
-    if is_first_time_install(backend_dir):
-        # Show first time setup dialog
-        setup_dialog = FirstTimeSetupDialog()
-        keep_installers = setup_dialog.get_choice()
+#     # Check if first time installation
+#     keep_installers = False
+#     if is_first_time_install(backend_dir):
+#         # Show first time setup dialog
+#         setup_dialog = FirstTimeSetupDialog()
+#         keep_installers = setup_dialog.get_choice()
 
-    window = InstallationWindow(backend_dir, logo_path, local_packages_dir, keep_installers)
-    window.show()
-    window.start_installation()
+#     window = InstallationWindow(backend_dir, logo_path, local_packages_dir, keep_installers)
+#     window.show()
+#     window.start_installation()
 
-    sys.exit(app.exec())
+#     sys.exit(app.exec())
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

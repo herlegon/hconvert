@@ -18,10 +18,11 @@ import subprocess
 import time
 from urllib.parse import unquote
 
-from .ext_packages import ExtPackage, download_package
+from ..install.ext_package import ExtPackage, download_package
 from utils.logger import logger
 from hytils import (
     get_app_tempdir,
+    lightcyan,
     lightgrey,
 )
 
@@ -189,7 +190,7 @@ def uninstall_py_package(package: PyPackage) -> bool:
 
 
 def install_py_package(package: PyPackage, ext_package: ExtPackage) -> bool:
-    logger.debug(lightgrey(f"  install {ext_package.tmp_file}"))
+    logger.debug(lightgrey(f"  install {ext_package.cache_file}"))
 
     if package.uninstall_before:
         uninstall_py_package(package)
@@ -198,7 +199,7 @@ def install_py_package(package: PyPackage, ext_package: ExtPackage) -> bool:
         "python",
         "-m", "pip", "install",
         "--no-cache-dir",
-        ext_package.tmp_file,
+        ext_package.cache_file,
         "--progress-bar=off",
         "-v"
     ]
@@ -252,13 +253,13 @@ def download_install_py_package(
         size=package.size,
         response=response,
         dirname="wheels",
-        tmp_file=os.path.join(temp_dir, "wheels", package.wheel)
+        cache_file=os.path.join(temp_dir, "wheels", package.wheel)
     )
 
     # Download package
     if (
-        os.path.exists(ext_package.tmp_file)
-        and os.path.getsize(ext_package.tmp_file) == ext_package.size
+        os.path.exists(ext_package.cache_file)
+        and os.path.getsize(ext_package.cache_file) == ext_package.size
     ):
         ext_package.downloaded = True
         logger.debug(lightgrey(f"  already downloaded"))
