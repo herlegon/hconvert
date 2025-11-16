@@ -3,8 +3,7 @@ from pprint import pprint
 import tomllib
 from pathlib import Path
 from typing import Any
-from ext_package import ExtPackage
-
+from install_types import PLATFORMS, ExtPackage
 
 from pathlib import Path
 from dataclasses import dataclass
@@ -17,34 +16,9 @@ import sys
 from pathlib import Path
 from dataclasses import dataclass
 import requests
-from utils import g_backend_dirs
+from utils import g_backend_dirs, get_rehost_dir
 
-PLATFORMS: tuple[str] = ('win32', 'linux', 'darwin')
 
-@dataclass
-class ExtPackage:
-    name: str
-    filename: str
-
-    # Installation, skip is not necessary except for dev and to keep the
-    # definitions in the config file
-    skip: bool
-    install_dir: Path = None
-    installed: bool = False
-
-    # Where to download from
-    last_modified: str = ''
-    size: int = 0
-    host: str = ''
-    response: requests.Response | None = None
-
-    # Downloaded/cached
-    downloaded: bool = False
-    cache_file: Path = None
-    do_cache: bool = False
-
-    def __post_init__(self):
-        self.skip = bool(self.filename == '')
 
 
 
@@ -96,7 +70,7 @@ def load_packages_toml_(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def create_ext_packages(
-    packages_cfg: dict,
+    packages_cfg: list,
     external_dir: Path,
     platform: str = None
 ) -> list[ExtPackage]:
@@ -135,12 +109,12 @@ def create_ext_packages(
             # print(red(f"{key}: skip={skip}"))
             if not skip:
                 package_name = value.get('name', default_config.get(f"{key}_name", key))
-
                 packages.append(
                     ExtPackage(
                         name=package_name,
-                        install_dir=external_dir / key,
                         filename=value.get('filename', ''),
+                        key=key,
+                        install_dir=external_dir / key,
                         host=value.get('host', ''),
                         do_cache=value.get('do_cache', False),
                         skip=value.get('skip', False),

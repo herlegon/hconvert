@@ -18,7 +18,7 @@ import subprocess
 import time
 from urllib.parse import unquote
 
-from ..install.ext_package import ExtPackage, download_package
+from ..install.ext_package import ExtPackage, download_package_from_host
 from utils.logger import logger
 from hytils import (
     get_app_tempdir,
@@ -265,7 +265,7 @@ def download_install_py_package(
         logger.debug(lightgrey(f"  already downloaded"))
 
     else:
-        ext_package.downloaded = download_package(
+        ext_package.downloaded = download_package_from_host(
             ext_package,
             progress=progress,
             task_id=progress.add_task(

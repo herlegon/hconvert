@@ -38,13 +38,3 @@ python_packages_add = {
     },
 }
 
-
-ext_packages = {
-    'linux': {
-        'ffmpeg': ("name" = "FFmpeg", "filename" = "ffmpeg_linux_amd64.zip"),
-    },
-    'win32': {
-        'ffmpeg': ("name" = "FFmpeg", "filename" =  "ffmpeg_win32_x64.zip"),
-        'vspython': ("name" = "VS python", "vspython.zip"),
-    },
-}

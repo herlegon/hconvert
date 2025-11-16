@@ -1,6 +1,6 @@
 [external]
 host = "https://github.com/JepEtau/external_rehost/releases/download/external"
-do_cache = true
+do_cache = false
 ffmpeg_name = "FFmpeg"
 vspython_name = "VS python"
 avs_name = "AviSynth+ plugins"
@@ -8,10 +8,9 @@ avs_name = "AviSynth+ plugins"
 [external.win32]
 do_cache = false
 
-# Windows:
+# Windows
 [external.win32.ffmpeg]
-filename = "ffmpeg-2025-11-12-git-6cdd2cbe32-essentials_build.zip"
-do_cache = true
+filename = "ffmpeg-release-essentials.zip"
 
 [external.win32.vspython]
 filename = "vspython.zip"

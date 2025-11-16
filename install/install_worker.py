@@ -109,7 +109,7 @@ class InstallWorker(QThread):
         print(f"created cache_dir: {cache_dir}")
 
         # Check if we should use local packages
-        rehost_dir: Path = backend_dirs.rehost
+        rehost_dir: Path = backend_dirs.local_host
         if rehost_dir and rehost_dir.exists():
             self.progress.emit("Local rehost directory found, using local installation...")
             self.use_local = True

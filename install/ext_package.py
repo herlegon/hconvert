@@ -1,10 +1,13 @@
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import datetime
 import os
 from pathlib import Path
 from pprint import pprint
 import signal
 import sys
+import tomllib
+from typing import Any
 import requests
 import shutil
 from rich.progress import (
@@ -16,50 +19,59 @@ from rich.progress import (
     TimeRemainingColumn,
     TransferSpeedColumn,
 )
-
+import tempfile
 from hytils import (
     get_extension,
+    lightcyan,
     lightgreen,
-    lightgrey,
     red,
     reformat_datetime,
 )
-from utils import g_backend_dirs
+from load_package_config import create_ext_packages, load_packages_toml_
+from utils import g_backend_dirs, get_rehost_dir
 from logger import ilog
 from urllib.error import URLError, HTTPError
+from install_types import ExtPackage
 
 
-# an external package is a program/helper
-# that will be installed in the external directory
-@dataclass
-class ExtPackage:
-    name: str
-    dirname: Path
-    filename: str
-    size: int = 0
-    host: str = ''
-    response: requests.Response | None = None
-    last_modified: str = ''
-    downloaded: bool = False
-    installed: bool = False
-    install_dir: Path = None
-    cache_file: Path = None
-    skip: bool = False
-    do_cache: bool = False
+def clean_cache(package: ExtPackage) -> None:
+    # clean cache of other version
+    ilog.debug(f"Remove old cache")
+    for file in package.cache_file.parent.iterdir():
+        if (
+            file.is_file()
+            and file.name.startswith(package.key)
+            and file.name not in (
+                package.tag,
+                package.filename
+            )
+        ):
+            file.unlink()
 
-    def __post_init__(self):
-        self.skip = bool(self.filename == '')
-
+    if not package.do_cache:
+        ilog.debug(f"Remove cached installed files")
+        for file in package.cache_file.parent.iterdir():
+            if file.is_file() and file.name.startswith(package.key):
+                file.unlink()
 
 
-def download_package(
+
+def download_package_from_host(
     package: ExtPackage,
     retry: int = 3,
     progress: Progress| None = None,
     task_id: TaskID | None = None,
 ) -> bool:
-    tmp_dir: str = os.path.dirname(package.cache_file)
-    os.makedirs(tmp_dir, exist_ok=True)
+
+    if not package.tag:
+        ilog.error(f"Tag file not valid for package: {package.name}")
+        return False
+
+    tmp_dir = package.cache_file.parent
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    tag_file = (tmp_dir / package.tag)
+    if tag_file.exists():
+        tag_file.unlink()
 
     ilog.debug(f"Download package: {package.filename}")
 
@@ -77,29 +89,26 @@ def download_package(
                     if progress is not None:
                         progress.update(task_id, advance=len(data))
             except Exception as e:
-                ilog.info("[W] Retry download, error: type(e)")
+                ilog.debug("[W] Retry download, error: type(e)")
                 _retry -= 1
                 continue
 
         if _retry == 0:
-            ilog.info(f"[E] failed downloading {package.filename}")
+            ilog.debug(f"[E] failed downloading {package.filename}")
             return False
 
         _retry = 0
 
-    if package.last_modified:
-        open(os.path.join(tmp_dir, package.last_modified), 'w').close()
-
-    return  True
-
+    tag_file.touch()
+    return True
 
 
 def install_ext_package(package: ExtPackage) -> bool:
-    ilog.info(lightgrey(f"  install"))
-    install_dir: str = package.install_dir
+    ilog.debug(f"Install: {package.name}")
+    install_dir = package.install_dir
 
-    extension: str = get_extension(package.cache_file)
-    if os.path.exists(install_dir):
+    extension: str = get_extension(str(package.cache_file))
+    if install_dir.exists():
         shutil.rmtree(install_dir)
 
     if extension == '.zip':
@@ -108,42 +117,42 @@ def install_ext_package(package: ExtPackage) -> bool:
             f.extractall(install_dir)
 
     else:
-        if os.path.exists(install_dir):
-            shutil.rmtree(install_dir)
-        os.makedirs(install_dir)
+        install_dir.mkdir(parents=True, exist_ok=True)
         shutil.move(package.cache_file, install_dir)
 
+    (install_dir / package.tag).touch()
     package.installed = True
-    open(os.path.join(install_dir, package.last_modified), 'w').close()
-    if not package.do_cache:
-        try:
-            shutil.rmtree(os.path.dirname(package.cache_file))
-        except:
-            pass
-    ilog.info(lightgrey(f"  {package.name} installed"))
+
+    ilog.debug(f"{package.name} installed in {install_dir}")
 
     return True
 
 
 
-def dl_and_install_ext_package(
+def download_package_(
     package: ExtPackage,
     progress: Progress | None = None,
     retry: int = 3,
-    use_local_rehost: bool = False,
+    use_local_host: bool = False,
     reinstall: bool = False,
-) -> bool:
-    if package.skip:
-        return True
-    ilog.info(f"Package: {package.name}")
-
+) -> ExtPackage:
     last_modified: str = ""
-    if use_local_rehost and g_backend_dirs.rehost:
-        # Use local rehost for testing purpose
-        local_rehost = g_backend_dirs.rehost
-        local_rehost_fp: Path = local_rehost / package.filename
-        if local_rehost_fp.is_file():
-            last_modified = local_rehost.stat().st_mtime
+    downloadable: bool = False
+    if use_local_host:
+        local_host = g_backend_dirs.local_host
+        if local_host and local_host.is_dir():
+            # Use local rehost for testing purpose
+            local_rehost_fp: Path = local_host / package.filename
+            if local_rehost_fp.is_file():
+                dt = datetime.fromtimestamp(local_rehost_fp.stat().st_mtime)
+                formatted_time = dt.strftime("%Y-%m-%dT%H-%M-%S")
+                last_modified = formatted_time
+                ilog.debug(f"use local rehost: {package.name}, {last_modified}")
+                package.size = local_rehost_fp.stat().st_size
+            else:
+                ilog.warning(f"Asked to use local host, but file {local_rehost_fp} not found")
+        else:
+            ilog.warning(f"Asked to use local host ({local_host}) but directory doesn't exist")
 
     else:
         # Get info from host and update package info
@@ -163,56 +172,84 @@ def dl_and_install_ext_package(
 
             except requests.exceptions.RequestException as e:
                 if str(e).startswith('404'):
-                    ilog.error(f"{package.filename} not found")
+                    ilog.error(f"{package.filename} not found on the host")
+                    break
                 else:
                     ilog.error(f"Exception while fetching: {str(e)}")
                 if attempt < retry - 1:
                     continue
 
+            downloadable = True
             last_modified: str = reformat_datetime(response.headers['Last-Modified'])
             package.size = int(response.headers.get('Content-length', 0))
             package.response = response
 
-    package.last_modified = last_modified
-    package.cache_file = g_backend_dirs.cache / package.filename
-    ilog.error(f"Cache file: {package.cache_file}")
+    package.tag = (
+        f"{package.filename}_{last_modified}"
+        if last_modified
+        else ""
+    )
+    if package.do_cache:
+        package.cache_file = g_backend_dirs.cache / package.filename
+    else:
+        package.cache_file = Path(tempfile.gettempdir()) / "herlegon" / package.filename
+    ilog.debug(f"package: {'\n'.join(str(package).split(','))}")
 
     # Check if installed: use a timestamp file for this
-    if last_modified:
-        package.install_dir = g_backend_dirs.external / package.dirname
-        timestamp_fp: Path = package.install_dir / last_modified
-        if timestamp_fp.exists():
+    if package.tag:
+        tag_fp: Path = package.install_dir / package.tag
+        if tag_fp.exists():
             package.installed = True
-            ilog.info(lightgrey(f"  already installed"))
-            try:
-                shutil.rmtree(package.cache_file.parent)
-            except:
-                pass
+            ilog.debug(f"{package.name} already installed")
+
+            # Remove cache if installed
+            if not package.do_cache and not reinstall:
+                try:
+                    package.cache_file.unlink()
+                except:
+                    pass
+                tag_fp.unlink()
+
             if not reinstall:
-                return True
+                clean_cache(package=package)
+                return package
+        else:
+            ilog.debug(f"{package.name} not installed yet")
+    else:
+        ilog.warning(f"{package.name} not tag found ({package.tag})")
 
     package.installed = False
 
     # Detect if cached
-    cache_last_modified: Path = g_backend_dirs.cache / package.dirname / last_modified
+    ilog.debug(f"Searching cache file: {package.cache_file}")
+    tag_fp: Path = g_backend_dirs.cache / package.tag
     if (
-        cache_last_modified.exists()
+        package.tag and tag_fp.exists()
         and package.cache_file.is_file()
         and package.cache_file.stat().st_size == package.size
     ):
         package.downloaded = True
-        ilog.info(lightgrey(f"  {cache_last_modified} already downloaded"))
+        ilog.debug(f"{package.name} Use cached installer")
 
-    # Use local rehost
-    if not package.downloaded and use_local_rehost and g_backend_dirs.rehost:
-        local_fp = g_backend_dirs.cache / package.filename
+    # Use local host to simulate a download
+    if (
+        not package.downloaded
+        and use_local_host
+        and g_backend_dirs.local_host
+    ):
+        local_fp: Path = g_backend_dirs.local_host / package.filename
+        ilog.debug(f"Searching {local_fp}")
         if local_fp.exists():
-            ilog.info(f"Using local rehost: {local_fp}")
+            cache_dir = package.cache_file.parent
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            ilog.debug(f"Copy from local host: {local_fp} -> {cache_dir}")
+            shutil.copy(local_fp, cache_dir)
+            (cache_dir / package.tag).touch(exist_ok=True)
             package.downloaded = True
 
     # Finally download it from host
-    if not package.downloaded:
-        package.downloaded = download_package(
+    if not package.downloaded and downloadable:
+        package.downloaded = download_package_from_host(
             package,
             progress=progress,
             task_id=progress.add_task(
@@ -223,22 +260,50 @@ def dl_and_install_ext_package(
             retry=retry
         )
 
-    if not package.downloaded:
-        return False
+    return package
+
+
+def dl_and_install_ext_package(
+    package: ExtPackage,
+    progress: Progress | None = None,
+    retry: int = 3,
+    use_local_host: bool = False,
+    reinstall: bool = False,
+) -> bool:
+    if package.skip:
+        return True
+    ilog.info(f"{package.name}")
+    package = download_package_(
+        package,
+        progress=progress,
+        retry=retry,
+        use_local_host=use_local_host,
+        reinstall=reinstall,
+    )
 
     # Install package
-    return install_ext_package(package)
+    if not package.installed or reinstall:
+        if package.downloaded:
+            installed: bool = install_ext_package(package)
+            if installed:
+                clean_cache(package=package)
+            package.installed = installed
 
+    if package.installed:
+        ilog.info(f"{package.name}: installed")
+    else:
+        ilog.error(f"{package.name}: Failed to install")
+
+    return package.installed
 
 
 
 def download_install_ext_packages(
     packages: tuple[ExtPackage],
-    rehost_url: str,
     retry: int = 3,
     threads: int = 1,
     reinstall: bool = False,
-    use_local_rehost: bool = False,
+    use_local_host: bool = False,
 ) -> bool:
     threads = min(max(threads, 1), len(packages))
     progress = Progress(
@@ -253,9 +318,6 @@ def download_install_ext_packages(
         TimeRemainingColumn(),
     )
 
-    for package in packages:
-        package.host = rehost_url
-
     packages = [package for package in packages if not package.skip]
     if threads == 1:
         with progress:
@@ -264,7 +326,7 @@ def download_install_ext_packages(
                     package=package,
                     progress=progress,
                     retry=retry,
-                    use_local_rehost=use_local_rehost,
+                    use_local_host=use_local_host,
                     reinstall=reinstall,
                 )
                 if not success:
@@ -280,7 +342,7 @@ def download_install_ext_packages(
                             'package': package,
                             'progress': progress,
                             'retry': retry,
-                            'use_local_rehost': use_local_rehost,
+                            'use_local_host': use_local_host,
                             'reinstall': reinstall
                         }
                         for package in packages
@@ -293,54 +355,44 @@ def download_install_ext_packages(
 
 
 
-def external_packages() -> tuple[ExtPackage]:
-    packages: tuple[ExtPackage] = (
-        ExtPackage(
-            name="FFmpeg",
-            dirname='ffmpeg',
-            filename=(
-                "ffmpeg_win32_x64.zip"
-                if sys.platform == "win32"
-                else "ffmpeg_linux_amd64.zip"
-            ),
-            do_cache=True,
-        ),
-        ExtPackage(
-            name="VS python",
-            dirname="vspython",
-            filename=(
-                "vspython.zip"
-                if sys.platform == "win32"
-                else ""
-            ),
-            do_cache=True,
-        ),
-    )
-    return packages
-
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    import logging
     import sys
     from logger import ilog
-    ilog.addHandler(logging.StreamHandler(sys.stdout))
     ilog.setLevel("DEBUG")
 
-    rehost_url: str = "https://github.com/JepEtau/external_rehost/releases/download/external"
+    with open(Path("packages.toml"), "rb") as f:
+        data: dict[str, Any] = tomllib.load(f)
+
+    packages_cfg = load_packages_toml_(data)
+
+    print(lightcyan(" ".join (("-" * 40, sys.platform, "-" * 40))))
+    external_packages = create_ext_packages(
+        packages_cfg, external_dir=g_backend_dirs.external
+    )
+    pprint(external_packages)
+    print()
+
+    g_backend_dirs.local_host = get_rehost_dir()
+    print(lightcyan(" ".join (("-" * 40, "backend directories", "-" * 40))))
+    pprint(g_backend_dirs)
 
     installed: bool = download_install_ext_packages(
-        external_packages(), rehost_url=rehost_url, threads=1,
+        packages=external_packages,
+        reinstall=True,
+        threads=1,
+        use_local_host=True
     )
     if installed:
         print(lightgreen("All packages installed"))
     else:
         print(red("Error: missing package(s)"))
 
-    installed: bool = download_install_ext_packages(
-        external_packages(), rehost_url=rehost_url, threads=1, reinstall=True,
-    )
-    if installed:
-        print(lightgreen("All packages installed"))
-    else:
-        print(red("Error: missing package(s)"))
+    # installed: bool = download_install_ext_packages(
+    #     external_packages(), threads=1, reinstall=True,
+    # )
+    # if installed:
+    #     print(lightgreen("All packages installed"))
+    # else:
+    #     print(red("Error: missing package(s)"))

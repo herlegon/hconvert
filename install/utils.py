@@ -13,7 +13,7 @@ class BackendDirectories:
     external: Path
     cache: Path
     models: Path
-    rehost: Path | None = None
+    local_host: Path | None = None
 
 
 
@@ -61,10 +61,10 @@ def get_rehost_dir(company: str = "herlegon") -> Path:
     local_package_dir: Path
 
     if sys.platform == "win32":
-        local_package_dir = Path(os.path.join("A:", company, "rehost"))
+        local_package_dir = Path("A:\\") / company / "rehost"
 
     elif sys.platform == "linux":
-        local_package_dir = Path(f"/opt/{company}/rehost")
+        local_package_dir = Path("/opt") / company / "rehost"
 
     elif sys.platform == "darwin":
         local_package_dir = Path.home() / company / "rehost"
