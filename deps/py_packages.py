@@ -18,7 +18,7 @@ import subprocess
 import time
 from urllib.parse import unquote
 
-from ..install.ext_package import ExtPackage, download_package_from_host
+from ..install.ext_package import Package, download_package_from_host
 from utils.logger import logger
 from hytils import (
     get_app_tempdir,
@@ -189,7 +189,7 @@ def uninstall_py_package(package: PyPackage) -> bool:
     return True
 
 
-def install_py_package(package: PyPackage, ext_package: ExtPackage) -> bool:
+def install_py_package(package: PyPackage, ext_package: Package) -> bool:
     logger.debug(lightgrey(f"  install {ext_package.cache_file}"))
 
     if package.uninstall_before:
@@ -247,7 +247,7 @@ def download_install_py_package(
         return False
 
     # Use the external package download procedure
-    ext_package = ExtPackage(
+    ext_package = Package(
         name=package.pretty_name,
         filename=package.wheel,
         size=package.size,

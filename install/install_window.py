@@ -10,7 +10,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 
 
-from utils import BackendDirectories
+from backend_dirs import BackendDirectories
 from install_worker import InstallWorker
 
 
