@@ -11,6 +11,7 @@ from hytils import (
     reformat_datetime,
 )
 from backend_dirs import g_backend_dirs
+from utils import check_site_reachable, get_domain_from_url
 from logger import ilog
 from urllib.error import URLError, HTTPError
 from ext_packages import ExtPackage
@@ -131,30 +132,32 @@ def download_package_(
         url: str = f"{package.host}/{package.filename}"
         ilog.debug(f"url: {url}")
 
-        for attempt in range(retry):
-            response: requests.Response
-            try:
-                response = requests.get(url, stream=True)
-                response.raise_for_status()
+        reacheable = check_site_reachable(get_domain_from_url(url))
+        if reacheable:
+            for attempt in range(retry):
+                response: requests.Response
+                try:
+                    response = requests.get(url, stream=True)
+                    response.raise_for_status()
 
-            except (URLError, HTTPError):
-                ilog.warning(f"Host not reachable")
-                if attempt < retry - 1:
-                    continue
+                except (URLError, HTTPError):
+                    ilog.warning(f"Host not reachable")
+                    if attempt < retry - 1:
+                        continue
 
-            except requests.exceptions.RequestException as e:
-                if str(e).startswith('404'):
-                    ilog.error(f"{package.filename} not found on the host")
-                    break
-                else:
-                    ilog.error(f"Exception while fetching: {str(e)}")
-                if attempt < retry - 1:
-                    continue
+                except requests.exceptions.RequestException as e:
+                    if str(e).startswith('404'):
+                        ilog.error(f"{package.filename} not found on the host")
+                        break
+                    else:
+                        ilog.error(f"Exception while fetching: {str(e)}")
+                    if attempt < retry - 1:
+                        continue
 
-            downloadable = True
-            last_modified: str = reformat_datetime(response.headers['Last-Modified'])
-            package.size = int(response.headers.get('Content-length', 0))
-            package.response = response
+                downloadable = True
+                last_modified: str = reformat_datetime(response.headers['Last-Modified'])
+                package.size = int(response.headers.get('Content-length', 0))
+                package.response = response
 
     package.tag = (
         f"{package.filename}_{last_modified}"
