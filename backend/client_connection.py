@@ -7,11 +7,7 @@ import os
 from pprint import pprint
 import queue
 import websockets
-from messages import WorkerResponse
-from worker import (
-    Worker,
-    worker_task_list,
-)
+from install_worker import InstallWorker
 from hytils import lightblue, lightcyan, purple, red, yellow
 from websockets import (
     ServerConnection,
@@ -25,6 +21,23 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from server import BackendServer
+
+
+# --- SAFE IMPORT BLOCK ---
+try:
+    from messages import WorkerResponse
+    from worker import Worker, worker_task_list
+    WORKER_AVAILABLE = True
+
+except ImportError:
+    # This happens during the first run (Setup Mode).
+    # We define dummy variables so the code below doesn't crash with NameError.
+    slog.warning("Worker dependencies missing. Running in Setup/Maintenance Mode.")
+
+    Worker = None
+    worker_task_list = []  # An empty list makes "if cmd in list" safe!
+    WORKER_AVAILABLE = False
+
 
 
 class ClientConnectionHandler:
@@ -58,8 +71,11 @@ class ClientConnectionHandler:
         self.workers: dict[str, dict[str, Worker]] = {}
         self.stop_event: mp.Event = mp.Event()
 
-        self.worker_name = "nnlib"
-        self.start_worker(self.worker_name)
+        self.install_worker_name = "hbinstall"
+
+        if WORKER_AVAILABLE:
+            self.worker_name = "nnlib"
+            self.start_worker(self.worker_name)
 
 
     async def route_message(self, msg):
@@ -83,8 +99,20 @@ class ClientConnectionHandler:
             slog.debug("route shutdown message")
             await self.close()
 
+        # 2. Setup/Install Messages (Only if needed)
+        # You can add logic here to handle "install_packages" command
+        # even if the worker is missing.
+        elif cmd == "install":
+            if self.install_worker_name not in self.workers.keys():
+                self.start_worker(self.install_worker_name)
+            self.submit_task_to_worker(self.install_worker_name, msg)
+
+
         elif cmd in worker_task_list:
-            self.submit_task_to_worker(self.worker_name, msg)
+            if WORKER_AVAILABLE:
+                self.submit_task_to_worker(self.worker_name, msg)
+            else:
+                slog.error("Cannot execute task: System is in Setup Mode.")
 
         else:
             slog.warning(lightblue(f"[{self.client_id}] ⚠️ Unknown message type: {cmd}"))
@@ -273,16 +301,29 @@ class ClientConnectionHandler:
 
         task_queue = mp.Queue()
         result_queue = mp.Queue()
-        try:
-            worker = Worker(
-                task_queue=task_queue,
-                result_queue=result_queue,
-                stop_event=self.stop_event
-            )
-            worker.start()
-        except Exception as e:
-            slog.error(f"[{self.client_id}] ❌  Failed to start worker \'{name}\'")
-            return
+        if name == 'worker':
+            try:
+                worker = Worker(
+                    task_queue=task_queue,
+                    result_queue=result_queue,
+                    stop_event=self.stop_event
+                )
+                worker.start()
+            except Exception as e:
+                slog.error(f"[{self.client_id}] ❌  Failed to start worker \'{name}\'")
+                return
+
+        elif name == 'hbinstall':
+            try:
+                worker = InstallWorker(
+                    task_queue=task_queue,
+                    result_queue=result_queue,
+                    stop_event=self.stop_event
+                )
+                worker.start()
+            except Exception as e:
+                slog.error(f"[{self.client_id}] ❌  Failed to start worker \'{name}\'")
+                return
 
         self.workers[name] = {
             'worker': worker,
@@ -322,7 +363,7 @@ class ClientConnectionHandler:
         """
         Async loop to forward worker results to the to_client queue.
         """
-        slog.info(lightblue(f"[{self.client_id}] ℹ️  start a worker result loop"))
+        slog.info(lightblue(f"[{self.client_id}] ℹ️  start a worker result loop for {name}"))
 
         loop = asyncio.get_running_loop()
         result_queue: mp.Queue = self.workers[name]['result_queue']

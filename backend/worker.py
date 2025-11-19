@@ -1,3 +1,5 @@
+from hsys import os_platform
+
 from pprint import pprint
 import queue
 import signal

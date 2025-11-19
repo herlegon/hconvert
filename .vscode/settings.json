@@ -33,6 +33,7 @@
         "../pynnlib",
         "../hytils",
         "../hwidgets",
+        "../hinstall",
     ],
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.diagnosticSeverityOverrides": {
