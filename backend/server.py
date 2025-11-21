@@ -20,6 +20,8 @@ import asyncio
 asyncio_logger = logging.getLogger("asyncio")
 asyncio_logger.setLevel(logging.WARNING)
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
+
 from client_connection import ClientConnectionHandler
 from hytils import red, yellow
 from logger import slog

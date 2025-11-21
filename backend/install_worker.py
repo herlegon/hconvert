@@ -1,10 +1,13 @@
+from concurrent.futures import ThreadPoolExecutor
 import json
+import os
 from pathlib import Path
 from pprint import pprint
 import queue
 import signal
 import sys
-from hytils import lightgreen, purple, red, yellow
+import time
+from hytils import lightcyan, lightgreen, purple, red, yellow
 from logger import slog
 from messages import WorkerCommand, WorkerResponse
 import multiprocessing as mp
@@ -14,20 +17,17 @@ try:
     from hinstall import __version__
 except:
     dev_dir: str = str(Path(__file__).resolve().parent.parent.parent / "hinstall")
-    slog.warning(f"Import from dev directory: {dev_dir}")
+    slog.warning(f"Import hinstall from dev directory: {dev_dir}")
     sys.path.append(dev_dir)
 
 try:
     from hinstall import (
         ExtPackages,
         PyPackages,
+        PyPackage,
         download_install_ext_packages,
         g_backend_dirs,
-        generate_backend_env,
-        get_python_version,
-        parse_packages_toml_,
-        get_pypackage_list,
-        get_pip_versions,
+        parse_config_,
     )
 except Exception as e:
     slog.critical(f"Failed to import hinstall package: {str(e)}")
@@ -54,6 +54,14 @@ class InstallWorker(mp.Process):
         self.result_queue: mp.Queue = result_queue
         self.stop_event: mp.Event = stop_event
 
+        self.product_name: str = "hconvert"
+        self.reinstall: bool = False
+        self.use_local_host: bool = True
+        self.local_host: str = ""
+        self.keep_up_to_date: bool = False
+
+        self.packages_cfg : dict[str, str] = {}
+        self.py_packages: PyPackages = None
 
 
     def run(self):
@@ -83,7 +91,7 @@ class InstallWorker(mp.Process):
                     #             g_backend_dirs,
                     #             generate_backend_env,
                     #             get_python_version,
-                    #             parse_packages_toml_,
+                    #             parse_config_,
                     #             get_pypackage_list,
                     #             get_pip_versions,
                     #         )
@@ -149,15 +157,15 @@ class InstallWorker(mp.Process):
         pprint(payload)
         toml_cfg = json.loads(payload.get("cfg"))
 
-        product_name: str = payload.get("product", "hconvert")
-        reinstall: bool = payload.get("reinstall", False)
-        use_local_host: bool = payload.get("use_local_host", False)
-        local_host: str = payload.get("local_host", "")
+        self.product_name: str = payload.get("product", "hconvert")
+        self.reinstall: bool = payload.get("reinstall", False)
+        self.use_local_host: bool = payload.get("use_local_host", False)
+        self.local_host: str = payload.get("local_host", "")
 
 
-        packages_cfg = parse_packages_toml_(toml_cfg)
+        self.packages_cfg = parse_config_(toml_cfg)
         # try:
-        #     packages_cfg = parse_packages_toml_(payload)
+        #     packages_cfg = parse_config_(payload)
         # except Exception as e:
         #     exception: str = str(e)
         #     self.send_result(
@@ -175,21 +183,46 @@ class InstallWorker(mp.Process):
             )
         )
 
+        self.handle_install_ext_packages()
+        restart_required = self.handle_install_py_packages_1st_stage()
+        if restart_required:
+            print("restart to install delayed")
+            print("\nPackages installed successfully. Restarting server...")
+
+            # Restart this script
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+            return
+
+        else:
+            restart_required = self.handle_install_2nd_stage()
+
+        if restart_required:
+            print("restart to install delayed")
+            print("\nPackages installed successfully. Restarting server...")
+            # Restart this script
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+            return
+        else:
+            print(red("READY"))
+
+
+
+    def handle_install_ext_packages(self) -> None:
         # for testing purpose
-        if use_local_host:
-            g_backend_dirs.local_host = local_host if local_host else self.get_rehost_dir()
+        if self.use_local_host:
+            g_backend_dirs.local_host = self.local_host if self.local_host else self.get_rehost_dir()
 
         # All packages except python
-        ext_packages = ExtPackages(packages_cfg, sys.platform)
+        ext_packages = ExtPackages(self.packages_cfg, sys.platform)
         packages_to_install = ext_packages.get_all_except('python')
 
         # Install external packages
         if packages_to_install:
             installed: bool = download_install_ext_packages(
                 packages=packages_to_install,
-                reinstall=reinstall,
+                reinstall=self.reinstall,
                 threads=1,
-                use_local_host=use_local_host
+                use_local_host=self.use_local_host
             )
             if installed:
                 print(lightgreen("All packages installed"))
@@ -208,24 +241,169 @@ class InstallWorker(mp.Process):
             )
         )
 
-        # Install python packages
-        # g_backend_dirs.python_exe = ""
-        backend_env = generate_backend_env()
-
-        # Get python packages that have to be installed first
-        py_packages = PyPackages(packages_cfg, sys.platform)
-        py_packages = py_packages.get_initial()
-
-        pprint(py_packages)
-
-        pprint(g_backend_dirs)
-
-        print(get_python_version())
-
-        result = get_pypackage_list()
+        # Todo: verify
 
 
-        # update_package_info(py_packages[0])
 
-        installed_versions = get_pip_versions()
-        pprint(installed_versions)
+    def handle_install_py_packages_1st_stage(self) -> bool:
+        self.py_packages = PyPackages(
+            self.packages_cfg,
+            sys.platform,
+            keep_up_to_date=self.keep_up_to_date
+        )
+
+        cpu_count = mp.cpu_count()
+        cpu_count = max(cpu_count - 1, int(cpu_count * 4 / 5))
+
+
+        initial_pkgs = self.py_packages.get_initial()
+
+        to_install_pkgs = initial_pkgs.get_not_installed()
+        if self.keep_up_to_date:
+            print(f"TODO add packages to update")
+
+        if not to_install_pkgs:
+            return False
+
+        start_time = time.time()
+        with ThreadPoolExecutor(
+            max_workers=min(cpu_count, len(to_install_pkgs))
+        ) as executor:
+            executor.map(lambda pkg: pkg.update_info(), to_install_pkgs)
+        elapsed = time.time() - start_time
+        for pkg in to_install_pkgs:
+            pkg: PyPackage
+            print(f"{lightcyan(pkg.name)}:\n    latest version: {pkg.latest_version}\n    selected: {pkg.version}")
+            print(f"    variant: {pkg.variant}")
+            print(f"    installed version: {pkg.installed_version}")
+            print(f"    wheel: {pkg.wheel}")
+            print(f"    wheel url: {pkg.wheel_url}")
+            print(f"    size: {pkg.size // 1024}kB")
+        print(f"updated in {elapsed:.02f}s")
+
+        for pkg in to_install_pkgs:
+            # Cache âckages with size > 80MB
+            if pkg.size > 80000:
+                pkg.do_cache = True
+
+            if pkg.do_cache:
+                start_time = time.time()
+                downloaded = pkg.download_wheel(force=False, use_pip=False)
+                elapsed = time.time() - start_time
+                if downloaded:
+                    slog.info(f"{pkg.name} downloaded in {elapsed:.02f}s")
+                else:
+                    slog.error(f"{pkg.name} failed to download")
+
+            pkg.install(force=False)
+
+        to_install_pkgs.update_installed_versions()
+        for pkg in to_install_pkgs:
+            if not pkg.installed:
+                slog.critical(f"{pkg.name} not installed")
+                pkg.install(recover=True)
+
+        # Now restart
+        return True
+
+
+    def handle_install_2nd_stage(self) -> bool:
+        if self.py_packages is None:
+            self.py_packages = PyPackages(
+                self.packages_cfg,
+                sys.platform,
+                keep_up_to_date=self.keep_up_to_date
+            )
+
+        pkgs = self.py_packages.get_delayed()
+
+        from hsys import is_feature_supported
+
+        cuda = is_feature_supported('cuda')
+        tensorrt = is_feature_supported('tensorrt')
+        directml = is_feature_supported('directml')
+        rocm = is_feature_supported('rocm')
+
+        print(f"CUDA: {'✅' if cuda else '❌'}")
+        print(f"TensorRT: {'✅' if tensorrt else '❌'}")
+        print(f"direct ML: {'✅' if directml else '❌'}")
+        print(f"RocM: {'✅' if rocm else '❌'}")
+
+        start_time = time.time()
+
+        for pkg in pkgs.get_by_execution_provider('cuda'):
+            pkg.skip = not cuda
+            pkg.supported = cuda
+
+        for pkg in pkgs.get_by_execution_provider('rocm'):
+            pkg.skip = not rocm
+            pkg.supported = rocm
+
+        for pkg in pkgs.get_by_execution_provider('directml'):
+            pkg.skip = not directml
+            pkg.supported = directml
+
+        cpu_fallback = all([x is False for x in (cuda, tensorrt, rocm)])
+        for pkg in pkgs.get_by_execution_provider('cpu'):
+            pkg.skip = not cpu_fallback
+            pkg.supported = cpu_fallback
+
+
+        print("supported packages")
+        supported_pkgs = pkgs.get_delayed(supported_only=True)
+        for pkg in supported_pkgs:
+            print(lightcyan(pkg.pretty_name))
+            pprint(pkg)
+
+        cpu_count = mp.cpu_count()
+        cpu_count = max(cpu_count - 1, int(cpu_count * 4 / 5))
+        with ThreadPoolExecutor(
+            max_workers=min(cpu_count, len(supported_pkgs))
+        ) as executor:
+            executor.map(lambda pkg: pkg.update_info(), supported_pkgs)
+        elapsed = time.time() - start_time
+
+        for pkg in supported_pkgs:
+            pkg: PyPackage
+            print(f"{lightcyan(pkg.name)}:\n    latest version: {pkg.latest_version}\n    selected: {pkg.version}")
+            print(f"    installed: {pkg.installed}")
+            print(f"    variant: {pkg.variant}")
+            print(f"    wheel: {pkg.wheel}")
+            print(f"    wheel url: {pkg.wheel_url}")
+            print(f"    size: {pkg.size // 1024}kB")
+            print(f"    do cache: {pkg.do_cache}")
+        slog.info(f"updated in {elapsed:.02f}s")
+
+
+        # print("Packages to install: ", lightcyan(", ".join((pkg.name for pkg in to_install_pkgs))))
+        pkgs = [pkg for pkg in supported_pkgs if not pkg.installed]
+        if len(pkgs) == 0:
+            return False
+
+        # Download
+        for pkg in pkgs:
+            if pkg.installed or not pkg.do_cache:
+                continue
+
+            start_time = time.time()
+            downloaded = pkg.download_wheel(force=False, use_pip=False)
+            if downloaded:
+                slog.info(f"{pkg.name} downloaded in {elapsed:.02f}s")
+            else:
+                slog.error(f"{pkg.name} failed to download")
+
+            elapsed = time.time() - start_time
+            slog.info(f"{pkg.name} downloaded in {elapsed:.02f}s")
+            # print(lightcyan("-" * 80))
+
+        # install
+        for pkg in pkgs:
+            pkg.install(reinstall=False)
+
+
+        pkgs.update_installed_versions()
+        for pkg in supported_pkgs:
+            if not pkg.installed:
+                slog.critical(f"{pkg.name} not installed")
+                pkg.install(recover=True)
+        return True
