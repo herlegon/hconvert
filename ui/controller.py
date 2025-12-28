@@ -175,7 +175,6 @@ class Controller(QObject):
                     self.signal_log.emit("Backend is ready")
                     break
 
-
             # Forward stdout
             def forward(stream, target):
                 for line in iter(stream.readline, ""):

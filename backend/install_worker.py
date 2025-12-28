@@ -206,7 +206,6 @@ class InstallWorker(mp.Process):
             print(red("READY"))
 
 
-
     def handle_install_ext_packages(self) -> None:
         # for testing purpose
         if self.use_local_host:
